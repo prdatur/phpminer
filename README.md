@@ -3,11 +3,11 @@ Description
 PHPMiner is a nice looking web interface for cgminer in conjunction with a graphiccard.
 If you running your mining machine under linux, this is probably the system you want.
 
-What does PHPMiner can do?
+How does it work?
 ===========
-PHPMiner connections through the API from CGMiner, there you will be able to get the current status of your devices.
-Also you can set minitor values for temperature, load and hashrate. PHPMiner is able to check those values periodicly and can send notifications to different systems if 
-for example the GPU Temerature is to high.
+PHPMiner connects through the API from CGMiner, there you will be able to get the current status of your devices.
+Also you can set monitor values for temperature, load and hashrate. PHPMiner is able to check those values periodicly and can send notifications to different systems if 
+for example the GPU Temerature is too high.
 PHPMiner can also check if CGMiner is running and if not it can automatically try to restart it.
 If a GPU Died and a CGMiner "defunc" process exist, PHPMiner can check those issues too and can reboot your machine.
 This will prevent you machine from long mining timeouts.
