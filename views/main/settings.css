@@ -1,0 +1,23 @@
+
+
+table.config_table td.key {
+    padding: 0px 0px 0px 10px;    
+}
+
+table.config_table td.value {
+    padding: 0px;
+}
+
+table.config_table td.value input {
+    margin: 0px;
+    width: 100%;
+}
+
+table.config_table td {
+    vertical-align: middle;
+}
+
+table.config_table td label {
+    margin-bottom: 0px;
+    font-weight: normal;
+}

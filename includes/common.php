@@ -1,0 +1,56 @@
+<?php
+/**
+ * @copyright Christian Ackermann (c) 2013 - End of life
+ * @author Christian Ackermann <prdatur@gmail.com>
+ */
+ini_set('display_errors', 'on');
+error_reporting(E_ALL);
+
+define("TIME_NOW", time());
+define("TIME_NOW_GMT", strtotime(gmdate("Y-m-d H:i:s", TIME_NOW)));
+define("DB_DATE", "Y-m-d");
+define("DB_DATETIME", "Y-m-d H:i:s");
+define("DB_TIME", "H:i:s");
+
+mb_internal_encoding('UTF-8');
+
+/**
+ * This is not a primitive datatype but it can be used as a real not set variable, so if we realy want to check if a
+ * parameter was provided to a function/method we can default assign NS so if we pass "", null or something similar to empty
+ * it is also a allowed "provided" value. The value behind NS is choosen with a string which should never be a value provided by a user
+ */
+define("NS", "-||notset||-");
+
+/**
+ * Define our primitive datatypes, these are used in several ways.
+ * Most use is within parameter type checks.
+ */
+$i = 1;
+define("PDT_INT", $i++, true);
+define("PDT_FLOAT", $i++, true);
+define("PDT_STRING", $i++, true);
+define("PDT_DECIMAL", $i++, true);
+define("PDT_DATE", $i++, true);
+define("PDT_OBJ", $i++, true);
+define("PDT_ARR", $i++, true);
+define("PDT_BOOL", $i++, true);
+define("PDT_INET", $i++, true);
+define("PDT_SQLSTRING", $i++, true);
+define("PDT_JSON", $i++, true);
+define("PDT_PASSWORD", $i++, true);
+define("PDT_ENUM", $i++, true);
+define("PDT_TEXT", $i++, true);
+define("PDT_TINYINT", $i++, true);
+define("PDT_MEDIUMINT", $i++, true);
+define("PDT_BIGINT", $i++, true);
+define("PDT_SMALLINT", $i++, true);
+define("PDT_DATETIME", $i++, true);
+define("PDT_TIME", $i++, true);
+define("PDT_FILE", $i++, true);
+define("PDT_LANGUAGE", $i++, true);
+define("PDT_LANGUAGE_ENABLED", $i++, true);
+define("PDT_SERIALIZED", $i++, true);
+define("PDT_BLOB", $i++, true);
+
+require 'CGMinerAPI.class.php';
+require 'Controller.class.php';

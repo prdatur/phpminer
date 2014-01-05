@@ -1,0 +1,29 @@
+/* Default box */
+.defaultBox {
+    border-width: 1px;
+    border-style: solid;
+    border-color: black;
+    margin: 0px auto;
+    background-color: #FAFAFA;
+    margin-bottom: 10px;
+}
+
+.defaultBox #description { 
+    padding: 7px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #FFF;
+}
+
+.defaultBox ul li { 
+    margin-left: 30px; 
+}
+
+.defaultBox_success #description { background: #59C50A linear-gradient(#59C50A,#467F1C); }
+.defaultBox_success { border-color: green; }
+
+.defaultBox_error #description { background: #790000 linear-gradient(#790000,#630000); }
+.defaultBox_error  { border-color: #CC0000; }
+
+.defaultBox_info #description { background: #DF8533 linear-gradient(#DF8533,#A25006); }
+.defaultBox_info { border-color: #FFCC00; }

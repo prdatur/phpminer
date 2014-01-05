@@ -1,0 +1,68 @@
+
+#device_list td.enabled {
+    background: #007E05 linear-gradient(#07A714, #007E05);
+    
+}
+
+@-moz-keyframes blink { 
+    from { background: #A70707 ; color: #FFF; } 
+    to { background: #F5F5F5 ; color: #3F3F3F; }
+}
+@-webkit-keyframes blink { 
+    from { background: #A70707 ; color: #FFF; } 
+    to { background: #F5F5F5 ; color: #3F3F3F; }
+}
+@-o-keyframes blink { 
+    from { background: #A70707 ; color: #FFF; } 
+    to { background: #F5F5F5 ; color: #3F3F3F; }
+}
+@-ms-keyframes blink { 
+    from { background: #A70707 ; color: #FFF; } 
+    to { background: #F5F5F5 ; color: #3F3F3F; }
+}
+@keyframes blink { 
+    from { background: #A70707 ; color: #FFF; } 
+    to { background: #F5F5F5 ; color: #3F3F3F; }
+}
+
+#device_list td.disabled {
+    background: #A70707 linear-gradient(#A70707, #7E0000);
+    animation: blink 2s step-end infinite;
+    -moz-animation: blink 2s step-end infinite;
+    -o-animation: blink 2s step-end infinite;
+    -webkit-animation: blink 2s infinite;
+    color: #FFF;
+}
+
+
+#device_list td.enabled .icon-check,
+#device_list td.disabled .icon-cancel,
+#device_list td.invalid .icon-cancel,
+#device_list td.invalid .icon-attention,
+#device_list td.clickable:hover .icon-check {
+    color: #FFF;
+}
+
+#device_list .icon-check {
+    color: #208102;
+}
+
+#device_list .icon-cancel {
+    color: #DD0000;
+}
+
+.modal .form-element .unit {
+    margin-left: 10px;
+}
+
+.remove_pool {
+    margin-left: 10px;
+}
+
+#pool_switching_container label {
+    margin-top: 3px;
+}
+#pool_switching_container select {
+    margin-bottom: 5px;
+    padding: 2px 5px;
+}

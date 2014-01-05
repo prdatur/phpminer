@@ -1,0 +1,47 @@
+AddDefaultCharset utf-8
+Options +FollowSymLinks
+Options -Indexes
+
+# Various rewrite rules.
+<IfModule mod_rewrite.c>
+
+  RewriteEngine   on
+  RewriteRule "(^|/)\." - [F]
+   
+  RewriteEngine   on
+  RewriteRule cron\.(php)$ - [R=404]
+   
+  RewriteEngine   on
+  RewriteBase /
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !=/favicon.ico
+  RewriteCond %{REQUEST_URI} !=/favicon.gif
+  RewriteRule ^ index.php [L]
+
+
+  # Rules to correctly serve gzip compressed CSS and JS files.
+  # Requires both mod_rewrite and mod_headers to be enabled.
+  <IfModule mod_headers.c>
+    # Serve gzip compressed CSS files if they exist and the client accepts gzip.
+    RewriteCond %{HTTP:Accept-encoding} gzip
+    RewriteCond %{REQUEST_FILENAME}\.gz -s
+    RewriteRule ^(.*)\.css $1\.css\.gz [QSA]
+
+    # Serve gzip compressed JS files if they exist and the client accepts gzip.
+    RewriteCond %{HTTP:Accept-encoding} gzip
+    RewriteCond %{REQUEST_FILENAME}\.gz -s
+    RewriteRule ^(.*)\.js $1\.js\.gz [QSA]
+
+    # Serve correct content types, and prevent mod_deflate double gzip.
+    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1]
+    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1]
+
+    <FilesMatch "(\.js\.gz|\.css\.gz)$">
+      # Serve correct encoding type.
+      Header append Content-Encoding gzip
+      # Force proxies to cache gzipped & non-gzipped css/js files separately.
+      Header append Vary Accept-Encoding
+    </FilesMatch>
+  </IfModule>
+</IfModule>

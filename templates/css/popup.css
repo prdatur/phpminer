@@ -1,0 +1,67 @@
+#popup_container {
+    background: #FFF;
+    border: solid 1px #999;
+    box-shadow: 0px 0px 34px 0px #3C3C3C;
+    color: #000;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    width: 400px;
+    opacity: 0;
+}
+
+#popup_title {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.75em;
+    background: #9B2C17 linear-gradient(#D82121,#9B2C17);
+    color: #FFF;
+    border: solid 1px rgba(255, 255, 255, 0.74);
+    border-bottom: solid 1px #999;
+    cursor: default;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    padding: 0em;
+    height: 28px;
+    margin: 0em;
+}
+
+#popup_titletxt i {
+    margin-right: 5px;
+}
+#popup_titletxt {
+    text-align: left;
+    width: 355px;
+    padding: 0em;
+    margin: 0em;
+    padding-left: 5px;
+    float: left;
+    line-height: 28px;
+}
+#popup_cancel_corner {
+    float: right;
+    width: 30px;
+    text-align: right;
+    cursor: pointer;
+}
+
+#popup_cancel_corner:hover {
+    color: #CFCFCF;
+}
+
+#popup_content {
+    text-align: left;
+    padding: 1em 1.75em;
+    margin: 0em;
+    clear: both;
+}
+
+div#popup_container input, 
+div#popup_container textarea, 
+div#popup_container select {
+    width: auto;
+}
+
+#popup_panel { text-align: center; margin-top: 1em; }
+#popup_prompt { margin: .5em 0em; }

@@ -1,0 +1,11 @@
+tr.invalid td {
+    background: rgba(255, 0, 0, 0.19);
+}
+
+tr.valid td.options * {
+    display: none;
+}
+
+tr.valid td {
+    background: rgba(31, 255, 0, 0.19);
+}

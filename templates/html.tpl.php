@@ -1,0 +1,83 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <TITLE>PHPMiner - Mine better</TITLE>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta name="description" content="PHPMiner is fully implemented api client for cgminer."/>
+        <meta name="ROBOTS" content="INDEX, FOLLOW">
+
+        <!-- Add CSS files -->
+        <link rel="StyleSheet" type="text/css" href="/templates/css/reset.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/bootstrap/css/bootstrap.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/fontello/css/phpminer.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/fontello/css/animation.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/css/jquery.nouislider.css" />
+        <link rel="stylesheet" type="text/css" href="/templates/x-editable/bootstrap3-editable/css/bootstrap-editable.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/css/main.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/css/status_box.css" />
+        <link rel="StyleSheet" type="text/css" href="/templates/css/popup.css" />
+        <?php foreach ($this->get_variable('cssfiles') AS $file): ?>
+            <link rel="StyleSheet" type="text/css" href="<?php echo $file; ?>" />
+        <?php endforeach; ?>
+
+        <!-- Add Javascript files -->
+        <script type="text/javascript" src="/templates/js/jquery-1.10.2.min.js"></script>
+        <script type="text/javascript" src="/templates/js/jquery.nouislider.min.js"></script>
+        <script type="text/javascript" src="/templates/bootstrap/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="/templates/x-editable/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+        <script type="text/javascript" src="/templates/js/common.js"></script>
+        <script type="text/javascript" src="/templates/js/core.js"></script>
+        <?php foreach ($this->get_variable('jsfiles') AS $file): ?>
+            <script type="text/javascript" src="<?php echo $file; ?>"></script>
+        <?php endforeach; ?>
+
+        <?php if ($this->has_variable('jsconfig')): ?>
+            <script type="text/javascript">
+                var phpminer = {};
+                phpminer.settings = <?php echo json_encode($this->get_variable('jsconfig')); ?>;
+            </script>        
+        <?php endif; ?>
+
+    </head>
+    <body>
+        <div id="page">
+            <section id="header">
+                <h1>PHPMiner - Mine better</h1>
+                <ul class="clearfix">
+                    <li><a href="/"><i class="icon-home"></i>Home</a></li>
+                    <li><a href="/pools/main"><i class="icon-group"></i>Pools</a></li>
+                    <li><a href="/notify/settings"><i class="icon-beaker"></i>Notifications / Auto tasks</a></li>
+                    <li><a href="/main/settings"><i class="icon-cogs"></i>Settings</a></li>
+                </ul>
+                <div class="donate">
+                    <span style='display: inline-block;margin-right: 20px;text-align: right;'>
+                        <b>Nice PHPMiner<br />Much work<br />Some donate</b>
+                    </span>
+                    <span style='display: inline-block;margin-right: 10px;'>
+                    Doge: DCKWDLSocxn1t9TKpoknZnezCLAB6pkhiB<br />
+                    BTC: 17dbqTnhn2qPLdSjaT7w2SkPLnCSMH4xFh<br />
+                    LTC: Lh5sjSpN88N3PeG3vyQD9h6bz2jV4tdoke<br />
+                    </span>
+                </div>
+            </section>
+            <div id="header_border"></div>
+            <?php if ($this->geT_variable('unsaved_changes')): ?>
+            <div id="save_cg_miner_config_container"><a class="btn btn-primary" id="save_cg_miner_config">You have unsaved changes, save to config</a></div>
+            <?php endif; ?>
+            <div id="wrapper">
+                <section id="status_messages">
+                    <?php if ($this->has_variable('messages')): ?>
+                        <?php foreach ($this->get_variable('messages') AS $type => $message_arrray): ?>
+                            <?php include "templates/status_message.tpl.php"; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </section>
+                <section id="content">
+                    <?php if (file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.tpl.php')): ?>
+                        <?php include SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.tpl.php'; ?>
+                    <?php endif; ?>
+                </section>
+            </div>
+        </div>
+    </body>
+</html>
