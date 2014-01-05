@@ -353,6 +353,7 @@ class main extends Controller {
         $this->js_config('active_pool_group', $current_active_group);
         $this->js_config('active_pool_uuid', $active_pool_uuid);
         $this->js_config('config', $this->config->get_config());
+        $this->js_config('is_configurated', !empty($this->config->cgminer_config_path));
     }
     
     /**

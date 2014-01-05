@@ -27,7 +27,7 @@ Soopfw.behaviors.main_init = function() {
     }
     refresh_device_list_timeout = setInterval(refresh_device_list, get_config('ajax_refresh_intervall', 5000));
 
-    if (empty(phpminer.settings.active_pool_group)) {
+    if (empty(phpminer.settings.active_pool_group) && !empty(phpminer.settings.is_configurated)) {
         var msg = "PHPMiner could not find the current active group.\n"
                 + "This means that the current configurated pools within cgminer are not equal with the pools within a pool group.\n"
                 + "PHPMiner needs to know which pool group is currently active.\n"
