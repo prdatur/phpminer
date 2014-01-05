@@ -41,7 +41,6 @@ class CGMinerAPI {
      */
     public function __construct($port) {
         $this->remote_ip = "127.0.0.1";
-        $this->remote_ip = "10.10.10.201";
         $this->remote_port = $port;
     }
     
