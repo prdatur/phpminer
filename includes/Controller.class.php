@@ -120,7 +120,7 @@ class Controller {
                 }
             }
             else {
-                $this->add_message('You didn\'t configurated the path to cgminer.conf, please set it up first. Else PHPMiner will not work properly.', Controller::MESSAGE_TYPE_ERROR);
+                $this->add_message('You didn\'t configurated the path to cgminer.conf, please set it up first under <a href="/main/settings">settings</a>, else PHPMiner will not work properly.', Controller::MESSAGE_TYPE_ERROR);
             }
         }
         $this->assign('unsaved_changes', false);

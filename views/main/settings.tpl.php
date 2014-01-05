@@ -10,7 +10,7 @@
     <tbody>
         <tr>
             <td class="key"><label for="cgminer_config_path">CGMiner config path:</label></td>
-            <td class="value"><input type="text" id="cgminer_config_path" name="cgminer_config_path" value="<?php echo (!empty($conf['cgminer_config_path']) ? $conf['cgminer_config_path'] : '/etc/cgminer/cgminer.conf');?>" /></td>
+            <td class="value"><input type="text" id="cgminer_config_path" name="cgminer_config_path" value="<?php echo (!empty($conf['cgminer_config_path']) ? $conf['cgminer_config_path'] : '');?>" /></td>
         </tr>
         <tr>
             <td class="key"><label for="ajax_refresh_intervall">Ajax refresh intervall (ms):</label></td>
