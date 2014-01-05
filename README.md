@@ -19,6 +19,7 @@ Requirements for PHPMiner
 ============
 * Apache2 with enabled mod_rewrite
  * libapache2-mod-php5
+* php5-cli
 * PHP 5.3+
  * php5-curl (for notifications with rapidpush and/or custom post)
 
@@ -72,7 +73,7 @@ Please add a file named **phpminer** to **/etc/cron.d/** with the following cont
 
     # /etc/cron.d/phpminer: crontab fragment for phpminer
     #  This will run the cronjob script for phpminer to send notifications and other periodic tasks.
-    * * * * * {user} {/path/to/phpminer}/cron.php
+    * * * * * {user} php -f {/path/to/phpminer}/cron.php
 
 
 Please replace:
@@ -125,11 +126,20 @@ Create a new virtual host in apache:
 
 Replace:
 
-{DOCUMENT_ROOT_TO_PHPMINER} - With the path where the index.php of PHPMiner is located.
+**{DOCUMENT_ROOT_TO_PHPMINER}** - With the path where the index.php of PHPMiner is located.
 
-{YOUR_DOMAIN} - The domain to the machine. If you don't have a domain you can set it to what ever you want, just make sure you edit your local hosts file to point the fantasy domain to the ip-address if the mining machine.
+**{YOUR_DOMAIN}** - The domain to the machine. If you don't have a domain you can set it to what ever you want, just make sure you edit your local hosts file to point the fantasy domain to the ip-address if the mining machine.
 
 Save the file and enable the vhost.
+
+Make config directory writeable:
+
+    chown {user}:{group} {DOCUMENT_ROOT_TO_PHPMINER}/config
+
+Replace:
+    **{user}** - The user of the webserver, this is normally **www-data**
+    **{group}** - The group of the webserver, this is normally **www-data**
+    **{DOCUMENT_ROOT_TO_PHPMINER}** - With the path where the index.php of PHPMiner is located.
 
 Now point your browser to http://{YOUR_DOMAIN}
 It will try to connect to CGMiner API.
