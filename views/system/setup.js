@@ -2,7 +2,7 @@ Soopfw.behaviors.system_setup = function() {
 
     var dialog = "";
 
-    dialog += '    Could not connect to cgminer with settings: <b>' + phpminer.settings.cgminer.ip + ':' + phpminer.settings.cgminer.port + '</b><br /><br />';
+    dialog += '    Could not connect to cgminer with settings: <b>127.0.0.1:' + phpminer.settings.cgminer.port + '</b><br /><br />';
     dialog += '    Please provide the connection settings to your cgminer. <br />';
     dialog += '    You can find it within cgminer.conf <br />';
     dialog += '    Please make sure to enable api-listen and set "api-allow": "W:127.0.0.1"<br />';
