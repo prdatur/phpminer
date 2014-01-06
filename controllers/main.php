@@ -162,8 +162,6 @@ class main extends Controller {
             }
             $pool_quota = $pool['quota'];
             
-            $pool_no++;
-            
             // Add the pool.
             $this->api->addpool($pool['url'], $pool['user'], $pool['pass'], $pool['quota']);
             $cgminer_config_pools[] = array(
@@ -264,7 +262,8 @@ class main extends Controller {
                 $this->api->set_poolquota($pool_no, $pool_quota);
             }
         }
-
+        $pool_no++;
+        
         // Make sure failover will be resetted.
         $this->api->set_failover_only(true);
         $this->config->set_cgminer_value($this->api, 'pools', $cgminer_config_pools);
