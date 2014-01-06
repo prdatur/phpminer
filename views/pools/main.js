@@ -135,6 +135,7 @@ Soopfw.behaviors.pools_main = function() {
                                 '                    <th>Url</th>' + 
                                 '                    <th style="width:200px;">Username</th>' + 
                                 '                    <th style="width:200px;">Password</th>' + 
+                                '                    <th style="width:60px;">Quota</th>' + 
                                 '                    <th style="width:120px;">Options</th>' + 
                                 '                </tr>' + 
                                 '            </thead>' + 
