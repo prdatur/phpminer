@@ -35,43 +35,9 @@ class pools extends Controller {
         $current_group = $this->pool_config->get_current_active_pool_group($this->api);
         if ($current_group === $group)  {
             
-            if ($this->has_advanced_api) {
-                $devices = $this->api->get_devices();
-                $current_pool = null;
-                $change_pool = null;
-                foreach ($devices AS $device) {
-
-                    // Check if we have our own cgminer fork with advanced api.
-                    if (isset($device['Current Pool'])) {
-                        $current_pool = $device['Current Pool'];
-
-                    }
-                    else {
-                        $current_pool = $device['Last Share Pool'];
-                    }
-                    break;
-                }
-                foreach ($this->api->get_pools() AS $pool) {
-                    if ($this->pool_config->get_pool_uuid($pool['URL'], $pool['User']) === $uuid) {
-                        $change_pool = $pool['POOL'];
-                    }
-                }
-
-                if ($current_pool === $change_pool) {
-                    header("HTTP/1.0 400 Bad request");
-                    echo 'The active pool can not be changed.';
-                    exit();
-                }
-                
-                $this->api->updatepool($change_pool, $old_pool['url'], $old_pool['user'], $old_pool['pass']);
-                $this->api->set_poolquota($change_pool, $old_pool['quota']);
-                
-            }
-            else {
-                header("HTTP/1.0 400 Bad request");
-                echo 'The active pool group can not be changed.';
-                exit();
-            }
+            header("HTTP/1.0 400 Bad request");
+            echo 'The active pool group can not be changed.';
+            exit();
         }
         
         $this->pool_config->update_pool($uuid, $old_pool['url'], $old_pool['user'], $old_pool['pass'], $old_pool['quota']);
