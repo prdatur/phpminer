@@ -82,27 +82,7 @@ try {
     }
 
 }
-catch (APIException $e) {
-    if ($set_request_type === 'html') {
-        switch ($e->getCode()) {
-            // We also want to get back to the setup screen to choose ip and port when we couldn't connect to the api.
-            // There the existing connection settings will be pre-filled.
-            case APIException::CODE_SOCKET_CONNECT_ERROR:
-                $controller->setup();
-                break;
-
-            // Bad bad, display errors.
-            case PHPMinerException::CODE_CONFIG_NOT_READABLE:
-            case PHPMinerException::CODE_CONFIG_NOT_WRITEABLE:
-                $controller->add_message($e->getMessage(), Controller::MESSAGE_TYPE_ERROR);
-                break;
-        }
-    }
-    else {
-        AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $e->getMessage());
-    }
-}
-catch (PHPMinerException $e) {
+catch (Exception $e) {
     if ($set_request_type === 'html') {
         switch ($e->getCode()) {
             // We also want to get back to the setup screen to choose ip and port when we couldn't connect to the api.
