@@ -115,7 +115,7 @@ class main extends Controller {
      * Action: Switch to the given pool group
      */
     public function switch_pool_group($pool_group = '') {
-        
+
         $params = new ParamStruct();
         $params->add_required_param('group', PDT_STRING);
 
@@ -130,7 +130,7 @@ class main extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
 
-        // Makre sure group exists.
+        // Make sure group exists.
         $this->load_pool_config();
         if (!$this->pool_config->group_exists($params->group)) {
             if (!empty($pool_group)) {
@@ -138,7 +138,7 @@ class main extends Controller {
             }
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, 'You provided an invalid group');
         }
-
+        
         $cgminer_config = new Config($this->config->cgminer_config_path);
         if (!$cgminer_config->is_writeable()) {
             if (!empty($pool_group)) {
@@ -147,162 +147,155 @@ class main extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'The cgminer config file <b>' . $this->config->cgminer_config_path . '</b> is not writeable.');
         }
         
-        // Loop through all pools which are within the group, those will be added old ones will be removed.
-        $first_add = true;
-
-        // First make sure after switching to the first added pool, it will not switch back when the pool is dead.
-        $this->api->set_failover_only(false);
-        $pool_quota_reset = 0;
-        $cgminer_config_pools = array();
-        $pool_no = 0;
-        foreach ($this->pool_config->get_pools($params->group) AS $pool) {
-            
-            if (!isset($pool['quota'])) {
-                $pool['quota'] = 1;
-            }
-            $pool_quota = $pool['quota'];
-            
-            // Add the pool.
-            $this->api->addpool($pool['url'], $pool['user'], $pool['pass'], $pool['quota']);
-            $cgminer_config_pools[] = array(
-                'url' => $pool['url'],
-                'user' => $pool['user'],
-                'pass' => $pool['pass'],
-            );
-
-            // When we have added our first pool, we have to switch to this pool, wait until all devices are connected to this and then remove the old ones.
-            // After that we can add the other pools within the group.
-            if ($first_add === true) {
-
-                $first_add = false;
-
-                // Get all current active pools.
-                $cgminer_pools = $this->api->get_pools();
-
-                // Find the currently added pool and switch it to active.
-                foreach ($cgminer_pools AS $cgminer_pool) {
-                    if ($pool['url'] == $cgminer_pool['URL'] && $pool['user'] == $cgminer_pool['User']) {
-                        $this->api->switchpool($cgminer_pool['POOL']);
-                        
-                        // Also we need to set the pool quota really high, so we can be sure that the pool is still active after the wait time.
-                        $this->api->set_poolquota($cgminer_pool['POOL'], 100000);
-                        $pool_quota_reset = $cgminer_pool['POOL'];
-                        break;
-                    }
-                }
-
-                // Get all configurated pools
-                $check_pools = $this->api->get_pools();
-
-                // Wait until all gpu's have switched to pool.
-                $gpus = $this->api->get_devices();
-                // Loop until all gpus are empty. gpu will be removed if we are mining add the first added pool.
-                while (!empty($gpus)) {
-
-                    // Loop through each gpu.
-                    foreach ($gpus AS $i => $gpu) {
-                        if (isset($gpu['Current Pool'])) {
-                            $pool_check = $gpu['Current Pool'];
-                        }
-                        else {
-                            $pool_check = $gpu['Last Share Pool'];
-                        }
-                        // Find the correct pool which was the last share pool of the gpu. or if we have advanced api commands get the current pool directly.
-                        foreach ($check_pools AS $chk_pool) {
-                            if ($chk_pool['POOL'] == $pool_check) {
-                                // Mark found gpu pool.
-                                $gpu_pool = $chk_pool;
-                                break;
-                            }
-                        }
-
-                        // Check if the last share pool details are the same as the currently added one. If so remove the current gpu from the gpu-list.
-                        if ($pool['url'] == $gpu_pool['URL'] && $pool['user'] == $gpu_pool['User']) {
-                            unset($gpus[$i]);
-                        }
-                    }
-
-                    // Only re-request the current gpu list details if we have some gpu's, because if we have no gpu's left in the list we are finished and can process further.
-                    if (!empty($gpus)) {
-                        // Just to get a little bit of time to let gpu set the new last share pool.
-                        usleep(250);
-
-                        // Get fresh updated gpu list.
-                        $gpus = $this->api->get_devices();
-                    }
-                }
-                
-                // Reset quota
-                $this->api->set_poolquota($pool_quota_reset, $pool_quota);
-                
-                $c = 0;
-                // Remove the old pools.
-                while (count($this->api->get_pools()) > 1) {
-                    // Just make sure that we are not within an endless loop.
-                    if ($c++ >= 100) {
-                        break;
-                    }
-
-                    // Find the first pool which is not the current added one which is active.
-                    foreach ($this->api->get_pools() AS $cgminer_pool) {
-                        // Check if the current pool is not the one we added previous.
-                        if ($pool['url'] != $cgminer_pool['URL'] || $pool['user'] != $cgminer_pool['User']) {
-                            // Remove old group.
-                            try {
-                                $this->api->removepool($cgminer_pool['POOL']);
-                            } catch (APIRequestException $e) {
-                                
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                $this->api->set_poolquota($pool_no, $pool_quota);
-            }
-        }
-        $pool_no++;
+        $old_group = $this->pool_config->get_current_active_pool_group($this->api);
         
-        // Make sure failover will be resetted.
-        $this->api->set_failover_only(true);
-        $this->config->set_cgminer_value($this->api, 'pools', $cgminer_config_pools);
-        if ($this->has_advanced_api) {
-            $this->api->set_poolstrategy($this->pool_config->get_strategy($params->group), $this->pool_config->get_period($params->group));
-            $this->config->del_cgminer_value($this->api, 'rotate');
-            $this->config->del_cgminer_value($this->api, 'balance');
-            $this->config->del_cgminer_value($this->api, 'load-balance');
-            $this->config->del_cgminer_value($this->api, 'round-robin');
-            if ($this->pool_config->get_strategy($params->group) !== 0) {
-                switch ($this->pool_config->get_strategy($params->group)) {
-                    case 1:
-                        $this->config->set_cgminer_value($this->api, 'round-robin', true);
-                        break;
-                    case 2:
-                        $this->config->set_cgminer_value($this->api, 'rotate', $this->pool_config->get_period($params->group));
-                        break;
-                    case 3:
-                        $this->config->set_cgminer_value($this->api, 'load-balance', true);
-                        break;
-                    case 4:
-                        $this->config->set_cgminer_value($this->api, 'balance', true);
-                        break;
+        $cg_pools = $this->api->get_pools();
+        $pools_to_add = $this->pool_config->get_pools($params->group);
+        foreach ($pools_to_add AS $k => $pool) {
+            unset($pools_to_add[$k]);
+            $pools_to_add[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
+        }
+        $group_pools = $pools_to_add;
+        
+        foreach ($cg_pools AS $pool) {
+            $rem_uuid = $this->pool_config->get_pool_uuid($pool['URL'], $pool['User']);
+            if (isset($pools_to_add[$rem_uuid])) {
+                unset($pools_to_add[$rem_uuid]);
+            }
+        }
+        
+        foreach ($pools_to_add AS $pool) {
+            // Add the pool.
+            $this->api->addpool($pool['url'], $pool['user'], $pool['pass'], !empty($pool['quota']) ? $pool['quota']: 1);
+            usleep(100000); // Wait 100 milliseconds to let the pool to be alived.
+        }
+        
+        $pool_switched = false;
+        $fallback_counter = 0;
+        while(!$pool_switched) {
+            usleep(100000);
+            
+            // Just try 100 times, which are around 1 second, to get a current added pool alive.
+            if ($fallback_counter++ > 100) {
+                break;
+            }
+            
+            // save the current cg pools, we do this here because we can then reuse it after switching.
+            $cg_pools = $this->api->get_pools();
+            foreach ($cg_pools AS $pool) {
+                $check_uuid = $this->pool_config->get_pool_uuid($pool['URL'], $pool['User']);
+                if (isset($group_pools[$check_uuid]) && $pool['Status'] == 'Alive') {
+                    $this->api->switchpool($pool['POOL']);
+                    $pool_switched = true;
+                    break;
                 }
             }
         }
-        // While switching pool groups we directly need to write to cgminer config file.
-        $cgminer_config->set_value('pools', $cgminer_config_pools);
-        if (!empty($pool_group)) {
-            return true;
+        
+        $cgminer_config_pools = array();
+        if (!$pool_switched) {
+            $group_pools = $this->pool_config->get_pools($old_group);
+            foreach ($group_pools AS $k => $pool) {
+                unset($group_pools[$k]);
+                $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
+                
+                $cgminer_config_pools[] = array(
+                    'url' => $pool['url'],
+                    'user' => $pool['user'],
+                    'pass' => $pool['pass'],
+                );
+                
+            }
         }
-        AjaxModul::return_code(AjaxModul::SUCCESS, $this->pool_config->get_pools($params->group));
+        
+        $pools_to_remove = array();
+        foreach ($cg_pools AS $pool) {
+            $rem_uuid = $this->pool_config->get_pool_uuid($pool['URL'], $pool['User']);
+            if (!isset($group_pools[$rem_uuid])) {
+                $pools_to_remove[$rem_uuid] = $pool;
+            }
+        }
+        $c = 0;
+        // Loop through the pools to be removed until all pools are removed.
+        while(!empty($pools_to_remove)) {
+                        
+            // Get the pool which needs to be removed now.
+            $pool_to_remove_uuid = key($pools_to_remove);
+            
+            // Loop through each current cgminer pools.
+            foreach ($cg_pools AS $k => $pool) {
+                // Get the uuid for this pool.
+                $rem_uuid = $this->pool_config->get_pool_uuid($pool['URL'], $pool['User']);
+                
+                // Check if this pool is the wanted one which needs to be removed.
+                if ($pool_to_remove_uuid == $rem_uuid) {
+                    // Remove pool from cgminer.
+                    $this->api->removepool($pool['POOL']);
+                    
+                    // Mark pool as removed.
+                    unset($pools_to_remove[$pool_to_remove_uuid]);
+                    break;
+                }
+            }
+            
+            // Let cgminer a bit time to reorder his pool no.
+            usleep(100000);
+            // Get fresh pools.
+            $cg_pools = $this->api->get_pools();
+            
+            // Fallback
+            if ($c++ >= 50) {
+                break;
+            }
+        }
+        
+        // When we switched successfully.
+        if ($pool_switched) {
+            $this->config->set_cgminer_value($this->api, 'pools', $cgminer_config_pools);
+        
+            if ($this->has_advanced_api) {
+                $this->api->set_poolstrategy($this->pool_config->get_strategy($params->group), $this->pool_config->get_period($params->group));
+                $this->config->del_cgminer_value($this->api, 'rotate');
+                $this->config->del_cgminer_value($this->api, 'balance');
+                $this->config->del_cgminer_value($this->api, 'load-balance');
+                $this->config->del_cgminer_value($this->api, 'round-robin');
+                if ($this->pool_config->get_strategy($params->group) !== 0) {
+                    switch ($this->pool_config->get_strategy($params->group)) {
+                        case 1:
+                            $this->config->set_cgminer_value($this->api, 'round-robin', true);
+                            break;
+                        case 2:
+                            $this->config->set_cgminer_value($this->api, 'rotate', $this->pool_config->get_period($params->group));
+                            break;
+                        case 3:
+                            $this->config->set_cgminer_value($this->api, 'load-balance', true);
+                            break;
+                        case 4:
+                            $this->config->set_cgminer_value($this->api, 'balance', true);
+                            break;
+                    }
+                }
+            }
+            $cgminer_config->reload();
+            $cgminer_config->set_value('pools', $cgminer_config_pools);
+            if (!empty($pool_group)) {
+                return true;
+            }
+            AjaxModul::return_code(AjaxModul::SUCCESS, $this->pool_config->get_pools($params->group));
+        }
+        else {
+            if (!empty($pool_group)) {
+                return false;
+            }
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'Could not find an alive pool from the new group, switched back to previous pool group');
+        }
+        
     }
-
+   
     /**
      * Main init function where the devices are listed-
      */
     public function init() {
-        $active_pool = null;
         
         // Get pools
         $pools = $this->api->get_pools();
@@ -322,11 +315,7 @@ class main extends Controller {
             }
             
             foreach ($pools AS $pool) {
-
                 if ($pool['POOL'] == $pool_check) {
-                    if (!empty($pool_check)) {
-                        $active_pool = $pool;
-                    }
                     $device['pool'] = $pool;
                 }
             }
@@ -343,14 +332,12 @@ class main extends Controller {
         $cfg_pools = $this->pool_config->get_pools($current_active_group);
 
         // Get the pool uuid which is currently in use.
-        $active_pool_uuid = $this->pool_config->get_pool_uuid($active_pool['URL'], $active_pool['User']);
         $this->assign('pool_groups', $this->pool_config->get_groups());
         $this->assign('current_group', $current_active_group);
         $this->assign('donating', !empty($this->config->switch_back_group));
         $this->js_config('device_list', $devices);
         $this->js_config('pools', $cfg_pools);
         $this->js_config('active_pool_group', $current_active_group);
-        $this->js_config('active_pool_uuid', $active_pool_uuid);
         $this->js_config('config', $this->config->get_config());
         $this->js_config('is_configurated', !empty($this->config->cgminer_config_path));
     }
@@ -517,14 +504,14 @@ class main extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
-
         $this->load_pool_config();
+        $pool_uuid = $this->pool_config->get_pool_uuid($params->pool);
         $sorted_pools = array();
         foreach ($this->api->get_pools() AS $pool) {
             $sorted_pools[$this->pool_config->get_pool_uuid($pool['URL'], $pool['User'])] = $pool;
         }
         try {
-            $this->api->switchpool($sorted_pools[$params->pool]['POOL']);
+            $this->api->switchpool($sorted_pools[$pool_uuid]['POOL']);
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $e) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $e->getMessage());
@@ -547,7 +534,14 @@ class main extends Controller {
      */
     public function get_device_list() {
         $devices = $this->api->get_devices_details();
-
+        $this->load_pool_config();
+        
+        $group_pools = $this->pool_config->get_pools($this->pool_config->get_current_active_pool_group($this->api));
+        foreach ($group_pools AS $k => $pool) {
+            unset($group_pools[$k]);
+            $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
+        }
+        
         // Get pools
         $pools = $this->api->get_pools();
         foreach ($devices AS &$device) {
@@ -564,7 +558,7 @@ class main extends Controller {
             }
             
             foreach ($pools AS $pool) {
-                if ($pool['POOL'] == $pool_check) {
+                if ($pool['POOL'] == $pool_check && isset($group_pools[$this->pool_config->get_pool_uuid($pool['URL'], $pool['User'])])) {
                     $device['pool'] = $pool;
                 }
             }
@@ -574,7 +568,7 @@ class main extends Controller {
             }
         }
 
-        AjaxModul::return_code(AjaxModul::SUCCESS, $devices);
+        AjaxModul::return_code(AjaxModul::SUCCESS, $devices, true, print_r($devices, true));
     }
 
     /**

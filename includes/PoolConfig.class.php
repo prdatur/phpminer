@@ -68,10 +68,12 @@ class PoolConfig extends Config {
         // Determine which pool group we are currently using.        
         $current_active_group = null;
         foreach ($cfg_groups AS $check_group => $cfg_groups_pools) {
-            
             // Get a copy so we don't remove anything from $cfg_groups
-            $cfg_pools_check = $cfg_groups_pools;
-            
+            $cfg_pools_check = array();
+
+            foreach ($cfg_groups_pools AS $pool) {
+                $cfg_pools_check[$this->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
+            }
             // We don't want to check empty groups.
             if (empty($cfg_pools_check)) {
                 continue;
@@ -88,7 +90,6 @@ class PoolConfig extends Config {
                 
                 // Now we check if the current active pool uuid is within the current checked group.
                 if (isset($cfg_pools_check[$pool['uuid']])) {
-                    
                     // If it is, remove it from the check pool array, after all current active pools are processed and the $cfg_pools_check is empty we can be sure that this is the current active group.
                     unset($cfg_pools_check[$pool['uuid']]);
                 }
@@ -103,6 +104,7 @@ class PoolConfig extends Config {
                 $current_active_group = $check_group;
                 break;
             }
+            
         }
         return $current_active_group;
     }
@@ -110,15 +112,21 @@ class PoolConfig extends Config {
     /**
      * Returns the uuid for the given pool / user.
      * 
-     * @param string $url
-     *   The pool url.
+     * @param string|array $url
+     *   The pool url. or the combination $url . '|' . $user or an array where first value is the url and the second is the user.
      * @param string $user
-     *   The pool username.
+     *   The pool username. Only optional if url is not just the url. (Optional, default = "")
      * 
      * @return string
      *   The uuid for the pool.
      */
-    public function get_pool_uuid($url, $user) {
+    public function get_pool_uuid($url, $user = "") {
+        if (is_array($url)) {
+            return md5(implode("|", $url));
+        }
+        if (empty($user)) {
+            return md5($url);
+        }
         return md5($url . '|' . $user);
     }
         

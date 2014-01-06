@@ -146,7 +146,7 @@ Soopfw.behaviors.main_init = function() {
         }, {ok: '1. Auto create pool group', cancel: '2. Manual', width: 800});
     }
     $('#current_pool_group').off('change').on('change', function(){
-        wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.<br /><b>Do not close this window (refresh page), else the old pools will remain and only the first pool within the group is added.');
+        wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
         ajax_request('/main/switch_pool_group.json', {group: $(this).val()}, function(new_pools) {
             update_pools(new_pools);
             $.alerts._hide();
@@ -157,6 +157,7 @@ Soopfw.behaviors.main_init = function() {
         ajax_request('/main/switch_pool.json', {pool: $(this).val()}, function() {
             success_alert('Pool switched successfully, Within the overview, the pool will be updated after the first accepted share was send to the new pool, this can take some time.', null, null, 10000);
         });
+        $('#current_pool_pool').val("");
     });
     update_pools();
 };
@@ -172,8 +173,10 @@ function update_pools(new_pools) {
     if (empty(phpminer.settings.pools)) {
         return;
     }
+    
+    $('#current_pool_pool').append('<option value="">Select a pool</optiona>');
     $.each(phpminer.settings.pools, function(k, v) {
-        $('#current_pool_pool').append('<option value="' + k + '"' + ((phpminer.settings.active_pool_uuid === k) ? ' selected="selected"' : '') + '>' + v['url'] + '</option>');
+        $('#current_pool_pool').append('<option value="' + v['url'] + '|' + v['user'] + '">' + v['url'] + '</option>');
     });
 }
 

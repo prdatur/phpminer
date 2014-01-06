@@ -393,7 +393,7 @@ class CGMinerAPI {
     }
     
     /**
-     * Set the pool strategy.
+     * Set the pool priority.
      * 
      * @param array $pool_ids
      *   The pool ids in which the priority should be. First pool id has the highest priority.
