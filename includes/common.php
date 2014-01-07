@@ -83,9 +83,9 @@ function is_cgminer_defunc() {
 	}
 }
 
-$system_conf['version'] = array(1, 0, 0);
+$system_conf['version'] = array(1, 0, 1);
 
-if (preg_match("/^(.+)?\/(main\/|gpu\/|notify\/|pools\/|$|index.php)/",$_SERVER['REQUEST_URI'], $matches)) {
+if (isset($_SERVER['REQUEST_URI']) && preg_match("/^(.+)?\/(main\/|gpu\/|notify\/|pools\/|$|index.php)/",$_SERVER['REQUEST_URI'], $matches)) {
     $system_conf['directory'] = $matches[1];
 }
 

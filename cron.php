@@ -22,6 +22,16 @@ if ($config->is_empty()) {
     exit;
 }
 
+$config->cron_last_run = TIME_NOW;
+
+$data = @file_get_contents('https://phpminer.com/latest_version');
+if (!empty($data)) {
+    $latest_version = json_decode($data, true);
+    if (!empty($latest_version)) {
+        $config->latest_version = $latest_version;
+    }
+}
+
 // Get the notification config.
 $notification_config = new Config(SITEPATH . '/config/notify.json');
         

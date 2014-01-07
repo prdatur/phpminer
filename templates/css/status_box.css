@@ -6,24 +6,37 @@
     margin: 0px auto;
     background-color: #FAFAFA;
     margin-bottom: 10px;
+    color: #FFF;
 }
 
+.defaultBox ul {
+    margin: 0px;
+}
+.defaultBox b {
+    color: #FFF;
+}
 .defaultBox #description { 
     padding: 7px;
     font-size: 15px;
-    font-weight: bold;
     color: #FFF;
+}
+
+.defaultBox a {
+    font-weight: bold;
 }
 
 .defaultBox ul li { 
     margin-left: 30px; 
 }
 
-.defaultBox_success #description { background: #59C50A linear-gradient(#59C50A,#467F1C); }
+.defaultBox_success #description { background: #3D800D linear-gradient(#3D800D,#34680E); }
 .defaultBox_success { border-color: green; }
+.defaultBox_success a { color: #0AFF00; }
 
 .defaultBox_error #description { background: #790000 linear-gradient(#790000,#630000); }
 .defaultBox_error  { border-color: #CC0000; }
+.defaultBox_error a { color: #F00; }
 
-.defaultBox_info #description { background: #DF8533 linear-gradient(#DF8533,#A25006); }
+.defaultBox_info #description { background: #995C25 linear-gradient(#995C25,#A25006); }
 .defaultBox_info { border-color: #FFCC00; }
+.defaultBox_info a { color: #FFE000; }

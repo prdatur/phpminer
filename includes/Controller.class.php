@@ -102,6 +102,17 @@ class Controller {
             $this->config->remote_port = 4028;
         }
         
+        if (!empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
+            $this->add_message('A new version is available, current version <b>' . implode('.', $system_conf['version']) . '</b> - latest version <b>' . implode('.', $this->config->latest_version) . '</b>. <a href="https://phpminer.com" target="_blank">Download</a>', Controller::MESSAGE_TYPE_INFO);
+        }
+        
+        if (empty($this->config->cron_last_run)) {
+            $this->add_message('The cronjob never ran! If you configurated it correctly, just wait 1 or 2 minutes, after the cronjob was executed, this message will disappear. If not configurated please have a look at the <a href="' . $system_conf['directory'] . '/README.md" target="_blank">Readme</a>', Controller::MESSAGE_TYPE_INFO);
+        }
+        else if(round((TIME_NOW - $this->config->cron_last_run) / 60) > 5) {
+            $this->add_message('The cronjob has not been executed since 5 minutes. Please check your cronjob config.', Controller::MESSAGE_TYPE_INFO);
+        }
+        
         // Within first run, get the current cgminer config file data.
         if (empty($this->config->cgminer_conf)) {
             
