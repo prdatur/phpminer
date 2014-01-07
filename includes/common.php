@@ -54,3 +54,70 @@ define("PDT_BLOB", $i++, true);
 
 require 'CGMinerAPI.class.php';
 require 'Controller.class.php';
+
+function is_cgminer_running() {
+	global $is_windows;
+	if ($is_windows) {
+		exec("tasklist 2>NUL", $task_list);
+		foreach ($task_list AS $task) {
+			if (preg_match("/cgminer\.exe/", $task)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	else {
+		$res = trim(shell_exec("ps a | grep cgminer | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
+		return !empty($res);
+	}
+}
+
+function is_cgminer_defunc() {
+	global $is_windows;
+	if ($is_windows) {
+		return false;
+	}
+	else {
+		$res = trim(shell_exec("ps a | grep cgminer | grep defunc | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
+		return !empty($res);
+	}
+}
+
+$system_conf['version'] = array(1, 0, 0);
+
+if (preg_match("/^(.+)?\/(main\/|gpu\/|notify\/|pools\/|$|index.php)/",$_SERVER['REQUEST_URI'], $matches)) {
+    $system_conf['directory'] = $matches[1];
+}
+
+function murl($controller, $action = null, $data = null, $is_json = false) {
+    global $system_conf;
+    
+    if (empty($system_conf['directory']) || $system_conf['directory'] === '/') {
+        $url = '/' . $controller;
+        if ($action != null) {
+            $url .= '/' . $action;
+            
+            if ($data != null) {
+                $url .= '/' . $data;
+            }
+        }
+        if ($is_json) {
+            $url .= '.json';
+        }
+        return $url;
+    }
+    else {
+        $url = $system_conf['directory'] . '/index.php?controller=' . $controller;
+        if ($action != null) {
+            $url .= '&action=' . $action;
+            
+            if ($data != null) {
+                $url .= '&data=' . $data;
+            }
+        }
+        if ($is_json) {
+            $url .= '&type=json';
+        }
+        return $url;
+    }
+}

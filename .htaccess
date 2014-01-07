@@ -9,7 +9,7 @@ Options -Indexes
   RewriteRule "(^|/)\." - [F]
    
   RewriteEngine   on
-  RewriteRule cron\.(php)$ - [R=404]
+  RewriteRule ^cron\.php$ - [R=404]
    
   RewriteEngine   on
   RewriteBase /

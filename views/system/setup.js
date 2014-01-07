@@ -26,9 +26,9 @@ Soopfw.behaviors.system_setup = function() {
                 },
                 click: function() {
                     var that = this;
-                    ajax_request('/main/check_connection.json', {
-                        'port': $('#port').val(),
-                    }, function(results) {
+                    ajax_request(murl('main', 'check_connection'), {
+                        'port': $('#port').val()
+                    }, function() {
                         Soopfw.reload();
                     }, function() {
                         $('#setup_check_connection').button('reset');
@@ -38,7 +38,7 @@ Soopfw.behaviors.system_setup = function() {
         ], {
         width: 660,
         keyboard: false,
-        cancelable: false,
+        cancelable: false
     });
 };
 

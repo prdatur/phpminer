@@ -7,28 +7,28 @@
         <meta name="ROBOTS" content="INDEX, FOLLOW">
 
         <!-- Add CSS files -->
-        <link rel="StyleSheet" type="text/css" href="/templates/css/reset.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/bootstrap/css/bootstrap.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/fontello/css/phpminer.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/fontello/css/animation.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/css/jquery.nouislider.css" />
-        <link rel="stylesheet" type="text/css" href="/templates/x-editable/bootstrap3-editable/css/bootstrap-editable.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/css/main.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/css/status_box.css" />
-        <link rel="StyleSheet" type="text/css" href="/templates/css/popup.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/css/reset.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/bootstrap/css/bootstrap.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/fontello/css/phpminer.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/fontello/css/animation.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/css/jquery.nouislider.css" />
+        <link rel="stylesheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/x-editable/bootstrap3-editable/css/bootstrap-editable.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/css/main.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/css/status_box.css" />
+        <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot'); ?>/templates/css/popup.css" />
         <?php foreach ($this->get_variable('cssfiles') AS $file): ?>
-            <link rel="StyleSheet" type="text/css" href="<?php echo $file; ?>" />
+            <link rel="StyleSheet" type="text/css" href="<?php echo $this->get_variable('docroot') . $file; ?>" />
         <?php endforeach; ?>
 
         <!-- Add Javascript files -->
-        <script type="text/javascript" src="/templates/js/jquery-1.10.2.min.js"></script>
-        <script type="text/javascript" src="/templates/js/jquery.nouislider.min.js"></script>
-        <script type="text/javascript" src="/templates/bootstrap/js/bootstrap.min.js"></script>
-        <script type="text/javascript" src="/templates/x-editable/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
-        <script type="text/javascript" src="/templates/js/common.js"></script>
-        <script type="text/javascript" src="/templates/js/core.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/jquery-1.10.2.min.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/jquery.nouislider.min.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/bootstrap/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/x-editable/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/core.js"></script>
         <?php foreach ($this->get_variable('jsfiles') AS $file): ?>
-            <script type="text/javascript" src="<?php echo $file; ?>"></script>
+            <script type="text/javascript" src="<?php echo $this->get_variable('docroot') . $file; ?>"></script>
         <?php endforeach; ?>
 
         <?php if ($this->has_variable('jsconfig')): ?>
@@ -44,10 +44,10 @@
             <section id="header">
                 <h1>PHPMiner - Mine better</h1>
                 <ul class="clearfix">
-                    <li><a href="/"><i class="icon-home"></i>Home</a></li>
-                    <li><a href="/pools/main"><i class="icon-group"></i>Pools</a></li>
-                    <li><a href="/notify/settings"><i class="icon-beaker"></i>Notifications / Auto tasks</a></li>
-                    <li><a href="/main/settings"><i class="icon-cogs"></i>Settings</a></li>
+                    <li><a href="<?php echo $this->get_variable('docroot'); ?>/"><i class="icon-home"></i>Home</a></li>
+                    <li><a href="<?php echo murl('pools', 'main'); ?>"><i class="icon-group"></i>Pools</a></li>
+                    <li><a href="<?php echo murl('notify', 'settings'); ?>"><i class="icon-beaker"></i>Notifications / Auto tasks</a></li>
+                    <li><a href="<?php echo murl('main', 'settings'); ?>"><i class="icon-cogs"></i>Settings</a></li>
                 </ul>
                 <div class="donate">
                     <span style='display: inline-block;margin-right: 20px;text-align: right;'>

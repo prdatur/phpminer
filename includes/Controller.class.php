@@ -90,7 +90,9 @@ class Controller {
      * @throws PHPMinerException
      */
     public function setup_controller() {
-        
+        global $system_conf;
+        $this->assign('docroot', $system_conf['directory']);
+        $this->js_config('docroot', $system_conf['directory']);
         // Get the own config.
         $this->config = new Config(SITEPATH . '/config/config.json');
         
@@ -120,7 +122,7 @@ class Controller {
                 }
             }
             else {
-                $this->add_message('You didn\'t configurated the path to cgminer.conf, please set it up first under <a href="/main/settings">settings</a>, else PHPMiner will not work properly.', Controller::MESSAGE_TYPE_ERROR);
+                $this->add_message('You didn\'t configurated the path to cgminer.conf, please set it up first under <a href="' . $system_config['directory'] . '/main/settings">settings</a>, else PHPMiner will not work properly.', Controller::MESSAGE_TYPE_ERROR);
             }
         }
         $this->assign('unsaved_changes', false);

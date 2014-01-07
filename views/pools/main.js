@@ -17,7 +17,7 @@ Soopfw.behaviors.pools_main = function() {
             if (empty(group)) {
                 group = 'default';
             }
-            ajax_request('/pools/add_pool.json', {url: $(this).data('pool_url'), user: $(this).data('pool_user'), pass: $(this).val(), group: group}, function(result) {
+            ajax_request(murl('pools', 'add_pool'), {url: $(this).data('pool_url'), user: $(this).data('pool_user'), pass: $(this).val(), group: group}, function(result) {
                 i--;
                 var elm = $('input[data-pool_url="' + result.url + '"][data-pool_user="' + result.user + '"]');
                 var parent = elm.parent().parent();
@@ -49,7 +49,7 @@ Soopfw.behaviors.pools_main = function() {
         var that = this;
         confirm('Do you really want to delete pool <b>' + $(this).data('name') + '</b> from group <b>' + $(this).data('group') + '</b>', 'Delete pool from group', function() {
             wait_dialog('Please wait');
-            ajax_request('/pools/delete_pool.json', {uuid: $(that).data('uuid')}, function() {
+            ajax_request(murl('pools', 'delete_pool'), {uuid: $(that).data('uuid')}, function() {
                 $.alerts._hide();
                 $('tr[data-uuid="' + $(that).data('uuid') + '"]').fadeOut('slow', function() {
                     $(this).remove();
@@ -63,7 +63,7 @@ Soopfw.behaviors.pools_main = function() {
         var group = $(this).data('del-pool-group');
         confirm('Do you really want to delete this group? All configurated pools within this group will also be deleted.', 'Delete pool group', function() {
             wait_dialog('Please wait');
-            ajax_request('/pools/del_group.json', {group: group}, function() {
+            ajax_request(murl('pools', 'del_group'), {group: group}, function() {
                 $.alerts._hide();
                 $('div[data-grp="' + group + '"]').fadeOut('slow', function() {
                    $(this).remove();
@@ -112,7 +112,7 @@ Soopfw.behaviors.pools_main = function() {
                         send_data['strategy'] = $('#strategy').val();
                         send_data['period'] = $('#period').val();
                     }
-                    ajax_request('/pools/add_group.json', send_data, function() {
+                    ajax_request(murl('pools', 'add_group'), send_data, function() {
                         $.alerts._hide();
                         var guuid = uuid();
                         $('.pool_groups').append(
@@ -205,15 +205,14 @@ Soopfw.behaviors.pools_main = function() {
                 },
                 click: function() {
                     wait_dialog('Please wait');
-                    console.log($('#quota').val());
-                    ajax_request('/pools/add_pool.json', {url: $('#url').val(), user: $('#username').val(), pass: $('#password').val(), group: group, quota: $('#quota').val()}, function(result) {
+                    ajax_request(murl('pools', 'add_pool'), {url: $('#url').val(), user: $('#username').val(), pass: $('#password').val(), group: group, quota: $('#quota').val()}, function(result) {
                         $.alerts._hide();
                         $('.pools[data-pool_group="' + group + '"]').append(
                              '<tr data-uuid="' + result.uuid + '|' + group + '">' + 
-                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="url" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="/pools/change_pool.json" data-title="Enter pool url">' + result.url + '</a></td>' + 
-                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="user" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="/pools/change_pool.json" data-title="Enter worker username">' + result.user + '</a></td>' + 
-                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="pass" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="/pools/change_pool.json" data-title="Enter worker password">' + $('#password').val() + '</a></td>' + 
-                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="quota" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="/pools/change_pool.json" data-title="Pool Quota">' + $('#quota').val() + '</a></td>' + 
+                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="url" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter pool url">' + result.url + '</a></td>' + 
+                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="user" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter worker username">' + result.user + '</a></td>' + 
+                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="pass" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter worker password">' + $('#password').val() + '</a></td>' + 
+                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="quota" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Pool Quota">' + $('#quota').val() + '</a></td>' + 
                              '   <td><a href="javascript:void(0);" class="option-action" data-uuid="' + result.uuid + '|' + group + '" data-name="' + result.url + '" data-group="' + group + '" data-action="delete-pool" title="Delete"><i class="icon-trash"></i></a></td>' + 
                              '</tr>').hide().fadeIn();
                      

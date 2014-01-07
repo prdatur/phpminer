@@ -1,7 +1,7 @@
-Description
+    Description
 ===========
 PHPMiner is a nice looking web interface for cgminer in conjunction with a graphiccard.
-If you running your mining machine under linux, this is probably the system you want.
+If you running your mining machine under Linux or Windows, this is probably the system you want.
 
 How does it work?
 ===========
@@ -51,6 +51,7 @@ Please use the command **visudo** to edit this file. Just type **visudo**.
 Then add these lines at the bottom of the file:
 
     %reboot ALL=(root) NOPASSWD: /sbin/reboot
+    %reboot ALL=(root) NOPASSWD: /sbin/shutdown
 
 This will allow all users which are within the group **reboot** to reboot the machine. (Only reboot, not shutdown)
 
@@ -67,14 +68,15 @@ NOTE: Replace the user **www-data** with your user which runs the php cron.
 How to setup.
 ============
 
-Installing cronjob:
+## Installing cronjob
 
+
+### Linux
 Please add a file named **phpminer** to **/etc/cron.d/** with the following contents:
 
     # /etc/cron.d/phpminer: crontab fragment for phpminer
     #  This will run the cronjob script for phpminer to send notifications and other periodic tasks.
     * * * * * {user} php -f {/path/to/phpminer}/cron.php
-
 
 Please replace:
 
@@ -82,7 +84,18 @@ Please replace:
 
 **{user}** with the user which runs also apache, normally this is **www-data**
 
-Pre-requirements within the config of CGMiner.
+### Windows
+
+You can start the above command
+
+    php -f {/path/to/phpminer}/cron.php
+
+with sheduled tasks, or you can use cronjob software nncron:
+
+http://www.nncron.ru/ - lightweight and free
+
+
+## Pre-requirements within the config of CGMiner.
 
 API needs to be enabled:
 
@@ -94,10 +107,11 @@ Please make sure api-allow allows priviledge access from localhost.
 
 Also make sure the API-Port is default to 4028
 
-    "api-mcast-port": "4028"
     "api-port": "4028"
 
 If you use another port, PHPMiner will ask for it.
+
+## For nice looking urls
 
 Create a new virtual host in apache:
 
@@ -132,17 +146,22 @@ Replace:
 
 Save the file and enable the vhost.
 
+## Required setup's
+
 Make config directory writeable:
 
     chown {user}:{group} {DOCUMENT_ROOT_TO_PHPMINER}/config
 
 Replace:
+
     **{user}** - The user of the webserver, this is normally **www-data**
     **{group}** - The group of the webserver, this is normally **www-data**
     **{DOCUMENT_ROOT_TO_PHPMINER}** - With the path where the index.php of PHPMiner is located.
 
-Now point your browser to http://{YOUR_DOMAIN}
+Now point your browser to http://{YOUR_DOMAIN} or if you have phpminer in a subdirectory browse to http://{YOUR_DOMAIN}/{SUB_DIRECTORY}
+
 It will try to connect to CGMiner API.
+
 All other required settings are explained within PHPMiner.
 
 License and Author

@@ -108,181 +108,6 @@ $.extend(Soopfw, {
 	},
 
 	/**
-	 * Init a ajax queue with given identifier.
-	 * 
-	 * @param {string} identifier
-	 *   The progress identifier.
-	 */
-	ajax_queue_init: function(identifier) {
-		soopfw_ajax_queue[identifier] = [];
-	},
-
-	/**
-	 * Adds to the given identifier queue an ajax call with the ajax options see Jquery ajax options for a complete list
-	 * of ajax_options.
-	 * 
-	 * @param {string} identifier
-	 *   The progress identifier.
-	 * @param {object} ajax_options
-	 */
-	ajax_queue: function(identifier, ajax_options) {
-		soopfw_ajax_queue[identifier].push(ajax_options);
-	},
-
-	/**
-	 * Start the queue.
-	 * 
-	 * @param {string} identifier
-	 *   The progress identifier.
-	 */
-	ajax_queue_start: function(identifier) {
-		Soopfw.ajax_queue_worker(identifier);
-	},
-
-	/**
-	 * Should not be called directly, will process the queue and on complete it will fetch next
-	 * queue item and process until queue is empty
-	 *
-	 * @param {string} identifier
-	 *   The progress identifier.
-	 */
-	ajax_queue_worker: function(identifier) {
-		if(!empty(soopfw_ajax_queue[identifier])) {
-			var o = soopfw_ajax_queue[identifier].shift();
-			if(o === undefined) {
-				return;
-			}
-			var old_complete = o.complete;
-			o.complete = function() {
-				if(old_complete !== undefined) {
-					old_complete();
-				}
-				Soopfw.ajax_queue_worker(identifier);
-			};
-			$.ajax(o);
-		}
-	},
-
-	/**
-	 * Append an ajax load to the given div.
-	 *
-	 * @param {mixed} div 
-	 *   Can be an jquery string or element object.
-	 * @param {string} id 
-	 *   an unique identifier for this ajax_loader.
-	 */
-	ajax_loader: function(div, id) {
-		if(document.getElementById("ajax_loader_"+id) !== undefined) {
-			$("#ajax_loader_"+id).remove();
-			return;
-		}
-		$(div).append(
-			create_element({input: 'div', attr: {id: 'ajax_loader_'+id, "class": 'ajax_loader'}, append:[
-					create_element({input: 'img', attr: {src: Soopfw.config.template_path + '/images/ajax_loader_small.gif', valign:'absmiddle'}}),
-					create_element({input: 'span', attr: {html: Soopfw.t("Loading content"), valign:'middle'}})
-			]})
-		);
-	},
-
-	/**
-	 * Call an ajax_html ajax request to the given module, action with args and display the output html in a dialog
-	 * After successfull load the ajax behaviours will be reloaded.
-	 *
-	 * @param {string} title 
-	 *   the title of the dialog.
-	 * @param {string} module 
-	 *   The module.
-	 * @param {string} action
-	 *   the action to be called.
-	 * @param {array} args 
-	 *   The arguments for the action.
-	 * @param {object} options 
-	 *   Options which are used for the dialog.
-	 * @param {array} get_params 
-	 *   An array with get params.
-	 *   
-	 * @return string the created dialog id.
-	 */
-	default_action_dialog: function(title, module, action, args, options, get_params) {
-		if(args !== undefined && args !== null) {
-			args = '/'+implode('/', args);
-		}
-		else {
-			args = "";
-		}
-
-		var get_param_string = '';
-		if (!empty(get_params)) {
-			var params = [];
-			foreach (get_params, function(k,v) {
-				params.push(k + '=' + v);
-			});
-			get_param_string = '?' + implode('&', params);
-		}
-
-
-		var id = module;
-		if(action !== undefined && action !== true) {
-			id += action;
-			action = '/'+action;
-		}
-		else {
-			action = '';
-		}
-
-		var url = module+action+args;
-
-
-		if(!url.match(/^\//)) {
-			url = '/'+url;
-		}
-
-		if(!url.match(/\.ajax_html$/i)) {
-			url += '.ajax_html';
-		}
-
-		url += get_param_string;
-
-		options = $.extend({
-			title: title,
-			modal: true,
-			width: 500,
-			open: function(event, ui) {
-				Soopfw.reload_behaviors();
-			}
-		}, options);
-
-		var matches = window.location.pathname.match(/^\/admin\/.*/g);
-		if(matches !== null && matches.length > 0) {
-			url = '/admin' + url;
-		}
-		id = 'jquery_dialog_' + id;
-		wait_dialog();
-		$.ajax({
-			url: url,
-			dataType: 'html',
-			close: function() {
-				$(this).dialog("destroy").remove();
-			},
-			success: function(result) {
-
-				var matches = result.match(/<title>(.*)<\/title>/g);
-				if(matches !== null && matches.length > 0) {
-					matches = matches[0].replace("<title>","").replace("</title>","");
-					if(!empty(matches)) {
-						options['title'] = matches;
-					}
-				}
-				$.alerts._hide();
-				$('#'+id).remove();
-				$('body').append(create_element({input: 'div', attr: {id:id, html: result}}) );
-				$('#'+id).dialog(options);
-			}
-		});
-		return id;
-	},
-
-	/**
 	 * Redirects the user to the url what was configurated through 
 	 * php within the redirect_url setting.
 	 */
@@ -309,12 +134,44 @@ $.extend(Soopfw, {
 	}
 });
 
+function murl($controller, $action, $data, $is_html) {
+    var $url;
+    if (phpminer.settings.docroot === '/') {
+        $url = '/' + $controller;
+        if ($action !== undefined && $action !== null) {
+            $url += '/' + $action;
+            
+            if ($data !== undefined && $data !== null) {
+                $url += '/' + $data;
+            }
+        }
+        if (!$is_html) {
+            $url += '.json';
+        }
+        return $url;
+    }
+    else {
+        $url = phpminer.settings.docroot + '/index.php?controller=' + $controller;
+        if ($action !== undefined && $action !== null) {
+            $url += '&action=' + $action;
+            
+            if ($data !== undefined && $data !== null) {
+                $url += '&data=' + $data;
+            }
+        }
+        if (!$is_html) {
+            $url += '&type=json';
+        }
+        return $url;
+    }
+}
+
 Soopfw.system_footer_behaviour = function() {
 	$('*[data-pk]').editable();
         
         $('#save_cg_miner_config').off('click').on('click', function() {
             confirm("You are going to save the current changed values to cgminer config.\nAfter saving, when cgminer starts it will use the new settings.\n<b>Please make sure that your system runs stable with all overclocked settings.<b>", 'Warning', function() {
-               ajax_request('/main/save_config.json', null, function() {
+               ajax_request(murl('main', 'save_config'), null, function() {
                    success_alert('Config saved', function() {
                        $('#save_cg_miner_config_container').fadeOut('slow');
                    });
@@ -343,7 +200,6 @@ Soopfw.system_footer_behaviour = function() {
         }); 
 };
 
-var tabs_loaded = {};
 $(document).ready(function() {
     Soopfw.reload_behaviors();
 });
@@ -413,7 +269,7 @@ function make_modal_dialog(title, html, buttons, options) {
     dialog += '</div>';
     
     var dlg_options = $.extend({
-        backdrop: false,
+        backdrop: false
     }, options);
     $(dialog).modal(dlg_options).on('shown.bs.modal', function(){
         if (!empty(buttons)) {
@@ -426,7 +282,7 @@ function make_modal_dialog(title, html, buttons, options) {
                     value.click = function() {
                         $(this).button('loading');
                         old_click();
-                    }
+                    };
                 }
                 if (value.click !== undefined) {
                     $('#' + value.id).on('click', value.click);

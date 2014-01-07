@@ -1,4 +1,11 @@
 <?php
+
+if (isset($_SERVER['REQUEST_URI'])) {
+    header("HTTP/1.0 404 Not found");
+    echo 'The requested URL was not found on this server.';
+    exit();
+}
+
 if (!defined('SITEPATH')) {
         define('SITEPATH', dirname(__FILE__));
 }
@@ -18,6 +25,8 @@ if ($config->is_empty()) {
 // Get the notification config.
 $notification_config = new Config(SITEPATH . '/config/notify.json');
         
+$is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
+
 // Can't do notify if nothing is configurated.'
 if (!$notification_config->is_empty()) {
 
@@ -81,6 +90,21 @@ if (!$notification_config->is_empty()) {
             $notifications['reboot'][0] = 'Needed to reboot mining machine.';
         }
     }
+    
+    $notify_cgminer_restart = $notification_config->get_value('notify_cgminer_restart');
+    
+    // Precheck if cgminer is running
+    if (!empty($notification_config->restart_cgminer) && !is_cgminer_running()) {
+
+        // Try to restart cgminer.
+        CGMinerAPI::start_cgminer($config->get_value('cgminer_config_path'), $notification_config->get_value('cgminer_path'), $notification_config->get_value('cgminer_amd_sdk_path'));
+        if ($notify_cgminer_restart) {
+            $notifications['cgminer_restart'][0] = 'Needed to restart cgminer.';
+        }
+        // Give cgminer time to start the api.
+        sleep(10);
+    }
+    
 
     // Only need to notify if at least one notification method is enabled and configurated.
     if ($email_enabled || $rapidpush_enabled || $post_enabled) {
@@ -90,7 +114,6 @@ if (!$notification_config->is_empty()) {
         $notify_gpu_max = $notification_config->get_value('notify_gpu_max');
         $notify_hashrate = $notification_config->get_value('notify_hashrate');
         $notify_load = $notification_config->get_value('notify_load');
-        $notify_cgminer_restart = $notification_config->get_value('notify_cgminer_restart');
 
         // How many minutes must the error exist after we send an error? Default 1 minutes.
         $notification_delay = $notification_config->get_value('notification_delay');
@@ -166,13 +189,13 @@ if (!$notification_config->is_empty()) {
                     }
 
                     // Check if gpu hasrate has errors.
-                    if ($notify_hashrate && isset($device['notify_config']['hashrate']) && ($device['gpu_info']['MHS 5s'] * 1000) < $device['notify_config']['hashrate']) {
+                    if ($notify_hashrate && isset($device['notify_config']['hashrate']['min']) && ($device['gpu_info']['MHS 5s'] * 1000) < $device['notify_config']['hashrate']['min']) {
 
                         if (can_send_notification('notify_hashrate_' . $gpu_id)) {
                             if (!isset($notifications['hashrate'])) {
                                 $notifications['hashrate'] = array();
                             }
-                            $notifications['hashrate'][$gpu_id] = 'GPU Hasharate on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . ($device['gpu_info']['MHS 5s'] * 1000) . ' min: ' . $device['notify_config']['hashrate'];
+                            $notifications['hashrate'][$gpu_id] = 'GPU Hasharate on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . ($device['gpu_info']['MHS 5s'] * 1000) . ' min: ' . $device['notify_config']['hashrate']['min'];
                         }
                     }
                     else {
@@ -180,13 +203,13 @@ if (!$notification_config->is_empty()) {
                     }
 
                     // Check if gpu load has errors.
-                    if ($notify_load && isset($device['notify_config']['load']) && $device['gpu_info']['GPU Activity'] < $device['notify_config']['load']) {
+                    if ($notify_load && isset($device['notify_config']['load']['min']) && $device['gpu_info']['GPU Activity'] < $device['notify_config']['load']['min']) {
 
                         if (can_send_notification('notify_load_' . $gpu_id)) {
                             if (!isset($notifications['load'])) {
                                 $notifications['load'] = array();
                             }
-                            $notifications['load'][$gpu_id] = 'GPU Load on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['GPU Activity'] . ' min: ' . $device['notify_config']['load'];
+                            $notifications['load'][$gpu_id] = 'GPU Load on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['GPU Activity'] . ' min: ' . $device['notify_config']['load']['min'];
                         }
                     }
                     else {
@@ -196,8 +219,7 @@ if (!$notification_config->is_empty()) {
                 }
             } catch (APIException $ex) {
                 // The API of cgminer maybe didn't response, check if the cgminer is alive and if not and we want to auto restart cgminer then do it.
-                $result = trim(shell_exec("ps a | grep cgminer | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
-                if (!empty($notification_config->restart_cgminer) && empty($result)) {
+                if (!empty($notification_config->restart_cgminer) && !is_cgminer_running()) {
 
                     // Try to restart cgminer.
                     CGMinerAPI::start_cgminer($config->get_value('cgminer_config_path'), $notification_config->get_value('cgminer_path'), $notification_config->get_value('cgminer_amd_sdk_path'));
@@ -206,89 +228,94 @@ if (!$notification_config->is_empty()) {
                     }
                 }
             }
-        }    
-
-        // Only do notifications when we have some.
-        if (!empty($notifications)) {
-            // Loop through each notification.
-            foreach ($notifications AS $type => $notification_strings) {
-                foreach (array_keys($notification_strings) as $gpu_id) {
-                    can_send_notification('notify_' . $type . '_' . $gpu_id, false, true);
-                }
-
-                // Get the notification string. This can be a message for each device for the current error type.
-                $data = implode("\n", $notification_strings);
-                try {
-
-                    // Send email notification if enabled.
-                    if ($email_enabled) {
-                        $mail = new PHPMailer();
-                        $mail->isSMTP();                                     
-                        $mail->CharSet = 'UTF-8';
-                        $mail->Host = $smtp['server'];
-                        $mail->Port = $smtp['port'];
-                        $mail->SMTPAuth = true;
-                        $mail->SMTPSecure = 'ssl';
-                        $mail->Username = $smtp['user'];
-                        $mail->Password = $smtp['pass'];
-                        $mail->addAddress($reciever_mail);
-                        $mail->Subject = 'PHPMiner error';
-                        $mail->Body = $data;
-                        $mail->send();
-                    }                       
-                }
-                catch(Exception $e) {}
-
-                try {
-                    // Send rapidpush notification if enabled.
-                    if ($rapidpush_enabled) {
-                        $rp = new RapidPush($api_key);
-                        $rp->notify('PHPMiner error', $data);
-                    }
-                }
-                catch(Exception $e) {}
-
-                try {
-                    // Send custom post notification if enabled.
-                    if ($post_enabled) {
-                        $http = new HttpClient();
-                        $http->do_get($post_url, array(
-                            'type' => $type,
-                            'msg' => $data,
-                        ));
-                    }
-                }
-                catch(Exception $e) {}
+        }
+    }
+    
+    // Only do notifications when we have some.
+    if (!empty($notifications)) {
+        // Loop through each notification.
+        foreach ($notifications AS $type => $notification_strings) {
+            foreach (array_keys($notification_strings) as $gpu_id) {
+                can_send_notification('notify_' . $type . '_' . $gpu_id, false, true);
             }
+
+            // Get the notification string. This can be a message for each device for the current error type.
+            $data = implode("\n", $notification_strings);
+            try {
+
+                // Send email notification if enabled.
+                if ($email_enabled) {
+                    $mail = new PHPMailer();
+                    $mail->isSMTP();                                     
+                    $mail->CharSet = 'UTF-8';
+                    $mail->Host = $smtp['server'];
+                    $mail->Port = $smtp['port'];
+                    $mail->SMTPAuth = true;
+                    $mail->SMTPSecure = 'ssl';
+                    $mail->Username = $smtp['user'];
+                    $mail->Password = $smtp['pass'];
+                    $mail->addAddress($reciever_mail);
+                    $mail->Subject = 'PHPMiner error';
+                    $mail->Body = $data;
+                    $mail->send();
+                }                       
+            }
+            catch(Exception $e) {}
+
+            try {
+                // Send rapidpush notification if enabled.
+                if ($rapidpush_enabled) {
+                    $rp = new RapidPush($api_key);
+                    $rp->notify('PHPMiner error', $data);
+                }
+            }
+            catch(Exception $e) {}
+
+            try {
+                // Send custom post notification if enabled.
+                if ($post_enabled) {
+                    $http = new HttpClient();
+                    $http->do_get($post_url, array(
+                        'type' => $type,
+                        'msg' => $data,
+                    ));
+                }
+            }
+            catch(Exception $e) {}
         }
     }
 
     // Check if we need to reboot.
     if (!empty($need_reboot)) {
-        $user = trim(shell_exec("ps uh " . getmypid() . " | awk '{print $1'}"));
+        if ($is_windows) {
+		exec('shutdown -r NOW');
+	}
+	else {
+            $user = trim(shell_exec("ps uh " . getmypid() . " | awk '{print $1'}"));
 
-        // Any time just try to call "reboot" maybe the user can call it.
-        exec('reboot');
+            // Any time just try to call "reboot" maybe the user can call it.
+            exec('shutdown -r NOW');
 
-        // If the user of the cron.php is root, we can call reboot, so don't try sudo fallback.
-        if ($user !== 'root') {
+            // If the user of the cron.php is root, we can call reboot, so don't try sudo fallback.
+            if ($user !== 'root') {
 
-            // Call sudo fallback.
-            exec('sudo /sbin/reboot');
+                // Call sudo fallback.
+                exec('sudo shutdown -r NOW');
+            }
         }
     }
 }
 // Check if user want's to donate, hopefully yes. :)
 If (!empty($config->enable_donation)) {
+    // Check if cgminer is running.
+    $is_cgminer_running = is_cgminer_running();
     
     // Check if we already donating.
     if (empty($config->switch_back_group)) {
         
-        // Check if cgminer is running.
-        $result = trim(shell_exec("ps a | grep cgminer | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
         
         // Only count up the time if cgminer is mining.
-        if (!empty($result)) {
+        if ($is_cgminer_running) {
             // Init mining seconds if not already.
             if (empty($config->mining_time)) {
                 $config->mining_time = 0;
@@ -356,11 +383,9 @@ If (!empty($config->enable_donation)) {
     }
     else {
         // We are donating, count up the time.
-        // Check if cgminer is running.
-        $result = trim(shell_exec("ps a | grep cgminer | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
         
         // Only count up the time if cgminer is donating.
-        if (!empty($result)) {
+        if ($is_cgminer_running) {
             // Init donating time.
             if (empty($config->donation_time)) {
                 $config->donation_time = 0;

@@ -41,7 +41,7 @@ Soopfw.behaviors.main_init = function() {
                 + "Please choose";
         question(msg, null, 'Configuration missmatch', function() {
             wait_dialog('Please wait');
-            ajax_request('/main/get_cgminer_pools.json', null, function(result) {
+            ajax_request(murl('main', 'get_cgminer_pools'), null, function(result) {
                 $.alerts._hide();
                 var dialog = ""
                     + "<div style='margin-top: 5px;bottom:15px;'>"
@@ -83,7 +83,7 @@ Soopfw.behaviors.main_init = function() {
                                 pools[$(this).data('url') + '|' + $(this).data('user')]['pass'] = $(this).val();
                             });
                             wait_dialog('Please wait, while the save process is in progress. Each pool must be validated. The wait time differs from the amount of pools which needs to be checked.');
-                            ajax_request('/main/fix_pool.json', {pools: pools}, function(result) {
+                            ajax_request(murl('main', 'fix_pool'), {pools: pools}, function(result) {
                                 $.alerts._hide();
                                 $('#main_fix_pools_set_value').button('reset');
                                 var alert_msg = "Some pools are invalid due to an invalid pool url, worker user or/and worker password.\n\n<b>The following pools are invalid:</b>\n";
@@ -107,7 +107,7 @@ Soopfw.behaviors.main_init = function() {
                                                         var url = $(this).data('url');
                                                         var user = $(this).data('user');
                                                         confirm("Do you really want to remove this pool from cgminer?\nPool: " + url + "\nUser: " + user, 'Delete pool from cgminer', function() {
-                                                            ajax_request('/main/remove_pool_from_cgminer.json', {pool: $(that).data('pool')}, function() {
+                                                            ajax_request(murl('main', 'remove_pool_from_cgminer'), {pool: $(that).data('pool')}, function() {
                                                                 delete pools[$(that).data('url') + '|' + $(that).data('user')];
                                                                 $('#' + $(that).data('pool')).parent().fadeOut('slow', function() {
                                                                     $(this).remove();
@@ -142,19 +142,19 @@ Soopfw.behaviors.main_init = function() {
                 });
             });
         }, function() {
-            Soopfw.location('/main/fix_pool_manual');
+            Soopfw.location(murl('main', 'fix_pool_manual', null, true));
         }, {ok: '1. Auto create pool group', cancel: '2. Manual', width: 800});
     }
     $('#current_pool_group').off('change').on('change', function(){
         wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
-        ajax_request('/main/switch_pool_group.json', {group: $(this).val()}, function(new_pools) {
+        ajax_request(murl('main', 'switch_pool_group'), {group: $(this).val()}, function(new_pools) {
             update_pools(new_pools);
             $.alerts._hide();
         });
     });
     
     $('#current_pool_pool').off('change').on('change', function(){
-        ajax_request('/main/switch_pool.json', {pool: $(this).val()}, function() {
+        ajax_request(murl('main', 'switch_pool'), {pool: $(this).val()}, function() {
             success_alert('Pool switched successfully, Within the overview, the pool will be updated after the first accepted share was send to the new pool, this can take some time.', null, null, 10000);
         });
         $('#current_pool_pool').val("");
@@ -181,7 +181,7 @@ function update_pools(new_pools) {
 }
 
 function refresh_device_list() {
-    ajax_request('/main/get_device_list.json', null, function(result) {
+    ajax_request(murl('main', 'get_device_list'), null, function(result) {
         set_device_list(result);
     });
 }
@@ -270,7 +270,7 @@ function getEnableDialog(gpu_id, gpuname, current_value) {
         message = "Disable GPU";
     }
     confirm(message, 'Enable/Disable GPU ' + gpuname + ' (' + gpu_id + ')', function() {
-        ajax_request("/gpu/enable_gpu.json", {gpu: gpu_id, value: (current_value === 'Y') ? 0 : 1});
+        ajax_request(murl('gpu', 'enable_gpu'), {gpu: gpu_id, value: (current_value === 'Y') ? 0 : 1});
     });
 }
 
@@ -279,8 +279,8 @@ function getHashrateConfigDialog(gpu_id, gpuname) {
     if (phpminer.settings.config['gpu_' + gpu_id] === undefined) {
         phpminer.settings.config['gpu_' + gpu_id] = {};
     }
-    if (phpminer.settings.config['gpu_' + gpu_id]['hashrate'] === undefined) {
-        phpminer.settings.config['gpu_' + gpu_id]['hashrate'] = 100;
+    if (phpminer.settings.config['gpu_' + gpu_id]['hashrate'] === undefined || phpminer.settings.config['gpu_' + gpu_id]['hashrate']['min'] === undefined) {
+        phpminer.settings.config['gpu_' + gpu_id]['hashrate'] = {min: 100};
     }
     
     var dialog = "<div>This setting is for minitoring, it is not used to overclock something automatically</div>";
@@ -291,12 +291,12 @@ function getHashrateConfigDialog(gpu_id, gpuname) {
     dialog += '        </div>';
     dialog += '    </div>';
 
-    var dlg = make_modal_dialog('Set min. hashrate for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
+    make_modal_dialog('Set min. hashrate for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
         width: 660,
         show: function() {
             $('#min_hashrate').noUiSlider({
                 range: [0, 1500],
-                start: phpminer.settings.config['gpu_' + gpu_id]['hashrate'],
+                start: phpminer.settings.config['gpu_' + gpu_id]['hashrate']['min'],
                 handles: 1,
                 margin: 2,
                 step: 1,
@@ -306,7 +306,7 @@ function getHashrateConfigDialog(gpu_id, gpuname) {
                     resolution: 1
                 }
             }).change(function() {
-                ajax_request("/gpu/set_hashrate_config.json", {gpu: gpu_id, min: $(this).val()}, function() {
+                ajax_request(murl('gpu', 'set_hashrate_config'), {gpu: gpu_id, min: $(this).val()}, function() {
                     phpminer.settings.config['gpu_' + gpu_id]['hashrate']['min'] = $('#min_hashrate').val();
                 });
             });
@@ -321,8 +321,8 @@ function getLoadConfigDialog(gpu_id, gpuname) {
     if (phpminer.settings.config['gpu_' + gpu_id] === undefined) {
         phpminer.settings.config['gpu_' + gpu_id] = {};
     }
-    if (phpminer.settings.config['gpu_' + gpu_id]['load'] === undefined) {
-        phpminer.settings.config['gpu_' + gpu_id]['load'] = 90;
+    if (phpminer.settings.config['gpu_' + gpu_id]['load'] === undefined || phpminer.settings.config['gpu_' + gpu_id]['load']['min'] === undefined) {
+        phpminer.settings.config['gpu_' + gpu_id]['load'] = {min:90};
     }
     
     var dialog = "<div>This setting is for minitoring, it is not used to overclock something automatically</div>";
@@ -333,12 +333,12 @@ function getLoadConfigDialog(gpu_id, gpuname) {
     dialog += '        </div>';
     dialog += '    </div>';
 
-    var dlg = make_modal_dialog('Set min. load for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
+    make_modal_dialog('Set min. load for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
         width: 660,
         show: function() {
             $('#min_load').noUiSlider({
                 range: [0, 100],
-                start: phpminer.settings.config['gpu_' + gpu_id]['load'],
+                start: phpminer.settings.config['gpu_' + gpu_id]['load']['min'],
                 handles: 1,
                 margin: 2,
                 step: 1,
@@ -348,7 +348,7 @@ function getLoadConfigDialog(gpu_id, gpuname) {
                     resolution: 1
                 }
             }).change(function() {
-                ajax_request("/gpu/set_load_config.json", {gpu: gpu_id, min: $(this).val()}, function() {
+                ajax_request(murl('gpu', 'set_load_config'), {gpu: gpu_id, min: $(this).val()}, function() {
                     phpminer.settings.config['gpu_' + gpu_id]['load']['min'] = $('#min_load').val();
                 });
             });
@@ -383,7 +383,7 @@ function getTempConfigDialog(gpu_id, gpuname) {
     dialog += '        </div>';
     dialog += '    </div>';
 
-    var dlg = make_modal_dialog('Set temperature for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
+    make_modal_dialog('Set temperature for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
         width: 660,
         show: function() {
             $('#min_temp').noUiSlider({
@@ -398,7 +398,7 @@ function getTempConfigDialog(gpu_id, gpuname) {
                     resolution: 1
                 }
             }).change(function() {
-                ajax_request("/gpu/set_temp_config.json", {gpu: gpu_id, min: $(this).val(), max: $('#max_temp').val()}, function() {
+                ajax_request(murl('gpu', 'set_temp_config'), {gpu: gpu_id, min: $(this).val(), max: $('#max_temp').val()}, function() {
                     phpminer.settings.config['gpu_' + gpu_id]['temperature']['min'] = $('#min_temp').val();
                 });
             });
@@ -415,7 +415,7 @@ function getTempConfigDialog(gpu_id, gpuname) {
                     resolution: 1
                 }
             }).change(function() {
-                ajax_request("/gpu/set_temp_config.json", {gpu: gpu_id, min: $('#min_temp').val(), max: $(this).val()}, function() {
+                ajax_request(murl('gpu', 'set_temp_config'), {gpu: gpu_id, min: $('#min_temp').val(), max: $(this).val()}, function() {
                     phpminer.settings.config['gpu_' + gpu_id]['temperature']['max'] = $('#max_temp').val();
                 });
             });
@@ -441,7 +441,7 @@ function getFanChangeDialog(gpu_id, gpuname, current_fan_speed) {
     dialog += '        </div>';
     dialog += '    </div>';
 
-    var dlg = make_modal_dialog('Set fanspeed for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
+    make_modal_dialog('Set fanspeed for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
         width: 660,
         show: function() {
 
@@ -457,7 +457,7 @@ function getFanChangeDialog(gpu_id, gpuname, current_fan_speed) {
                     resolution: 1
                 }
             }).change(function() {
-                ajax_request("/gpu/set_fan_speed.json", {gpu: gpu_id, speed: $(this).val()}, function() {
+                ajax_request(murl('gpu', 'set_fan_speed'), {gpu: gpu_id, speed: $(this).val()}, function() {
                     change_btn();
                 });
             });
@@ -475,7 +475,7 @@ function getVoltageChangeDialog(gpu_id, gpuname, value) {
     dialog += '        </div>';
     dialog += '    </div>';
 
-    var dlg = make_modal_dialog('Set voltage for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
+    make_modal_dialog('Set voltage for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
         width: 860,
         show: function() {
             
@@ -490,7 +490,7 @@ function getVoltageChangeDialog(gpu_id, gpuname, value) {
                     resolution: 0.001
                 }
             }).change(function() {
-                ajax_request("/gpu/set_voltage.json", {gpu: gpu_id, value: $(this).val()}, function() {
+                ajax_request(murl('gpu', 'set_voltage'), {gpu: gpu_id, value: $(this).val()}, function() {
                     change_btn();
                 });
             });
@@ -513,7 +513,7 @@ function getIntensityChangeDialog(gpu_id, gpuname, value) {
     dialog += '        </div>';
     dialog += '    </div>';
 
-    var dlg = make_modal_dialog('Set intensity for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
+    make_modal_dialog('Set intensity for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, null, {
         width: 660,
         show: function() {
 
@@ -529,7 +529,7 @@ function getIntensityChangeDialog(gpu_id, gpuname, value) {
                     resolution: 1
                 }
             }).change(function() {
-                ajax_request("/gpu/set_intensity.json", {gpu: gpu_id, value: $(this).val()}, function(){
+                ajax_request(murl('gpu', 'set_intensity'), {gpu: gpu_id, value: $(this).val()}, function(){
                     change_btn();
                 });
             });
@@ -547,13 +547,13 @@ function getChangeDialog(gpu_id, gpuname, current_value, type) {
     if (type === 'engine') {
         label = "Engine clock";
         title = "Set engine clock";
-        url = "/gpu/set_engine_clock.json";
+        url = murl('gpu', 'set_engine_clock');
         unit = "Mhz";
     }
     else if (type === 'memory') {
         label = "Memory clock";
         title = "Set memory clock";
-        url = "/gpu/set_memory_clock.json";
+        url = murl('gpu', 'set_memory_clock');
         unit = "Mhz";
     }
 

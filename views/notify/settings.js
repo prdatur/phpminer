@@ -9,7 +9,7 @@ Soopfw.behaviors.main_settings = function() {
                 values[$(this).attr('name')] = $(this).val();
             }
         });
-        ajax_request('/notify/save_settings.json', {settings: values}, function() {
+        ajax_request(murl('notify', 'save_settings'), {settings: values}, function() {
             success_alert('Configuration saved successfully.');
         });
     });
@@ -24,7 +24,7 @@ Soopfw.behaviors.main_settings = function() {
                 values[$(this).attr('name')] = $(this).val();
             }
         });
-        ajax_request('/notify/save_settings.json', {settings: values}, function() {
+        ajax_request(murl('notify', 'save_settings'), {settings: values}, function() {
             success_alert('Configuration saved successfully.');
         });
     });

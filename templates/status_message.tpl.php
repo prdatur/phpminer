@@ -3,11 +3,11 @@
         <div id="title">
             <div>
                 <?php if ($type == "success"): ?>
-                    <img src="/1x1_spacer.gif" class="ui-icon-soopfw ui-icon-soopfw-check" alt="<?php echo 'Success'; ?>">
+                    <img src="<?php echo $this->get_variable('docroot'); ?>/1x1_spacer.gif" class="ui-icon-soopfw ui-icon-soopfw-check" alt="<?php echo 'Success'; ?>">
                 <?php elseif ($type == "error"): ?>
-                    <img src="/1x1_spacer.gif" class="ui-icon-soopfw ui-icon-soopfw-cancel" alt="<?php echo 'Error'; ?>" />
+                    <img src="<?php echo $this->get_variable('docroot'); ?>/1x1_spacer.gif" class="ui-icon-soopfw ui-icon-soopfw-cancel" alt="<?php echo 'Error'; ?>" />
                 <?php elseif ($type == "info"): ?>
-                    <img src="/1x1_spacer.gif" class="ui-icon-soopfw ui-icon-soopfw-warning" alt="<?php echo 'Info'; ?>" />
+                    <img src="<?php echo $this->get_variable('docroot'); ?>/1x1_spacer.gif" class="ui-icon-soopfw ui-icon-soopfw-warning" alt="<?php echo 'Info'; ?>" />
                 <?php endif; ?>
 
             </div>

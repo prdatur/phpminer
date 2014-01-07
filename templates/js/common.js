@@ -400,7 +400,7 @@ function try_reconnect(from_timeout) {
         wait_dialog('PHPMiner can not connect to cgminer api, it will now try to reconnect periodicly.', 'Connection to cgminer lost');
     }
     reconnect_in_progress = true;
-    ajax_request('/main/connection_reconnect.json', null, function() {
+    ajax_request(murl('main', 'connection_reconnect'), null, function() {
         reconnect_in_progress = false;
         Soopfw.reload();
     }, function() {

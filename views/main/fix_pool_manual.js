@@ -32,7 +32,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
         });
         if (all_valid === true) {
             success_alert('You have successfully merged the pools, you will be now redirected to the main page', function() {
-                Soopfw.location('/');
+                Soopfw.location(phpminer.settings.docroot + '/');
             });            
             return;
         }
@@ -45,7 +45,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
             var user = data[1];
             confirm("Are you sure you want to add the following pool to cgminer?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Add pool to cgminer', function() {
                 wait_dialog();
-                ajax_request('/main/fix_pool_manual_action.json', {type: 3, url: url, user: user, pass: pass}, function() {
+                ajax_request(murl('main', 'fix_pool_manual_action'), {type: 3, url: url, user: user, pass: pass}, function() {
                     $.alerts._hide();
                     var html = '<tr data-uuid="' + url + '|' + user + '" data-pass="' + pass + '">'
                         + '    <td>' + url + '</td>'
@@ -67,7 +67,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
             var user = data[1];
             confirm("Are you sure you want to remove the following pool from group <b>" + current_group + "</b>?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Remove pool from group ' + current_group, function() {
                 wait_dialog();
-                ajax_request('/main/fix_pool_manual_action.json', {type: 2, url: url, user: user, group: current_group}, function() {
+                ajax_request(murl('main', 'fix_pool_manual_action'), {type: 2, url: url, user: user, group: current_group}, function() {
                     $.alerts._hide();
                     $(parent).fadeOut('slow', function() {
                         $(this).remove();
@@ -114,7 +114,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
                     click: function() {
                         var pass = $('#pass').val();
                         wait_dialog();
-                        ajax_request('/main/fix_pool_manual_action.json', {type: 4, url: url, user: user, pass: pass, group: current_group}, function() {
+                        ajax_request(murl('main', 'fix_pool_manual_action'), {type: 4, url: url, user: user, pass: pass, group: current_group}, function() {
                             $.alerts._hide();
                             cfg_pools[url + '|' + user] = true;
                             var html = '<tr data-uuid="' + url + '|' + user + '" data-pass="' + pass + '">'
@@ -143,7 +143,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
             var user = data[1];
             confirm("Are you sure you want to remove the following pool from cgminer?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Remove pool from cgminer', function() {
                 wait_dialog();
-                ajax_request('/main/fix_pool_manual_action.json', {type: 1, url: url, user: user}, function() {
+                ajax_request(murl('main', 'fix_pool_manual_action'), {type: 1, url: url, user: user}, function() {
                     $.alerts._hide();
                     $(parent).fadeOut('slow', function() {
                         $(this).remove();

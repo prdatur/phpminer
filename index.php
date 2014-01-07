@@ -4,8 +4,28 @@ if (!defined('SITEPATH')) {
 }
 require 'includes/common.php';
 
+
+if (isset($_GET['controller'])) {
+    $url = '/' . $_GET['controller'];
+    if (isset($_GET['action'])) {
+        $url .= '/' . $_GET['action'];
+    }
+    if (isset($_GET['data'])) {
+        $url .= '/' . $_GET['data'];
+    }
+    if (isset($_GET['type']) && $_GET['type'] === 'json') {
+        $url .= '.json';
+    }
+    $_SERVER['REQUEST_URI'] = urlencode($url);
+}
+
+$request_uri = urldecode($_SERVER['REQUEST_URI']);
+if ($system_conf['directory'] !== '/') {
+    $request_uri = str_replace($system_conf['directory'], '', $request_uri);
+}
+
 // Get the request current path.
-$url_decoded_request_array = parse_url(urldecode($_SERVER['REQUEST_URI']));
+$url_decoded_request_array = parse_url($request_uri);
 
 // Get request type. .json is handled as json, anything else as html.
 if (preg_match("/\.json$/", $url_decoded_request_array['path'])) {

@@ -45,20 +45,39 @@ class CGMinerAPI {
     }
     
     public static function start_cgminer($config_file, $cgminer_path = '', $amd_sdk = null) {
-        $cmd = "#!/bin/bash\n"
-             . "export GPU_MAX_ALLOC_PERCENT=100;\n"
-             . "export GPU_USE_SYNC_OBJECTS=1;\n"
-             . "export DISPLAY=:0;\n";
-        if (!empty($amd_sdk)) {
-            $cmd .= "export LD_LIBRARY_PATH=" . escapeshellarg($amd_sdk) . ":;\n";
-        }
-        $cmd .= "cd " . escapeshellarg($cgminer_path) . ";";
-        $cmd .= "screen -d -m -S cgminer ./cgminer -c " . escapeshellarg($config_file) . "\n";
+        
+        $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
+        if (!$is_windows) {
+            $cmd = "#!/bin/bash\n"
+                 . "export GPU_MAX_ALLOC_PERCENT=100;\n"
+                 . "export GPU_USE_SYNC_OBJECTS=1;\n"
+                 . "export DISPLAY=:0;\n";
+            if (!empty($amd_sdk)) {
+                $cmd .= "export LD_LIBRARY_PATH=" . escapeshellarg($amd_sdk) . ":;\n";
+            }
+            $cmd .= "cd " . escapeshellarg($cgminer_path) . ";\n";
+            $cmd .= "screen -d -m -S cgminer ./cgminer -c " . escapeshellarg($config_file) . "\n";
 
-        file_put_contents('/tmp/startcg', $cmd);
-        chmod('/tmp/startcg', 0777);
-        shell_exec('/tmp/startcg');
-        unlink('/tmp/startcg');
+            file_put_contents('/tmp/startcg', $cmd);
+            chmod('/tmp/startcg', 0777);
+            shell_exec('/tmp/startcg');
+            unlink('/tmp/startcg');
+        }
+        else {
+            $cmd = ""
+                 . "setx GPU_MAX_ALLOC_PERCENT 100\n"
+                 . "setx GPU_USE_SYNC_OBJECTS 1\n";
+            $cmd .= "cd " . escapeshellarg($cgminer_path) . "\n";
+            $cmd .= "cgminer.exe -c " . escapeshellarg($config_file) . "\n";
+            $temp = sys_get_temp_dir();
+            if (!preg_match("/(\/|\\)$/", $temp)) {
+                $temp .= "\\";
+            }
+            file_put_contents($temp . '\startcg.bat', $cmd);
+            pclose(popen('start ' . $temp . '\startcg.bat', 'r'));
+	    sleep(2);
+            unlink($temp . '\startcg.bat');
+        }
     }
     
     /**
