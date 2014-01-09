@@ -176,6 +176,10 @@ Then type
 
     sudo update-rc.d phpminer_rpcclient defaults 98
 
+Finally start the service the first time
+
+    service phpminer_rpcclient start
+
 ##### Other
 
 You should get the information for your distribution to run a script on system startup.
