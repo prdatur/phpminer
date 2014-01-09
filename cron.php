@@ -92,7 +92,7 @@ if (!$notification_config->is_empty()) {
     foreach ($rig_notifications AS $rig => $notification_data) {
         
         $rig_cfg = $config->get_rig($rig);
-        $rpc = new PHPMinerRPC($rig_cfg['ip'], $rig_cfg['http_port'], $rig_cfg['ssl'], $rig_cfg['http_path'], $rig_cfg['rpc_key']);
+        $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key']);
         if (!$rpc->ping()) {
             continue;
         }
