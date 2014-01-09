@@ -1,4 +1,28 @@
 Soopfw.behaviors.pools_main = function() {
+    
+    function reload_editable() {
+        
+        $('*[data-pk]').editable('destroy').editable({
+            ajaxOptions: {
+                dataType: 'json'
+            },
+            success: function(response, new_value) {
+                parse_ajax_result(response, function(data) {
+                    var new_pk = data.new + '|' + data.group;
+                    var tr = $('tr[data-uuid="' + data.old + '|' + data.group + '"]');
+                    tr.attr('data-uuid', new_pk).data('uuid', new_pk);
+                    $('*[data-pk]', tr).attr('data-pk', new_pk).data("pk", new_pk);
+                    $('*[data-uuid]', tr).attr('data-uuid', new_pk).data("uuid", new_pk);
+                    $('a[data-action="delete-pool"]', tr).attr('name', data.url).data("name", data.url);
+                    setTimeout(function() {
+                        reload_editable();
+                    }, 100);
+                });
+            }
+        });
+    }
+    reload_editable();
+    
     $('#save_unconfigurated_pools').off('click').on('click', function() {
         var btn = this;
         $(this).button('loading');

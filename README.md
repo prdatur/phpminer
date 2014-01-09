@@ -3,6 +3,8 @@
 PHPMiner is a nice looking web interface for cgminer in conjunction with a graphiccard.
 If you running your mining machine under Linux or Windows, this is probably the system you want.
 
+PHPMiner has multi rig support, so you can add all your rig's to PHPMiner and controll them via one interface.
+
 How does it work?
 ===========
 PHPMiner connects through the API from CGMiner, there you will be able to get the current status of your devices.
@@ -34,7 +36,7 @@ https://github.com/prdatur/cgminer
 Requirements for rebooting machine on defunc cgminer process.
 ===========
 If you want to allow PHPMiner to reboot your machine after it detects a defunced cgminer script. 
-You either need to run the cron.php as root or the user which runs the cron needs sudo access to reboot without password.
+You either need to run the phpminer_rpcclient/index.php as root or the user which runs the cron needs sudo access to reboot without password.
 
 With normal user:
 
@@ -148,6 +150,44 @@ Save the file and enable the vhost.
 
 ## Required setup's
 
+Copy the directory **phpminer_rpcclient** to **each** mining rig which you want to connect.
+Open the file index.php on each rig and change the config section to your needs.
+
+### Running RPC Client on system start
+
+#### Linux
+
+##### Debian based
+
+Within the phpminer_rpcclient directory, there exists a file **phpminer_rpc**.
+
+Open this file and replace:
+
+    **{USER}** - With a user which can reboot your machine (config from above) and can start cgminer
+    **{/PATH/TO/phpminer_rpcclient}** to the path where you copied the phpminer_rpcclient.
+
+Now copy the file into **/etc/init.d/**
+
+Make it executeable
+
+chmod +x /etc/init.d/phpminer_rpcclient
+
+Then type
+
+    sudo update-rc.d phpminer_rpcclient defaults 98
+
+##### Other
+
+You should get the information for your distribution to run a script on system startup.
+
+The command which needs to be executed is:
+
+   php -f {/PATH/TO/phpminer_rpcclient}/index.php
+
+Replace **{/PATH/TO/phpminer_rpcclient}** to the path where you copied the phpminer_rpcclient.
+
+### Finish configuration
+
 Make config directory writeable:
 
     chown {user}:{group} {DOCUMENT_ROOT_TO_PHPMINER}/config
@@ -159,8 +199,6 @@ Replace:
     **{DOCUMENT_ROOT_TO_PHPMINER}** - With the path where the index.php of PHPMiner is located.
 
 Now point your browser to http://{YOUR_DOMAIN} or if you have phpminer in a subdirectory browse to http://{YOUR_DOMAIN}/{SUB_DIRECTORY}
-
-It will try to connect to CGMiner API.
 
 All other required settings are explained within PHPMiner.
 

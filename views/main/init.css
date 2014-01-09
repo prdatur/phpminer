@@ -1,5 +1,5 @@
 
-#device_list td.enabled {
+table:not(.layout_table).device_list td.enabled {
     background: #007E05 linear-gradient(#07A714, #007E05);
     
 }
@@ -25,7 +25,7 @@
     to { background: #F5F5F5 ; color: #3F3F3F; }
 }
 
-#device_list td.disabled {
+table:not(.layout_table).device_list td.disabled {
     background: #A70707 linear-gradient(#A70707, #7E0000);
     animation: blink 2s step-end infinite;
     -moz-animation: blink 2s step-end infinite;
@@ -35,19 +35,19 @@
 }
 
 
-#device_list td.enabled .icon-check,
-#device_list td.disabled .icon-cancel,
-#device_list td.invalid .icon-cancel,
-#device_list td.invalid .icon-attention,
-#device_list td.clickable:hover .icon-check {
+.device_list td.enabled .icon-check,
+.device_list td.disabled .icon-cancel,
+.device_list td.invalid .icon-cancel,
+.device_list td.invalid .icon-attention,
+.device_list td.clickable:hover .icon-check {
     color: #FFF;
 }
 
-#device_list .icon-check {
+.device_list .icon-check {
     color: #208102;
 }
 
-#device_list .icon-cancel {
+.device_list .icon-cancel {
     color: #DD0000;
 }
 
@@ -59,10 +59,25 @@
     margin-left: 10px;
 }
 
-#pool_switching_container label {
+.pool_switching_container label {
     margin-top: 3px;
 }
-#pool_switching_container select {
+.pool_switching_container select {
     margin-bottom: 5px;
     padding: 2px 5px;
+}
+
+.rig {
+    padding: 10px;
+    border: 1px solid #A5A5A5;
+    box-shadow: 0px 0px 15px 0px #BEBEBE;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.rig_edit, .rig_delete {
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin-left: 15px;
+    cursor: pointer;
 }

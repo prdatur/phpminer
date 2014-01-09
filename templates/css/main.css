@@ -62,6 +62,10 @@ h2 {
     font-size: 24px;
 }
 
+#content > h2:first-child {
+    margin-top: 0px;
+}
+
 #header ul {
     list-style-type: none;
     margin: 0px;
@@ -195,22 +199,22 @@ textarea {
     fliat: right;
 }
 
-table {
+table:not(.layout_table) {
     width: 100%;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
 }
 
-table th:first-child {
+table:not(.layout_table) th:first-child {
     border-top-left-radius: 5px;
     border-left: 1px solid #C5C5C5;
 }
-table th:last-child {
+table:not(.layout_table) th:last-child {
     border-top-right-radius: 5px;
     border-right: 1px solid #C5C5C5;
 }
 
-table th {
+table:not(.layout_table) th {
     border-left: 1px solid #616161;
     padding: 5px;
     font-weight: normal;
@@ -219,7 +223,7 @@ table th {
 }
 
 
-table td {
+table:not(.layout_table) td {
     padding: 5px;
     background: #F5F5F5 linear-gradient(#F5F5F5, #E6E6E6);
     border: 1px solid #C5C5C5;
@@ -228,13 +232,21 @@ table td {
     border-bottom: 1px solid #C5C5C5;
 }
 
-table th:last-child, 
-table td:last-child {
+table:not(.layout_table) th:last-child, 
+table:not(.layout_table) td:last-child {
     border-right: 1px solid #C5C5C5;
 }
 
-table > thead > tr > th > i {
+table:not(.layout_table) > thead > tr > th > i {
     margin-right: 5px;
+}
+
+table.layout_table {
+    width: 100%;
+}
+table.layout_table td {
+    padding-right: 10px;
+    padding-left: 10px;
 }
 
 .modal .simpleform .form-element input {
@@ -277,10 +289,12 @@ td.nopadding {
     padding: 0px;
 }
 
+table:not(.layout_table) td.clickable,
 .clickable {
     background: #F5F5F5 linear-gradient(#E6E6E6, #CCC);
 }
 
+table:not(.layout_table) td.clickable:hover,
 .clickable:hover {
     background: #F5F5F5 linear-gradient(#D67777, #AF4040);
     color: #FFF;
@@ -484,4 +498,46 @@ border-radius: 4px;
 
 .noUi-handle {
     background: #5E5E5E;
+}
+
+.tab_links { 
+    margin: 0;
+    padding: 0; 
+    list-style-type: none; 
+    position: relative;
+    z-index: 5;
+}
+
+.tab_links li:first-child {
+    border-top-left-radius: 5px;
+}
+.tab_links li:last-child {
+    border-top-right-radius: 5px;
+}
+
+.tab_links li { 
+    
+    cursor: pointer; 
+    float: left; 
+    padding: 5px 10px;
+    background: #EFEFEF; 
+    position: relative;
+}
+.tab_links li.selected { 
+    background: #fff; 
+    top: 1px;
+    border: 1px solid #DBDBDB;
+    border-bottom: 0px;
+}
+div[data-tab] { 
+    clear: both;
+    padding: 10px;
+    background-color: #FFF;
+    border: 1px solid #DBDBDB;
+}
+.tabs .js { 
+    display: none;
+}
+.tabs .js:first-child { 
+    display: block; 
 }

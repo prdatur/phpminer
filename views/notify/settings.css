@@ -20,7 +20,7 @@ table.config_table .noUi-target  {
 }
 
 table.config_table td.value .noUi-target + input {
-    width: 200px;
+    width: 140px;
 }
 
 table.config_table td {

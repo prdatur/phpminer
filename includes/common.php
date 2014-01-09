@@ -53,35 +53,9 @@ define("PDT_SERIALIZED", $i++, true);
 define("PDT_BLOB", $i++, true);
 
 require 'CGMinerAPI.class.php';
+require 'HttpClient.class.php';
+require 'PHPMinerRPC.class.php';
 require 'Controller.class.php';
-
-function is_cgminer_running() {
-	global $is_windows;
-	if ($is_windows) {
-		exec("tasklist 2>NUL", $task_list);
-		foreach ($task_list AS $task) {
-			if (preg_match("/cgminer\.exe/", $task)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	else {
-		$res = trim(shell_exec("ps a | grep cgminer | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
-		return !empty($res);
-	}
-}
-
-function is_cgminer_defunc() {
-	global $is_windows;
-	if ($is_windows) {
-		return false;
-	}
-	else {
-		$res = trim(shell_exec("ps a | grep cgminer | grep defunc | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
-		return !empty($res);
-	}
-}
 
 $system_conf['version'] = array(1, 0, 1);
 

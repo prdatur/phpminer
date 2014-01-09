@@ -3,7 +3,6 @@
  * @copyright Christian Ackermann (c) 2013 - End of life
  * @author Christian Ackermann <prdatur@gmail.com>
  */
-require_once 'HttpClient.class.php';
 
 /**
  * Represents the config of php cgminer.

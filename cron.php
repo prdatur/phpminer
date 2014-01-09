@@ -13,6 +13,7 @@ require 'includes/common.php';
 require_once 'includes/PHPMinerException.class.php';
 require_once 'includes/Config.class.php';
 require_once 'includes/PoolConfig.class.php';
+require 'controllers/main.php';
 
 // Get the system config.
 $config = new Config(SITEPATH . '/config/config.json');
@@ -32,10 +33,11 @@ if (!empty($data)) {
     }
 }
 
+$system_config = $config->get_config();
+
 // Get the notification config.
 $notification_config = new Config(SITEPATH . '/config/notify.json');
-        
-$is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
+$rig_notifications = $notification_config->rigs;
 
 // Can't do notify if nothing is configurated.'
 if (!$notification_config->is_empty()) {
@@ -87,170 +89,204 @@ if (!$notification_config->is_empty()) {
 
     // Holds all notifications which will be send.
     $notifications = array();
-
-    $need_reboot = '';
-    // If PHPMiner should check for defunc.
-    if (!empty($notification_config->reboot_defunc)) {
-
-        // Check if there is a defunced cgminer process.
-        $need_reboot = trim(shell_exec("ps a | grep cgminer | grep defunc | grep -v grep | grep -v SCREEN | awk '{print $1'}"));
-
-        $notify_reboot = $notification_config->get_value('notify_reboot');
-        if (!empty($need_reboot) && $notify_reboot) {
-            $notifications['reboot'][0] = 'Needed to reboot mining machine.';
+    foreach ($rig_notifications AS $rig => $notification_data) {
+        
+        $rig_cfg = $config->get_rig($rig);
+        $rpc = new PHPMinerRPC($rig_cfg['ip'], $rig_cfg['http_port'], $rig_cfg['ssl'], $rig_cfg['http_path'], $rig_cfg['rpc_key']);
+        if (!$rpc->ping()) {
+            continue;
         }
-    }
-    
-    $notify_cgminer_restart = $notification_config->get_value('notify_cgminer_restart');
-    
-    // Precheck if cgminer is running
-    if (!empty($notification_config->restart_cgminer) && !is_cgminer_running()) {
+        
+        $is_cgminer_running = $rpc->is_cgminer_running();
+        
+        $need_reboot = '';
+        // If PHPMiner should check for defunc.
+        if (!empty($notification_data['reboot_defunc'])) {
 
-        // Try to restart cgminer.
-        CGMinerAPI::start_cgminer($config->get_value('cgminer_config_path'), $notification_config->get_value('cgminer_path'), $notification_config->get_value('cgminer_amd_sdk_path'));
-        if ($notify_cgminer_restart) {
-            $notifications['cgminer_restart'][0] = 'Needed to restart cgminer.';
-        }
-        // Give cgminer time to start the api.
-        sleep(10);
-    }
-    
+            // Check if there is a defunced cgminer process.
+            $need_reboot = $rpc->is_cgminer_defunc();
 
-    // Only need to notify if at least one notification method is enabled and configurated.
-    if ($email_enabled || $rapidpush_enabled || $post_enabled) {
-
-        // Check which notification should be send.
-        $notify_gpu_min = $notification_config->get_value('notify_gpu_min');
-        $notify_gpu_max = $notification_config->get_value('notify_gpu_max');
-        $notify_hashrate = $notification_config->get_value('notify_hashrate');
-        $notify_load = $notification_config->get_value('notify_load');
-
-        // How many minutes must the error exist after we send an error? Default 1 minutes.
-        $notification_delay = $notification_config->get_value('notification_delay');
-        if (empty($notification_delay)) {
-            $notification_delay = 1;
-            $notification_config->set_value('notification_delay', $notification_delay);
+            $notify_reboot = $notification_data['notify_reboot'];
+            if (!empty($need_reboot) && $notify_reboot) {
+                $notifications['reboot'][$rig] = array('Needed to reboot rig ' . $rig . '.');
+            }
         }
 
-        // How much minutes must be past after resending notifications? Default 15 minutes.
-        $notification_resend_delay = $notification_config->get_value('notification_resend_delay');
-        if (empty($notification_resend_delay)) {
-            $notification_resend_delay = 15;
-            $notification_config->set_value('notification_resend_delay', $notification_resend_delay);
+        $notify_cgminer_restart = $notification_data['notify_cgminer_restart'];
+
+        // Precheck if cgminer is running
+        if (!empty($notification_data['restart_cgminer']) && !$is_cgminer_running) {
+
+            // Try to restart cgminer.
+            $rpc->restart_cgminer();
+            if ($notify_cgminer_restart) {
+                $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . '.');
+            }
+            // Give cgminer time to start the api.
+            sleep(10);
         }
 
-        // Only proceed when we want to notify something and don#t want to reboot, because when we want to reboot, any notifications are not important anymore.
-        if (($notify_gpu_min || $notify_gpu_max || $notify_hashrate || $notify_load || $notify_reboot || $notify_cgminer_restart) && empty($need_reboot)) {
 
-            try {
-                // Get the system config, here are the max and min values stored.
-                $system_config = $config->get_config();            
+        // Only need to notify if at least one notification method is enabled and configurated.
+        if ($email_enabled || $rapidpush_enabled || $post_enabled) {
 
-                // Get the cgminer api.
-                $api = new CGMinerAPI($config->remote_ip, $config->remote_port);
-                $api->test_connection();
-                $active_pool = null;
+            // Check which notification should be send.
+            $notify_gpu_min = $notification_data['notify_gpu_min'];
+            $notify_gpu_max = $notification_data['notify_gpu_max'];
+            $notify_hashrate = $notification_data['notify_hashrate'];
+            $notify_load = $notification_data['notify_load'];
 
-                // Get all active devices.
-                $devices = $api->get_devices_details();
-                foreach ($devices AS $k => $device) {
+            // How many minutes must the error exist after we send an error? Default 1 minutes.
+            if (!isset($notification_data['notification_delay'])) {
+                $notification_delay = 1;
+                $notification_data['notification_delay'] = $notification_delay;
+                $rig_notifications[$rig] = $notification_data;
+                $notification_config->set_value('rigs', $rig_notifications);
+            }
+            
+            $notification_delay = $notification_data['notification_delay'];
+            
 
-                    // Get device data.
-                    $gpu_id = $device['ID'];
-                    $gpu_name = trim($device['Model']);
+            // How much minutes must be past after resending notifications? Default 15 minutes.
+            if (!isset($notification_data['notification_resend_delay'])) {
+                $notification_resend_delay = 15;
+                $notification_data['notification_resend_delay'] = $notification_resend_delay;
+                $rig_notifications[$rig] = $notification_data;
+                $notification_config->set_value('rigs', $rig_notifications);
+            }
+            $notification_resend_delay = $notification_data['notification_resend_delay'];
+            
+            
+            // Only proceed when we want to notify something and don#t want to reboot, because when we want to reboot, any notifications are not important anymore.
+            if (($notify_gpu_min || $notify_gpu_max || $notify_hashrate || $notify_load || $notify_reboot || $notify_cgminer_restart) && empty($need_reboot)) {
 
-                    // Only process if it was configurated within the system settings.
-                    if (!isset($system_config['gpu_' . $gpu_id])) {
-                        unset($devices[$k]);
-                        continue;
-                    }
+                try {
+                    // Get the system config, here are the max and min values stored.
+                    // 
+                    // Get the cgminer api.
+                    $rig_cfg = $system_config['rigs'][$rig];
+                    $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
+                    $api->test_connection();
+                    
+                    $active_pool = null;
 
-                    // Get gpu data.
-                    $info = $api->get_gpu($device['ID']);
-                    $device['gpu_info'] = current($info);
+                    // Get all active devices.
+                    $devices = $api->get_devices_details();
+                    foreach ($devices AS $k => $device) {
 
-                    $device['notify_config'] = $system_config['gpu_' . $gpu_id];
+                        // Get device data.
+                        $gpu_id = $device['ID'];
+                        $gpu_name = trim($device['Model']);
 
-                    // Check if gpu min temp has errors.
-                    if ($notify_gpu_min && isset($device['notify_config']['temperature']['min']) && $device['gpu_info']['Temperature'] < $device['notify_config']['temperature']['min']) {
-                        if (can_send_notification('notify_temp_min_' . $gpu_id)) {
-                            if (!isset($notifications['temp_min'])) {
-                                $notifications['temp_min'] = array();
-                            }
-                            $notifications['temp_min'][$gpu_id] = 'GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['Temperature'] . ' min: ' . $device['notify_config']['temperature']['min'];
+                        // Only process if it was configurated within the system settings.
+                        if (!isset($rig_cfg['gpu_' . $gpu_id])) {
+                            unset($devices[$k]);
+                            continue;
                         }
-                    }
-                    else {
-                        can_send_notification('notify_temp_min_' . $gpu_id, true);
-                    }
 
-                    // Check if gpu max temp has errors.
-                    if ($notify_gpu_max && isset($device['notify_config']['temperature']['max']) && $device['gpu_info']['Temperature'] > $device['notify_config']['temperature']['max']) {
+                        // Get gpu data.
+                        $info = $api->get_gpu($device['ID']);
+                        $device['gpu_info'] = current($info);
 
-                        if (can_send_notification('notify_temp_max_' . $gpu_id)) {
-                            if (!isset($notifications['temp_max'])) {
-                                $notifications['temp_max'] = array();
+                        $device['notify_config'] = $rig_cfg['gpu_' . $gpu_id];
+
+                        // Check if gpu min temp has errors.
+                        if ($notify_gpu_min && isset($device['notify_config']['temperature']['min']) && $device['gpu_info']['Temperature'] < $device['notify_config']['temperature']['min']) {
+                            if (can_send_notification('notify_temp_min_' . $gpu_id . '_' . $rig)) {
+                                if (!isset($notifications['temp_min'])) {
+                                    $notifications['temp_min'] = array();
+                                }
+                                if (!isset($notifications['temp_min'][$rig])) {
+                                    $notifications['temp_min'][$rig] = array();
+                                }
+                                $notifications['temp_min'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['Temperature'] . ' min: ' . $device['notify_config']['temperature']['min'];
                             }
-                            $notifications['temp_max'][$gpu_id] = 'GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to high. Current value: ' . $device['gpu_info']['Temperature'] . ' max: ' . $device['notify_config']['temperature']['max'];
                         }
-                    }
-                    else {
-                        can_send_notification('notify_temp_max_' . $gpu_id, true);
-                    }
+                        else {
+                            can_send_notification('notify_temp_min_' . $gpu_id . '_' . $rig, true);
+                        }
 
-                    // Check if gpu hasrate has errors.
-                    if ($notify_hashrate && isset($device['notify_config']['hashrate']['min']) && ($device['gpu_info']['MHS 5s'] * 1000) < $device['notify_config']['hashrate']['min']) {
+                        // Check if gpu max temp has errors.
+                        if ($notify_gpu_max && isset($device['notify_config']['temperature']['max']) && $device['gpu_info']['Temperature'] > $device['notify_config']['temperature']['max']) {
 
-                        if (can_send_notification('notify_hashrate_' . $gpu_id)) {
-                            if (!isset($notifications['hashrate'])) {
-                                $notifications['hashrate'] = array();
+                            if (can_send_notification('notify_temp_max_' . $gpu_id . '_' . $rig)) {
+                                if (!isset($notifications['temp_max'])) {
+                                    $notifications['temp_max'] = array();
+                                }
+                                if (!isset($notifications['temp_max'][$rig])) {
+                                    $notifications['temp_max'][$rig] = array();
+                                }
+                                $notifications['temp_max'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to high. Current value: ' . $device['gpu_info']['Temperature'] . ' max: ' . $device['notify_config']['temperature']['max'];
                             }
-                            $notifications['hashrate'][$gpu_id] = 'GPU Hasharate on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . ($device['gpu_info']['MHS 5s'] * 1000) . ' min: ' . $device['notify_config']['hashrate']['min'];
                         }
-                    }
-                    else {
-                        can_send_notification('notify_hashrate_' . $gpu_id, true);
-                    }
+                        else {
+                            can_send_notification('notify_temp_max_' . $gpu_id . '_' . $rig, true);
+                        }
 
-                    // Check if gpu load has errors.
-                    if ($notify_load && isset($device['notify_config']['load']['min']) && $device['gpu_info']['GPU Activity'] < $device['notify_config']['load']['min']) {
+                        // Check if gpu hasrate has errors.
+                        if ($notify_hashrate && isset($device['notify_config']['hashrate']['min']) && ($device['gpu_info']['MHS 5s'] * 1000) < $device['notify_config']['hashrate']['min']) {
 
-                        if (can_send_notification('notify_load_' . $gpu_id)) {
-                            if (!isset($notifications['load'])) {
-                                $notifications['load'] = array();
+                            if (can_send_notification('notify_hashrate_' . $gpu_id . '_' . $rig)) {
+                                if (!isset($notifications['hashrate'])) {
+                                    $notifications['hashrate'] = array();
+                                }
+                                if (!isset($notifications['hashrate'][$rig])) {
+                                    $notifications['hashrate'][$rig] = array();
+                                }
+                                $notifications['hashrate'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Hasharate on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . ($device['gpu_info']['MHS 5s'] * 1000) . ' min: ' . $device['notify_config']['hashrate']['min'];
                             }
-                            $notifications['load'][$gpu_id] = 'GPU Load on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['GPU Activity'] . ' min: ' . $device['notify_config']['load']['min'];
                         }
-                    }
-                    else {
-                        can_send_notification('notify_load_' . $gpu_id, true);
-                    }
+                        else {
+                            can_send_notification('notify_hashrate_' . $gpu_id . '_' . $rig, true);
+                        }
 
-                }
-            } catch (APIException $ex) {
-                // The API of cgminer maybe didn't response, check if the cgminer is alive and if not and we want to auto restart cgminer then do it.
-                if (!empty($notification_config->restart_cgminer) && !is_cgminer_running()) {
+                        // Check if gpu load has errors.
+                        if ($notify_load && isset($device['notify_config']['load']['min']) && $device['gpu_info']['GPU Activity'] < $device['notify_config']['load']['min']) {
 
-                    // Try to restart cgminer.
-                    CGMinerAPI::start_cgminer($config->get_value('cgminer_config_path'), $notification_config->get_value('cgminer_path'), $notification_config->get_value('cgminer_amd_sdk_path'));
-                    if ($notify_cgminer_restart) {
-                        $notifications['cgminer_restart'][0] = 'Needed to restart cgminer.';
+                            if (can_send_notification('notify_load_' . $gpu_id . '_' . $rig)) {
+                                if (!isset($notifications['load'])) {
+                                    $notifications['load'] = array();
+                                }
+                                if (!isset($notifications['load'][$rig])) {
+                                    $notifications['load'][$rig] = array();
+                                }
+                                $notifications['load'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Load on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['GPU Activity'] . ' min: ' . $device['notify_config']['load']['min'];
+                            }
+                        }
+                        else {
+                            can_send_notification('notify_load_' . $gpu_id . '_' . $rig, true);
+                        }
+
+                    }
+                } catch (APIException $ex) {
+                    // The API of cgminer maybe didn't response, check if the cgminer is alive and if not and we want to auto restart cgminer then do it.
+                    if (!empty($notification_data['restart_cgminer']) && !$is_cgminer_running) {
+
+                        // Try to restart cgminer.
+                        $rpc->restart_cgminer();
+                        if ($notify_cgminer_restart) {
+                            $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . '.');
+                        }
                     }
                 }
             }
         }
     }
-    
     // Only do notifications when we have some.
     if (!empty($notifications)) {
         // Loop through each notification.
-        foreach ($notifications AS $type => $notification_strings) {
-            foreach (array_keys($notification_strings) as $gpu_id) {
-                can_send_notification('notify_' . $type . '_' . $gpu_id, false, true);
-            }
+        foreach ($notifications AS $type => $notification) {
+            
+            $data = "";
+            foreach ($notification as $rig_id => $notification_strings) {
+                foreach (array_keys($notification_strings) as $gpu_id) {
+                    can_send_notification('notify_' . $type . '_' . $gpu_id . '_' . $rig_id, false, true);
+                }
 
-            // Get the notification string. This can be a message for each device for the current error type.
-            $data = implode("\n", $notification_strings);
+                // Get the notification string. This can be a message for each device for the current error type.
+                $data .= implode("\n", $notification_strings) . "\n";
+            }
+            
             try {
 
                 // Send email notification if enabled.
@@ -297,137 +333,136 @@ if (!$notification_config->is_empty()) {
 
     // Check if we need to reboot.
     if (!empty($need_reboot)) {
-        if ($is_windows) {
-		exec('shutdown -r NOW');
-	}
-	else {
-            $user = trim(shell_exec("ps uh " . getmypid() . " | awk '{print $1'}"));
-
-            // Any time just try to call "reboot" maybe the user can call it.
-            exec('shutdown -r NOW');
-
-            // If the user of the cron.php is root, we can call reboot, so don't try sudo fallback.
-            if ($user !== 'root') {
-
-                // Call sudo fallback.
-                exec('sudo shutdown -r NOW');
-            }
-        }
+        $rpc->reboot();
     }
 }
+
 // Check if user want's to donate, hopefully yes. :)
-If (!empty($config->enable_donation)) {
-    // Check if cgminer is running.
-    $is_cgminer_running = is_cgminer_running();
-    
-    // Check if we already donating.
-    if (empty($config->switch_back_group)) {
+If (!isset($system_config['enable_donation']) || !empty($system_config['enable_donation'])) {
+    $donate_pools_added = false;
+    foreach ($rig_notifications AS $rig => $notification_data) {
         
+        // Get the old pool group to switch back after donating.
+        $main = new main();
+        $main->set_request_type('cron');
+        $main->setup_controller();
         
-        // Only count up the time if cgminer is mining.
-        if ($is_cgminer_running) {
-            // Init mining seconds if not already.
-            if (empty($config->mining_time)) {
-                $config->mining_time = 0;
-            }
-
-            // The time from the last mining time.
-            if (empty($config->mining_last)) {
-                $config->mining_last = TIME_NOW;
-            }
-
-            // Inc the mining time.
-            $config->mining_time += (TIME_NOW - $config->mining_last);
-            $config->mining_last = TIME_NOW;
+        $cg_conf = $main->get_rpc($rig)->get_config();
+       
+        // Make sure rig is on scrypt.
+        if ((isset($cg_conf['kernel']) && $cg_conf['kernel'] !== 'scrypt') && !isset($cg_conf['scrypt'])) {
+            continue;
         }
-        else {
-            // We are not mining so remove the last active mining time.
-            $config->mining_last = '';
-        }
-
-        // If we mine over 24 hours. Switch to donate pools.
-        if ($config->mining_time >= 86400) {
-
-            // Get actual donating pools.
-            $donation_pools = json_decode(file_get_contents('https://phpminer.com/donatepools.json'), true);
-            
-            //Only process if we have some donation pools.
-            if (!empty($donation_pools['donate'])) {
-                // Reset mining time to 0 so we begin after donating again checking for 24 hours.
-                $config->mining_time = 0;
-                $config->mining_last = '';
-
-                // Init the donating time.
-                $config->donation_time = 0;
-
+        
+        // Check if cgminer is running.
+        $is_cgminer_running = $rpc->is_cgminer_running();
+        $rig_config = $system_config['rigs'][$rig];
                 
-                $mining_pools = new PoolConfig();
+        // Check if we already donating.
+        if (empty($rig_config['switch_back_group'])) {
 
-                // Replace old donating groups with the new one.
-                $mining_pools->del_group('donate');
-                $mining_pools->add_group('donate');
-                foreach ($donation_pools['donate'] AS $uuid => $pool) {
-                    $mining_pools->add_pool($pool['url'], $pool['user'], $pool['pass'], 'donate');
+            // Only count up the time if cgminer is mining.
+            if ($is_cgminer_running) {
+                // Init mining seconds if not already.
+                if (empty($rig_config['mining_time'])) {
+                    $rig_config['mining_time'] = 0;
                 }
 
-                // Try to connect to default connection values.
-                try {
-                    // Get the old pool group to switch back after donating.
-                    require 'controllers/main.php';
-                    $main = new main();
-                    $main->set_request_type('cron');
-                    $main->setup_controller();
+                // The time from the last mining time.
+                if (empty($rig_config['mining_last'])) {
+                    $rig_config['mining_last'] = TIME_NOW;
+                }
 
-                    $config->switch_back_group = $mining_pools->get_current_active_pool_group($main->getCGMinerAPI());
-                    if (empty($config->switch_back_group)) {
-                        $config->switch_back_group = 'default';
+                // Inc the mining time.
+                $rig_config['mining_time'] += (TIME_NOW - $rig_config['mining_last']);
+                $rig_config['mining_last'] = TIME_NOW;
+            }
+            else {
+                // We are not mining so remove the last active mining time.
+                $rig_config['mining_last'] = '';
+            }
+
+            // If we mine over 24 hours. Switch to donate pools.
+            if ($rig_config['mining_time'] >= 86400) {
+
+                $mining_pools = new PoolConfig();
+                
+                if ($donate_pools_added === false) {
+                    $donate_pools_added = true;
+                
+                    // Get actual donating pools.
+                    $donation_pools = json_decode(file_get_contents('https://phpminer.com/donatepools.json'), true);
+                    //Only process if we have some donation pools.
+                    if (!empty($donation_pools['donate'])) {
+
+                        // Replace old donating groups with the new one.
+                        $mining_pools->del_group('donate');
+                        $mining_pools->add_group('donate');
+                        foreach ($donation_pools['donate'] AS $uuid => $pool) {
+                            $mining_pools->add_pool($pool['url'], $pool['user'], $pool['pass'], 'donate');
+                        }
+                        
                     }
+                }
+                
+                $don_pools = $mining_pools->get_pools('donate');
+                if (!empty($don_pools)) {
+                    // Reset mining time to 0 so we begin after donating again checking for 24 hours.
+                    $rig_config['mining_time'] = 0;
+                    $rig_config['mining_last'] = '';                    
 
-                    $main->reload_config();
-                    // Switch to donating pool group.
-                    $main->switch_pool_group('donate');
+                    // Try to connect to default connection values.
+                    try {
+                        $rig_config['switch_back_group'] = $mining_pools->get_current_active_pool_group($main->get_api($rig));
+                        if (empty($rig_config['switch_back_group'])) {
+                            $rig_config['switch_back_group'] = 'default';
+                        }
 
-                } catch (APIException $ex) {}
+                        $main->reload_config();
+                        // Switch to donating pool group.
+                        $main->switch_pool_group('donate', $rig);
+
+                    } catch (APIException $ex) {}
+                }
             }
-        }
-    }
-    else {
-        // We are donating, count up the time.
-        
-        // Only count up the time if cgminer is donating.
-        if ($is_cgminer_running) {
-            // Init donating time.
-            if (empty($config->donation_time)) {
-                $config->donation_time = 0;
-            }
-
-            // The time from the last donate time.
-            if (empty($config->donate_last)) {
-                $config->donate_last = TIME_NOW;
-            }
-
-            // Inc the mining time.
-            $config->donation_time += (TIME_NOW - $config->donate_last);
-            $config->donate_last = TIME_NOW;
         }
         else {
-            // We are not donating so remove the last active donation time.
-            $config->donate_last = '';
+            // We are donating, count up the time.
+
+            // Only count up the time if cgminer is donating.
+            if ($is_cgminer_running) {
+                // Init donating time.
+                if (empty($rig_config['donation_time'])) {
+                    $rig_config['donation_time']= 0;
+                }
+
+                // The time from the last donate time.
+                if (empty($rig_config['donate_last'])) {
+                    $rig_config['donate_last'] = TIME_NOW;
+                }
+
+                // Inc the mining time.
+                $rig_config['donation_time'] += (TIME_NOW - $rig_config['donate_last']);
+                $rig_config['donate_last'] = TIME_NOW;
+            }
+            else {
+                // We are not donati
+                $rig_config['donate_last'] = '';
+            }
+
+            // If we donated 15 minutes. Switch to back to normal pools.
+            if ($rig_config['donation_time'] >= 900) {
+
+                // Switch back to normal pool group.
+                $main->switch_pool_group($rig_config['switch_back_group'], $rig);
+                $config->reload();
+                $rig_config['switch_back_group'] = '';
+                $rig_config['donation_time'] = 0;
+            }
         }
-        
-        // If we donated 15 minutes. Switch to back to normal pools.
-        if ($config->donation_time >= 900) {
-            
-            // Switch back to normal pool group.
-            require 'controllers/main.php';
-            $main = new main();
-            $main->set_request_type('cron');
-            $main->setup_controller();
-            $main->switch_pool_group($config->switch_back_group);
-            $config->reload();
-            $config->switch_back_group = '';
-        }
+        $system_config['rigs'][$rig] = $rig_config;
     }
+    $config->set_value('rigs', $system_config['rigs']);
 }
 
 /**
@@ -445,7 +480,7 @@ If (!empty($config->enable_donation)) {
  */
 function can_send_notification($type, $reset = false, $last_send = false) {
     global $notification_config, $notification_delay, $notification_resend_delay;
-    
+
     if ($reset === true) {
         $notification_config->set_value($type . '_estart', 0);
         return;

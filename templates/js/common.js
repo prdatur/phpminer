@@ -317,6 +317,9 @@ function alert(msg, title, callback_function)
         };
     }
     $.alerts.cancelButton = Soopfw.t("cancel");
+    if (title === undefined) {
+        title = 'Error';
+    }
     return jAlert(msg, title, callback_function);
 }
 

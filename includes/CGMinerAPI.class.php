@@ -31,6 +31,14 @@ class CGMinerAPI {
      * @var socket
      */
     private $socket = null;
+    
+    /**
+     * Determines if this cgminer has the advanced api commands.
+     * 
+     * @var boolean
+     */
+    private $has_advanced_api = false;
+    
     /**
      * Creates a new api instance-
      * 
@@ -39,47 +47,11 @@ class CGMinerAPI {
      * @param int $port
      *   The remote port where cgminer is running.
      */
-    public function __construct($port) {
-        $this->remote_ip = "127.0.0.1";
+    public function __construct($address, $port) {
+        $this->remote_ip = $address;
         $this->remote_port = $port;
     }
-    
-    public static function start_cgminer($config_file, $cgminer_path = '', $amd_sdk = null) {
         
-        $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
-        if (!$is_windows) {
-            $cmd = "#!/bin/bash\n"
-                 . "export GPU_MAX_ALLOC_PERCENT=100;\n"
-                 . "export GPU_USE_SYNC_OBJECTS=1;\n"
-                 . "export DISPLAY=:0;\n";
-            if (!empty($amd_sdk)) {
-                $cmd .= "export LD_LIBRARY_PATH=" . escapeshellarg($amd_sdk) . ":;\n";
-            }
-            $cmd .= "cd " . escapeshellarg($cgminer_path) . ";\n";
-            $cmd .= "screen -d -m -S cgminer ./cgminer -c " . escapeshellarg($config_file) . "\n";
-
-            file_put_contents('/tmp/startcg', $cmd);
-            chmod('/tmp/startcg', 0777);
-            shell_exec('/tmp/startcg');
-            unlink('/tmp/startcg');
-        }
-        else {
-            $cmd = ""
-                 . "setx GPU_MAX_ALLOC_PERCENT 100\n"
-                 . "setx GPU_USE_SYNC_OBJECTS 1\n";
-            $cmd .= "cd " . escapeshellarg($cgminer_path) . "\n";
-            $cmd .= "cgminer.exe -c " . escapeshellarg($config_file) . "\n";
-            $temp = sys_get_temp_dir();
-            if (!preg_match("/(\/|\\)$/", $temp)) {
-                $temp .= "\\";
-            }
-            file_put_contents($temp . '\startcg.bat', $cmd);
-            pclose(popen('start ' . $temp . '\startcg.bat', 'r'));
-	    sleep(2);
-            unlink($temp . '\startcg.bat');
-        }
-    }
-    
     /**
      * Setup the socket.
      * 
@@ -117,7 +89,23 @@ class CGMinerAPI {
      */
     public function test_connection() {
         $this->setup_socket();
-        return $this->get_version();
+        $res = $this->get_version();
+        
+        $advanced_api = $this->check('currentpool');
+        $this->has_advanced_api = $advanced_api[0]['Exists'] == 'Y';
+        
+        return $res;
+        
+    }
+    
+    /**
+     * Returns wether this cgminer connection has advanced api or not.
+     * 
+     * @return boolean
+     *   True if advanced api is available, else false.
+     */
+    public function has_advanced_api() {
+        return $this->has_advanced_api;
     }
     
     /**

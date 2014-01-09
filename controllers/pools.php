@@ -11,7 +11,7 @@ class pools extends Controller {
     public function main() {
         $this->load_pool_config();
         if ($this->pool_config->is_empty()) {
-            $this->assign('unconfigured_pools', $this->api->get_pools());
+            $this->pool_config->add_group('default', 0, 0);
         }
     }
 
@@ -30,18 +30,35 @@ class pools extends Controller {
         list($uuid, $group) = explode("|", $params->pk, 2);
         $this->load_pool_config();
         $old_pool = $this->pool_config->get_pool($uuid, $group);
+        if (empty($old_pool)) {
+            header("HTTP/1.0 400 Bad request");
+            echo 'No such pool';
+            exit();
+        }
         $old_pool[$params->name] = $params->value;
         
-        $current_group = $this->pool_config->get_current_active_pool_group($this->api);
-        if ($current_group === $group)  {
-            
+        foreach (array_keys($this->config->rigs) AS $rig) {
+            if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $group)  {
+                header("HTTP/1.0 400 Bad request");
+                echo 'The active pool group can not be changed.';
+                exit();
+            }
+        }
+        
+        $pool_check = $this->pool_config->check_pool($old_pool['url'], $old_pool['user'], $old_pool['pass']);
+        if ($pool_check !== true) {
             header("HTTP/1.0 400 Bad request");
-            echo 'The active pool group can not be changed.';
+            echo $pool_check;
             exit();
         }
         
         $this->pool_config->update_pool($uuid, $old_pool['url'], $old_pool['user'], $old_pool['pass'], $old_pool['quota']);
-        die();
+        AjaxModul::return_code(AjaxModul::SUCCESS, array(
+            'group' => $group,
+            'old' => $uuid,
+            'new' => $this->pool_config->get_pool_uuid($old_pool['url'], $old_pool['user']),
+            'url' => $old_pool['url'],
+        ));
     }
 
     public function delete_pool() {
@@ -67,116 +84,132 @@ class pools extends Controller {
         if ($group === 'donate') {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not remove the donate pool group.');
         }
+        $wait_msg = '';
+        $pools_needs_to_switch = array();
+        foreach (array_keys($this->config->rigs) AS $rig) {
         
-        // Get all configured pools within cgminer.
-        $pools = $this->api->get_pools();
-        
-        // Determine which pool group we are currently using.        
-        $current_active_group = $this->pool_config->get_current_active_pool_group($this->api);
-        
-        // If we want to delete a pool from the group which is currently active, we need to check additional things, in order to not delete the current active pool, cgminer would not let us do this.
-        if ($current_active_group === $group) {
-            
-            // We need to check if we want to delete the pool which is currently active.
-            $active_pools = array();
-            
-            // Get all devices.
-            $devices = $this->api->get_devices();
-            
-            $pool_to_remove = null;
-            
-            // We create an array where we have the pool id as the array key, this will save some performance withi nthe next loop, else we would need to loop each pool within each device loop.
-            $sorted_pools = array();
-            foreach ($pools AS $pool) {
-                $sorted_pools[$pool['POOL']] = $pool;
-                if ($this->pool_config->get_pool_uuid($pool['URL'], $pool['User']) === $uuid) {
-                    $pool_to_remove = $pool['POOL'];
-                }
-            }
-            
-            $active_pool = null;
-            // Loop through each device.
-            foreach ($devices AS $device) {
-                
-                if (isset($device['Current Pool'])) {
-                    $pool_check = $device['Current Pool'];
-                }
-                else {
-                    $pool_check = $device['Last Share Pool'];
-                }
-                
-                // Just add the last share pool as an index to the active pools, this will just help us to save performance while checking if all devices have the same pool.
-                if (!isset($active_pools[$pool_check])) {
-                    $active_pools[$pool_check] = 0;
-                }
-                $active_pools[$pool_check]++;
-                
-                // For the first time we save the pool as the active one, we will set it back to null if we find more than one active pool which are not the same.
-                $active_pool = $sorted_pools[$pool_check];
-            }
-            
-            // We don't need to loop again, because we have 
-            if (count($active_pools) > 1) {
-                $active_pool = null;
-            }
-            
-            // If we have more than one active mining pool, we have just switch (or cgminer due to a failover/roundrobin), in this state we can't delete anything, tell browser to wait until devices have the same pool.
-            if ($active_pool === null) {
-                $msg =  "There are devices which have different last share pools, please wait until all devices have the same pool.\n"
-                      . "<b>Current active pools (Pool / Count of devices using this pool currently):</b>\n";
-                foreach ($active_pools AS $pool_id => $device_count) {
-                   $msg .= $sorted_pools[$pool_id]['URL'] . " (" . $device_count . ")\n"; 
-                }
-                AjaxModul::return_code(305, null, true, $msg);
-            }
-            
-            // Get the pool uuid which is currently in use.
-            $active_pool_uuid = $this->pool_config->get_pool_uuid($active_pool['URL'], $active_pool['User']);
-            
-            // When we want to delete a pool which is currently in use, we have to switch first to another alive pool, else we can not delete it.
-            if ($uuid === $active_pool_uuid) {
-                // Loop through each pool wich are active within cgminer and get all pools which are alive.
-                $alive_pools = array();
+            // Get all configured pools within cgminer.
+            $pools = $this->get_api($rig)->get_pools();
+
+            // Determine which pool group we are currently using.        
+            $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
+
+            // If we want to delete a pool from the group which is currently active, we need to check additional things, in order to not delete the current active pool, cgminer would not let us do this.
+            if ($current_active_group === $group) {
+
+                // We need to check if we want to delete the pool which is currently active.
+                $active_pools = array();
+
+                // Get all devices.
+                $devices = $this->get_api($rig)->get_devices();
+
+                $pool_to_remove = null;
+
+                // We create an array where we have the pool id as the array key, this will save some performance withi nthe next loop, else we would need to loop each pool within each device loop.
+                $sorted_pools = array();
                 foreach ($pools AS $pool) {
-                    if ($pool['Status'] !== 'Alive') {
-                        continue;
+                    $sorted_pools[$pool['POOL']] = $pool;
+                    if ($this->pool_config->get_pool_uuid($pool['URL'], $pool['User']) === $uuid) {
+                        $pool_to_remove = $pool['POOL'];
                     }
-                    $alive_pools[$this->pool_config->get_pool_uuid($pool['URL'], $pool['User'])] = $pool;
-                }
-                
-                // Remove the current mining pool from the alive pool array, because to this we can not switch.. we already there.
-                if (isset($alive_pools[$active_pool_uuid])) {
-                    unset($alive_pools[$active_pool_uuid]);
                 }
 
-                // After removing active pool, check if there are some alive ones to which we can switch else we can't delete the pool.
-                if (empty($alive_pools)) {
-                    AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not delete the only active pool, there are no other pools which we can switch to it. CGMiner will not let you delete the pool which is currently in use');
+                $active_pool = null;
+                // Loop through each device.
+                foreach ($devices AS $device) {
+
+                    if (isset($device['Current Pool'])) {
+                        $pool_check = $device['Current Pool'];
+                    }
+                    else {
+                        $pool_check = $device['Last Share Pool'];
+                    }
+
+                    // Just add the last share pool as an index to the active pools, this will just help us to save performance while checking if all devices have the same pool.
+                    if (!isset($active_pools[$pool_check])) {
+                        $active_pools[$pool_check] = 0;
+                    }
+                    $active_pools[$pool_check]++;
+
+                    // For the first time we save the pool as the active one, we will set it back to null if we find more than one active pool which are not the same.
+                    $active_pool = $sorted_pools[$pool_check];
                 }
-                
-                // Get the pool where we can switch to.
-                $pool_to_switch = reset($alive_pools);
-                
-                if (!$params->confirm) {
-                     AjaxModul::return_code(AjaxModul::NEED_CONFIRM, null, true, 
-                               "You are going to delete a pool which is currently in use.\n"
-                             . "In order to do this, the system needs to switch to a different pool within the mining group.\n"
-                             . "The pool which will be used is:\n"
-                             . "<b>" . $pool_to_switch['URL'] . " (" . $pool_to_switch['User'] . ")\n\n"
-                             . "Do you want to proceed?</b>");
+
+                // We don't need to loop again, because we have 
+                if (count($active_pools) > 1) {
+                    $active_pool = null;
                 }
-                
+
+                // If we have more than one active mining pool, we have just switch (or cgminer due to a failover/roundrobin), in this state we can't delete anything, tell browser to wait until devices have the same pool.
+                if ($active_pool === null) {
+                    $wait_msg .= 'Rig <b>' . $rig . '</b>\n';
+                    foreach ($active_pools AS $pool_id => $device_count) {
+                       $wait_msg .= ' - ' . $sorted_pools[$pool_id]['URL'] . " (" . $device_count . ")\n"; 
+                    }
+                    continue;
+                }
+                // Don't process further when we have some errors, we need to continue so we have really all errors, not only the first one.
+                if (!empty($wait_msg)) {
+                    continue;
+                }
+                // Get the pool uuid which is currently in use.
+                $active_pool_uuid = $this->pool_config->get_pool_uuid($active_pool['URL'], $active_pool['User']);
+
+                // When we want to delete a pool which is currently in use, we have to switch first to another alive pool, else we can not delete it.
+                if ($uuid === $active_pool_uuid) {
+                    // Loop through each pool wich are active within cgminer and get all pools which are alive.
+                    $alive_pools = array();
+                    foreach ($pools AS $pool) {
+                        if ($pool['Status'] !== 'Alive') {
+                            continue;
+                        }
+                        $alive_pools[$this->pool_config->get_pool_uuid($pool['URL'], $pool['User'])] = $pool;
+                    }
+
+                    // Remove the current mining pool from the alive pool array, because to this we can not switch.. we already there.
+                    if (isset($alive_pools[$active_pool_uuid])) {
+                        unset($alive_pools[$active_pool_uuid]);
+                    }
+
+                    // After removing active pool, check if there are some alive ones to which we can switch else we can't delete the pool.
+                    if (empty($alive_pools)) {
+                        AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not delete the only active pool, there are no other pools which we can switch to it. CGMiner will not let you delete the pool which is currently in use');
+                    }
+
+                    // Get the pool where we can switch to.
+                    $pool_to_switch = reset($alive_pools);
+
+                    $pools_needs_to_switch[$rig] = array(
+                        'pool_to_switch' => $pool_to_switch['POOL'],
+                        'active_pool' => $active_pool['POOL'],
+                    );
+                }
+                else {
+
+                    // No need to switch something, just remove it.
+                    $pools_needs_to_switch[$rig] = array(
+                        'pool_to_switch' => null,
+                        'active_pool' => $pool_to_remove,
+                    );
+                }
+            }
+        }
+        if (!empty($wait_msg)) {
+            AjaxModul::return_code(305, null, true, 
+                  "There are devices which have different last share pools, please wait until all devices have the same pool.\n"
+                . "<b>Current active pools (Pool / Count of devices using this pool currently) per rig:</b>\n" . $wait_msg);
+        }
+        
+        foreach ($pools_needs_to_switch AS $rig => $data) {
+            
+            // We only need to switch if we have an active pool which should be deleted.
+            if ($data['pool_to_switch'] !== null) {
                 // Switch to the pool.
-                $this->api->switchpool($pool_to_switch['POOL']);
-                
-                // Now we can remove the active pool.
-                $this->api->removepool($active_pool['POOL']);
+                $this->get_api($rig)->switchpool($data['pool_to_switch']);
             }
-            else {
-                
-                // No need to switch something, just remove it.
-                $this->api->removepool($pool_to_remove);
-            }
+            
+            // Now we can remove the pool.
+            $this->get_api($rig)->removepool($data['active_pool']);
         }
         
         $this->pool_config->remove_pool_by_uuid($uuid, $group);
@@ -212,7 +245,17 @@ class pools extends Controller {
                     ), true, $result);
         }
         $this->load_pool_config();
+        
+        // Before we adding the pool we have to check if the group to which we add the pool is in a rig active, if so we have to add the pool into the cgminer of the rig.
+        foreach (array_keys($this->config->rigs) AS $rig) {
+            if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group) {
+                $this->get_api($rig)->addpool($params->url, $params->user, $params->pass);
+            }
+        }
+        
+        // Now add the pool to the config.
         $this->pool_config->add_pool($params->url, $params->user, $params->pass, $params->group, $params->quota);
+                
         AjaxModul::return_code(AjaxModul::SUCCESS, array(
             'url' => $params->url,
             'user' => $params->user,
@@ -236,6 +279,18 @@ class pools extends Controller {
         }
 
         $this->load_pool_config();
+        
+        $rigs_in_use = array();
+        foreach (array_keys($this->config->rigs) AS $rig) {
+            if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group)  {
+                $rigs_in_use[] = ' - ' . $rig;
+            }
+        }
+        
+        if (!empty($rigs_in_use)) {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, "You can not delete this group because there exist rig's which currently have this group active.\n\nRig's which have this group active:\n" . implode("\n", $rigs_in_use));
+        }
+        
         $result = $this->pool_config->del_group($params->group);
         if ($result !== true) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, $result);

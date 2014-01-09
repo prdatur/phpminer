@@ -91,18 +91,14 @@ class Controller {
      */
     public function setup_controller() {
         global $system_conf;
-        $this->assign('docroot', $system_conf['directory']);
-        $this->js_config('docroot', $system_conf['directory']);
+        if (isset($system_conf['directory'])) {
+            $this->assign('docroot', $system_conf['directory']);
+            $this->js_config('docroot', $system_conf['directory']);
+        }
         // Get the own config.
         $this->config = new Config(SITEPATH . '/config/config.json');
         
-        // Check if we didn't configured phpminer yet.
-        if ($this->config->is_empty()) {
-            // Default settings matched so save them.
-            $this->config->remote_port = 4028;
-        }
-        
-        if (!empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
+        if (isset($system_conf['directory']) && !empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
             $this->add_message('A new version is available, current version <b>' . implode('.', $system_conf['version']) . '</b> - latest version <b>' . implode('.', $this->config->latest_version) . '</b>. <a href="https://phpminer.com" target="_blank">Download</a>', Controller::MESSAGE_TYPE_INFO);
         }
         
@@ -132,9 +128,6 @@ class Controller {
                     $this->add_message('PHPMiner was unable to retrieve the content of the cgminer.conf, the following error occured: ' . $e->getMessage(), Controller::MESSAGE_TYPE_ERROR);
                 }
             }
-            else {
-                $this->add_message('You didn\'t configurated the path to cgminer.conf, please set it up first under <a href="' . $system_config['directory'] . '/main/settings">settings</a>, else PHPMiner will not work properly.', Controller::MESSAGE_TYPE_ERROR);
-            }
         }
         $this->assign('unsaved_changes', false);
         if (!empty($this->config->cgminer_config_path)) {
@@ -154,30 +147,72 @@ class Controller {
             }
             catch(Exception $e) {}
         }
-        
-        // Provide javascript the current configurated cgminer ip and port.
-        $this->js_config('cgminer', array(
-            'port' => $this->config->remote_port,
-        ));
-        
+                
         // We can not process as a normal controller action when we check for connection within the setup or in case of disconnected connection while reconnecting.
         if ($this->controller_name === 'main' && ($this->action_name === 'check_connection' || $this->action_name === 'connection_reconnect')) {
             return;
         }
         
-        
-        // Try to connect to default connection values.
-        try {
-            $this->api = new CGMinerAPI($this->config->remote_port);
-            $this->api->test_connection();
-            $advanced_api = $this->api->check('currentpool');
-            $this->has_advanced_api = $advanced_api[0]['Exists'] == 'Y';
-            $this->assign('has_advanced_api', $this->has_advanced_api);
-            $this->js_config('has_advanced_api', $this->has_advanced_api);
-        } catch (APIException $ex) {
-            // Not configured and also no config. Switch to setup.
-            throw new APIException('No connection to cgminer', APIException::CODE_SOCKET_CONNECT_ERROR);
+        if (empty($this->config->rigs)) {
+            throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
         }
+    }
+    
+    /**
+     * Returns the cgminer api for the given rig.
+     * 
+     * @param string $rig
+     *   The rig name.
+     * @param boolean $force
+     *   Force a reconnect try.
+     * @return CGMinerAPI|null
+     *   The CGMiner api on success, else null.
+     * 
+     * @throws APIException
+     */
+    public function get_api($rig, $force = false) {
+        static $cache = array();
+        
+        if ($force || !isset($cache[$rig])) {
+            $rig_cfg = $this->config->rigs[$rig];
+            $cache[$rig] = null;
+            try {
+                if (empty($this->config->rigs)) {
+                    throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
+                }
+                $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
+                $api->test_connection();
+                $cache[$rig] = $api;
+            } catch (APIException $ex) {
+                // Not configured and also no config. Switch to setup.
+                throw new APIException('No connection to cgminer at rig: ' . $rig, APIException::CODE_SOCKET_CONNECT_ERROR);
+            }
+
+            
+        }
+        
+        return $cache[$rig];
+    }
+    
+    /**
+     * Returns the rpc handler for the given rig.
+     * 
+     * @param string $rig
+     *   The rig name.
+     * 
+     * @return PHPMinerRPC
+     *   The PHPMiner RPC client
+     * 
+     * @throws APIException
+     */
+    public function get_rpc($rig) {
+        $rig_cfg = $this->config->get_rig($rig);
+        $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key']);
+        $res = $rpc->ping();
+        if ($res !== true) {
+            throw new APIException("No connection to PHPMiner RCP on Rig <b>" . $rig . "</b>.\n\n<b>Error message</b>\n" . $res, APIException::CODE_SOCKET_CONNECT_ERROR);
+        }
+        return $rpc;
     }
     
     /**

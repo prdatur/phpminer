@@ -68,7 +68,7 @@
                 <section id="status_messages">
                     <?php if ($this->has_variable('messages')): ?>
                         <?php foreach ($this->get_variable('messages') AS $type => $message_arrray): ?>
-                            <?php include "templates/status_message.tpl.php"; ?>
+                            <?php include "status_message.tpl.php"; ?>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </section>

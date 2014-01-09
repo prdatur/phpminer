@@ -11,6 +11,7 @@ class notify extends Controller {
     public function settings() {
        $config = new Config(SITEPATH . '/config/notify.json');
        $this->assign('config', $config->get_config());
+       $this->assign('rigs', array_keys($this->config->rigs));
     }
     
     /**
@@ -26,8 +27,9 @@ class notify extends Controller {
         }
         $config = new Config(SITEPATH . '/config/notify.json');
         foreach ($params->settings AS $key => $val) {
-            $config->set_value($key, $val);
+            $config->set_value($key,  $val);
         }
+        
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
     
