@@ -151,7 +151,7 @@ Save the file and enable the vhost.
 ## Required setup's
 
 Copy the directory **phpminer_rpcclient** to **each** mining rig which you want to connect.
-Open the file index.php on each rig and change the config section to your needs.
+Open the file **config.php** within this directory on each rig and change the config to your needs.
 
 ### Running RPC Client on system start
 

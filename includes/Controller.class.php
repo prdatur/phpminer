@@ -99,7 +99,7 @@ class Controller {
         $this->config = new Config(SITEPATH . '/config/config.json');
         
         if (isset($system_conf['directory']) && !empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
-            $this->add_message('A new version is available, current version <b>' . implode('.', $system_conf['version']) . '</b> - latest version <b>' . implode('.', $this->config->latest_version) . '</b>. <a href="https://phpminer.com" target="_blank">Download</a>', Controller::MESSAGE_TYPE_INFO);
+            $this->add_message('A new version is available, current version <b>' . implode('.', $system_conf['version']) . '</b> - latest version <b>' . implode('.', $this->config->latest_version) . '</b>. <a href="https://phpminer.com" target="_blank">Download</a>. After updating to a new version, do not forget to copy the new index.php from the phpminer_rpcclient and restart the service."', Controller::MESSAGE_TYPE_INFO);
         }
         
         if (empty($this->config->cron_last_run)) {
@@ -108,27 +108,7 @@ class Controller {
         else if(round((TIME_NOW - $this->config->cron_last_run) / 60) > 5) {
             $this->add_message('The cronjob has not been executed since 5 minutes. Please check your cronjob config.', Controller::MESSAGE_TYPE_INFO);
         }
-        
-        // Within first run, get the current cgminer config file data.
-        if (empty($this->config->cgminer_conf)) {
-            
-            // Only get config if some path was configurated
-            if (!empty($this->config->cgminer_config_path)) {
-                $conf = array();
-                try {
-                    $cgminer_config = new Config($this->config->cgminer_config_path);
-                    foreach(array("intensity", "vectors", "worksize", "kernel", "lookup-gap", "thread-concurrency", "shaders", "gpu-engine", "gpu-fan", "gpu-memclock", "gpu-memdiff", "gpu-powertune", "gpu-vddc", "temp-cutoff", "temp-overheat", "temp-target", "expiry", "gpu-dyninterval", "gpu-platform", "gpu-threads", "log", "no-pool-disable", "queue", "scan-time", "scrypt", "temp-hysteresis", "shares", "kernel-path") AS $key) {
-                        if ($cgminer_config->get_value($key) !== null) {
-                            $conf[$key] = $cgminer_config->$key;
-                        }
-                    }
-                    $this->config->cgminer_conf = $conf;
-                }
-                catch(PHPMinerException $e) {
-                    $this->add_message('PHPMiner was unable to retrieve the content of the cgminer.conf, the following error occured: ' . $e->getMessage(), Controller::MESSAGE_TYPE_ERROR);
-                }
-            }
-        }
+       
         $this->assign('unsaved_changes', false);
         if (!empty($this->config->cgminer_config_path)) {
             try {
