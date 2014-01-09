@@ -36,7 +36,7 @@ https://github.com/prdatur/cgminer
 Requirements for rebooting machine on defunc cgminer process.
 ===========
 If you want to allow PHPMiner to reboot your machine after it detects a defunced cgminer script. 
-You either need to run the phpminer_rpcclient/index.php as root or the user which runs the cron needs sudo access to reboot without password.
+You either need to run the phpminer_rpcclient/index.php as root or the user which runs the phpminer_rcpclient needs sudo access to reboot without password.
 
 With normal user:
 
@@ -55,7 +55,7 @@ Then add these lines at the bottom of the file:
     %reboot ALL=(root) NOPASSWD: /sbin/reboot
     %reboot ALL=(root) NOPASSWD: /sbin/shutdown
 
-This will allow all users which are within the group **reboot** to reboot the machine. (Only reboot, not shutdown)
+This will allow all users which are within the group **reboot** to reboot the machine.
 
 Now you have to add the group **reboot**:
 
@@ -65,7 +65,7 @@ And finally add the user which runs
 
     adduser www-data reboot
 
-NOTE: Replace the user **www-data** with your user which runs the php cron.
+NOTE: Replace the user **www-data** with your user which runs the phpminer_rpcclient.
 
 How to setup.
 ============
@@ -103,11 +103,11 @@ API needs to be enabled:
 
     "api-listen": true
 
-Please make sure api-allow allows priviledge access from localhost.
+Please make sure api-allow allows priviledge access from the host which act's as the "master" (on which you host phpminer website). (The below example would allow the complete subnet from 10.10.10.1 - 10.10.10.254)
 
-    "api-allow": "W:127.0.0.1"
+    "api-allow": "W:10.10.10.0/24"
 
-Also make sure the API-Port is default to 4028
+Also make sure the API-Port is configurated (default is: 4028)
 
     "api-port": "4028"
 
@@ -170,7 +170,7 @@ Now copy the file into **/etc/init.d/**
 
 Make it executeable
 
-chmod +x /etc/init.d/phpminer_rpcclient
+    chmod +x /etc/init.d/phpminer_rpcclient
 
 Then type
 
