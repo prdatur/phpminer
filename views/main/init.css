@@ -81,3 +81,7 @@ table:not(.layout_table).device_list td.disabled {
     margin-left: 15px;
     cursor: pointer;
 }
+
+.device_list th {
+    white-space: nowrap;
+}

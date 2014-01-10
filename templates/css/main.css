@@ -541,3 +541,7 @@ div[data-tab] {
 .tabs .js:first-child { 
     display: block; 
 }
+
+.nowrap {
+    white-space: nowrap;
+}
