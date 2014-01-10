@@ -547,57 +547,55 @@ class main extends Controller {
      * Ajax request to retrieve current configurated devices within cgminer.
      */
     public function get_device_list() {
+        $resp = array();
+        
+        $this->load_pool_config();
+        foreach (array_keys($this->config->rigs) AS $rig) {
+            try {
+                $devices = $this->get_api($rig)->get_devices_details();
+                
 
-        $params = new ParamStruct();
-        $params->add_required_param('rig', PDT_STRING);
-
-        $params->fill();
-        if (!$params->is_valid()) {
-            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
-        }
-        try {
-            $devices = $this->get_api($params->rig)->get_devices_details();
-            $this->load_pool_config();
-
-            $group_pools = $this->pool_config->get_pools($this->pool_config->get_current_active_pool_group($this->get_api($params->rig)));
-            foreach ($group_pools AS $k => $pool) {
-                unset($group_pools[$k]);
-                $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
-            }
-            
-            $rigs = $this->config->rigs;
-
-            // Get pools
-            $pools = $this->get_api($params->rig)->get_pools();
-            foreach ($devices AS &$device) {
-                if ($device['Name'] !== 'GPU') {
-                    continue;
-                }
-                $info = $this->get_api($params->rig)->get_gpu($device['ID']);
-                $info = reset($info);
-
-                $device['gpu_info'] = $info;
-
-                if (isset($info['Current Pool'])) {
-                    $pool_check = $info['Current Pool'];
-                } else {
-                    $pool_check = $info['Last Share Pool'];
+                $group_pools = $this->pool_config->get_pools($this->pool_config->get_current_active_pool_group($this->get_api($params->rig)));
+                foreach ($group_pools AS $k => $pool) {
+                    unset($group_pools[$k]);
+                    $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
                 }
 
-                foreach ($pools AS $pool) {
-                    if ($pool['POOL'] == $pool_check) {
-                        $device['pool'] = $pool;
+                $rigs = $this->config->rigs;
+
+                // Get pools
+                $pools = $this->get_api($params->rig)->get_pools();
+                foreach ($devices AS &$device) {
+                    if ($device['Name'] !== 'GPU') {
+                        continue;
+                    }
+                    $info = $this->get_api($params->rig)->get_gpu($device['ID']);
+                    $info = reset($info);
+
+                    $device['gpu_info'] = $info;
+
+                    if (isset($info['Current Pool'])) {
+                        $pool_check = $info['Current Pool'];
+                    } else {
+                        $pool_check = $info['Last Share Pool'];
+                    }
+
+                    foreach ($pools AS $pool) {
+                        if ($pool['POOL'] == $pool_check) {
+                            $device['pool'] = $pool;
+                        }
+                    }
+
+                    if (!empty($rigs[$params->rig]['switch_back_group'])) {
+                        $device['donating'] = ceil((900 - $rigs[$params->rig]['donation_time']) / 60);
                     }
                 }
-
-                if (!empty($rigs[$params->rig]['switch_back_group'])) {
-                    $device['donating'] = ceil((900 - $rigs[$params->rig]['donation_time']) / 60);
-                }
+                $resp[$rig] = $devices;
+            } catch (Exception $ex) {
+                continue;
             }
-        } catch (Exception $ex) {
-            $devices = array();
         }
-        AjaxModul::return_code(AjaxModul::SUCCESS, $devices);
+        AjaxModul::return_code(AjaxModul::SUCCESS, $resp);
     }
 
     /**

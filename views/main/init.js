@@ -143,12 +143,11 @@ function update_pools(rig, new_pools) {
 }
 
 function refresh_device_list() {
-    $('.device_list').each(function() {
-        var rig = $(this).data('rig');
-        ajax_request(murl('main', 'get_device_list'), {rig: rig}, function(result) {
-            set_device_list(result, rig);
-        });
-    })
+    ajax_request(murl('main', 'get_device_list'), null, function(result) {
+        $.each(result, function(rig, devices) {
+            set_device_list(devices, rig);
+        })
+    });
 }
 
 function set_device_list(result, rig) {
