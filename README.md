@@ -67,6 +67,14 @@ And finally add the user which runs
 
 NOTE: Replace the user **www-data** with your user which runs the phpminer_rpcclient.
 
+Donations
+============
+Donations are welcome
+
+BTC: 17dbqTnhn2qPLdSjaT7w2SkPLnCSMH4xFh
+
+LTC: Lh5sjSpN88N3PeG3vyQD9h6bz2jV4tdoke
+
 How to setup.
 ============
 

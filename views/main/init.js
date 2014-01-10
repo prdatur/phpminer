@@ -59,6 +59,7 @@ Soopfw.behaviors.main_init = function() {
             html += '               <th style="width: 65px;" class="right"><i class="icon-thermometer"></i>Temp</th>';
             html += '               <th style="width: 140px;" class="right"><i class="icon-chart-line"></i>Hashrate 5s (avg)</th>';
             html += '               <th style="width: 145px; class="right"><i class="icon-link-ext"></i>Shares</th>';
+            html += '               <th style="width: 65px; class="right"><i class="icon-attention"></i>HW</th>';
             html += '               <th style="width: 60px;" class="right"><i class="icon-air"></i>Fan</th>';
             html += '               <th style="width: 75px;" class="right"><i class="icon-clock"></i>Engine</th>';
             html += '               <th style="width: 83px;" class="right"><i class="icon-clock"></i>Memory</th>';
@@ -176,7 +177,11 @@ function set_device_list(result, rig) {
             if (device['gpu_info']['GPU Activity'] >= get_config([rig, 'gpu_' + device['ID'], 'load', 'min'], 90)) {
                 load_ok = true;
             }
-           
+            
+            var hw_ok = false;
+            if (device['gpu_info']['Hardware Errors'] <= get_config([rig, 'gpu_' + device['ID'], 'hw', 'max'], 5)) {
+                hw_ok = true;
+            }
             var tr = $('<tr></tr>')
                     .append($('<td class="nowrap center clickable ' + ((device['gpu_info']['Enabled'] === 'Y') ? 'enabled' : 'disabled') + '"><i class="icon-' + ((device['gpu_info']['Enabled'] === 'Y') ? 'check' : 'attention') + '"></i></td>').off('click').on('click', function() {
                         getEnableDialog(rig, device['ID'], device['Model'], device['gpu_info']['Enabled']);
@@ -192,6 +197,9 @@ function set_device_list(result, rig) {
                         getHashrateConfigDialog(rig, device['ID'], device['Model']);
                     }))
                     .append($('<td class="nowrap right shares"><i class="icon-check"></i>' + device['gpu_info']['Accepted'] + ' <i class="icon-cancel"></i>' + device['gpu_info']['Rejected'] + ' (' + Math.round((100 / device['gpu_info']['Accepted']) * device['gpu_info']['Rejected'], 2) + '%)</td>'))
+                    .append($('<td class="nowrap right clickable' + ((hw_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((hw_ok === true) ? 'check' : 'attention') + '"></i>'  + device['gpu_info']['Hardware Errors'] + '</td>').off('click').on('click', function() {
+                        getHWConfigDialog(rig, device['ID'], device['Model']);
+                    }))
                     .append($('<td class="nowrap right clickable">' + device['gpu_info']['Fan Percent'] + ' %</td>').off('click').on('click', function() {
                         getFanChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['Fan Percent']);
                     }))
@@ -330,6 +338,47 @@ function getLoadConfigDialog(rig, gpu_id, gpuname) {
     
 
         }
+    });
+}
+
+function getHWConfigDialog(rig, gpu_id, gpuname) {
+    
+    if (phpminer.settings.config['rigs'][rig] === undefined) {
+        phpminer.settings.config['rigs'][rig] = {};
+    }
+    if (phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id] === undefined) {
+        phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id] = {};
+    }
+    if (phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw'] === undefined || phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw']['max'] === undefined) {
+        phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw'] = {max: 5};
+    }
+    
+    var dialog = "<div>This setting is for minitoring, it is not used to overclock something automatically</div>";
+    dialog += '    <div class="simpleform">';
+    dialog += '        <div class="form-element">';
+    dialog += '            <label for="max_hw">Max. Hardware errors:</label>';
+    dialog += '            <input type="text" value="' + phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw']['max'] + '" id="max_hw"></input>';
+    dialog += '        </div>';
+    dialog += '    </div>';
+
+    make_modal_dialog('Set max. hardware errors for <b>' + gpuname + '</b> (GPU: <b>' + gpu_id + '</b>)', dialog, [
+        {
+            title: 'Save',
+            type: 'primary',
+            id: 'main_init_set_hw_eeror',
+            data: {
+                "loading-text": 'Saving...'
+            },
+            click: function() {
+            wait_dialog();
+            ajax_request(murl('gpu', 'set_hw_config'), {rig: rig, gpu: gpu_id, max: $('#max_hw').val()}, function() {
+                $.alerts._hide();
+                phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw']['max'] = $('#max_hw').val();
+            });
+        }
+        }
+    ], {
+        width: 660        
     });
 }
 

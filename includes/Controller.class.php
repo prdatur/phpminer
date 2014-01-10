@@ -109,32 +109,16 @@ class Controller {
             $this->add_message('The cronjob has not been executed since 5 minutes. Please check your cronjob config.', Controller::MESSAGE_TYPE_INFO);
         }
        
-        $this->assign('unsaved_changes', false);
-        if (!empty($this->config->cgminer_config_path)) {
-            try {
-                $cgminer_config = new Config($this->config->cgminer_config_path);
-                $cg_conf = $cgminer_config->get_config();
-                foreach ($this->config->cgminer_conf AS $key => $val) {
-                    // Pools will be not checked because they will be written directly on pool group change.
-                    if ($key === 'pools') {
-                        continue;;
-                    }
-
-                    if (!isset($cg_conf[$key]) || $cg_conf[$key] !== $val) {
-                        $this->assign('unsaved_changes', true);
-                    }
-                }
-            }
-            catch(Exception $e) {}
-        }
-                
         // We can not process as a normal controller action when we check for connection within the setup or in case of disconnected connection while reconnecting.
         if ($this->controller_name === 'main' && ($this->action_name === 'check_connection' || $this->action_name === 'connection_reconnect')) {
             return;
         }
         
         if (empty($this->config->rigs)) {
-            throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
+            $this->config->reload();
+            if (empty($this->config->rigs)) {
+                throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
+            }
         }
     }
     
@@ -154,12 +138,16 @@ class Controller {
         static $cache = array();
         
         if ($force || !isset($cache[$rig])) {
-            $rig_cfg = $this->config->rigs[$rig];
-            $cache[$rig] = null;
-            try {
+            
+            if (empty($this->config->rigs)) {
+                $this->config->reload();
                 if (empty($this->config->rigs)) {
                     throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
                 }
+            }
+            $rig_cfg = $this->config->rigs[$rig];
+            $cache[$rig] = null;
+            try {
                 $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
                 $api->test_connection();
                 $cache[$rig] = $api;

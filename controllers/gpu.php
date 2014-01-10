@@ -46,6 +46,20 @@ class gpu extends Controller {
         $this->set_cfg($params->rig, $params->gpu, array('load', 'min'), $params->min);
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
+    
+    public function set_hw_config() {
+        $params = new ParamStruct();
+        $params->add_required_param('rig', PDT_STRING);
+        $params->add_required_param('gpu', PDT_INT);
+        $params->add_required_param('max', PDT_INT);
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
+        }
+
+        $this->set_cfg($params->rig, $params->gpu, array('hw', 'max'), $params->max);
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
 
     public function set_hashrate_config() {
         $params = new ParamStruct();

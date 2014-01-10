@@ -111,6 +111,10 @@
                                 <td class="value"><div class="slider"><input type="checkbox" id="notify_load_<?php echo $rig_id; ?>" name="notify_load" value="1" <?php echo (isset($rig_conf['notify_load']) && $rig_conf['notify_load'] == "1" ? 'checked="checked"' : '');?> /><label for="notify_load_<?php echo $rig_id; ?>"></label></div></td>
                             </tr>
                             <tr>
+                                <td class="key">Notify if too may hardware errors occure:</td>
+                                <td class="value"><div class="slider"><input type="checkbox" id="notify_hw_<?php echo $rig_id; ?>" name="notify_hw" value="1" <?php echo (isset($rig_conf['notify_hw']) && $rig_conf['notify_hw'] == "1" ? 'checked="checked"' : '');?> /><label for="notify_hw_<?php echo $rig_id; ?>"></label></div></td>
+                            </tr>
+                            <tr>
                                 <td class="key">Notify on auto reboot:</td>
                                 <td class="value"><div class="slider"><input type="checkbox" id="notify_reboot_<?php echo $rig_id; ?>" name="notify_reboot" value="1" <?php echo (isset($rig_conf['notify_reboot']) && $rig_conf['notify_reboot'] == "1" ? 'checked="checked"' : '');?> /><label for="notify_reboot_<?php echo $rig_id; ?>"></label></div></td>
                             </tr>
