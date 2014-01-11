@@ -555,7 +555,7 @@ class main extends Controller {
                 $devices = $this->get_api($rig)->get_devices_details();
                 
 
-                $group_pools = $this->pool_config->get_pools($this->pool_config->get_current_active_pool_group($this->get_api($params->rig)));
+                $group_pools = $this->pool_config->get_pools($this->pool_config->get_current_active_pool_group($this->get_api($rig)));
                 foreach ($group_pools AS $k => $pool) {
                     unset($group_pools[$k]);
                     $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
@@ -564,12 +564,12 @@ class main extends Controller {
                 $rigs = $this->config->rigs;
 
                 // Get pools
-                $pools = $this->get_api($params->rig)->get_pools();
+                $pools = $this->get_api($rig)->get_pools();
                 foreach ($devices AS &$device) {
                     if ($device['Name'] !== 'GPU') {
                         continue;
                     }
-                    $info = $this->get_api($params->rig)->get_gpu($device['ID']);
+                    $info = $this->get_api($rig)->get_gpu($device['ID']);
                     $info = reset($info);
 
                     $device['gpu_info'] = $info;
@@ -586,8 +586,8 @@ class main extends Controller {
                         }
                     }
 
-                    if (!empty($rigs[$params->rig]['switch_back_group'])) {
-                        $device['donating'] = ceil((900 - $rigs[$params->rig]['donation_time']) / 60);
+                    if (!empty($rigs[$rig]['switch_back_group'])) {
+                        $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
                     }
                 }
                 $resp[$rig] = $devices;
