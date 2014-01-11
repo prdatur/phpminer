@@ -1,29 +1,29 @@
 <?php
-
 declare(ticks = 1);
 include dirname(__FILE__) . '/config.php';
 
-$check_file = '/tmp/phpminer_rpcclient.pid';
 
-function sig_handler($signo) {
-    global $check_file;
-    switch ($signo) {
-        case SIGTERM:
-        case SIGINT:
-            unlink($check_file);
-            exit;
+if (function_exists('pcntl_signal')) {
+    $check_file = '/tmp/phpminer_rpcclient.pid';
+    function sig_handler($signo) {
+        global $check_file;
+        switch ($signo) {
+            case SIGTERM:
+            case SIGINT:
+                unlink($check_file);
+                exit;
+        }
     }
+
+    pcntl_signal(SIGTERM, "sig_handler");
+    pcntl_signal(SIGINT, "sig_handler");
+
+    if (file_exists($check_file)) {
+        exit;
+    }
+
+    file_put_contents($check_file, getmypid());
 }
-
-pcntl_signal(SIGTERM, "sig_handler");
-pcntl_signal(SIGINT, "sig_handler");
-
-if (file_exists($check_file)) {
-    exit;
-}
-
-file_put_contents($check_file, getmypid());
-
 $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
 $sockets = $clients = array();
 
