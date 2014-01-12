@@ -75,14 +75,14 @@ Soopfw.behaviors.main_init = function() {
 
         $('#rigs').append(html);
         $('.rig_edit').off('click').on('click', function() {
-            ajax_request('/main/get_rig_data.json', {rig: $(this).data('rig')}, function(rig_results) {
+            ajax_request(murl('main', 'get_rig_data'), {rig: $(this).data('rig')}, function(rig_results) {
                 add_rig_dialog(true, rig_results);
             });
         });
         $('.rig_delete').off('click').on('click', function() {
             var rig = $(this).data('rig');
             confirm('Do you really want to delete the rig: <b>' + rig + '</b>', 'Delete rig ' + rig + '?', function() {
-                ajax_request('/main/delete_rig.json', {rig: rig}, function() {
+                ajax_request(murl('main', 'delete_rig'), {rig: rig}, function() {
                     $('.rig[data-rig="' + rig + '"]').fadeOut('fast', function() {
                         $(this).remove();
                     });
