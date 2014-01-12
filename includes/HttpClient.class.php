@@ -200,8 +200,8 @@ class HttpClient {
                 if (isset($connection_result['error'])) {
                     return $connection_result['error'][1];
                 }
-
-                if ($connection_result['result'] === false) {
+                
+                if (isset($connection_result['result']) && $connection_result['result'] === false) {
                     return 'Username and/or password incorrect.';
                 }
 
