@@ -373,6 +373,10 @@ function getHWConfigDialog(rig, gpu_id, gpuname) {
             ajax_request(murl('gpu', 'set_hw_config'), {rig: rig, gpu: gpu_id, max: $('#max_hw').val()}, function() {
                 $.alerts._hide();
                 phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw']['max'] = $('#max_hw').val();
+                $('.modal').modal('hide');
+                $('#main_init_set_value').button('reset');
+            }, function() {
+                $('#main_init_set_value').button('reset');
             });
         }
         }
