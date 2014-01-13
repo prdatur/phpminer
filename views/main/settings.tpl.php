@@ -19,6 +19,10 @@
                         <td class="key">Enable donation:<i data-toggle="tooltip" title="To support further updates and help to improve PHPMiner, I decided to implement an auto donation system which you can disable at any time. So what is auto-donation? PHPMiner will detect when your workers have mined 24 hours, then PHPMiner will switch to donation pools where your workers will mine for me for 15 Minuntes. After this time PHPMiner will switch back to your previous pool group. 15 Minutes within 24 Hours are just 1% if the hole mining time. So this will not have a real effect of your profit. It's just a little help to let me know that you want updates in the future and this tells me that my work with PHPMiner was useful." class="icon-help-circled"></i></td>
                         <td class="value"><div class="slider"><input type="checkbox" id="enable_donation" name="enable_donation" value="1" <?php echo (!isset($conf['enable_donation']) || $conf['enable_donation'] == "1" ? 'checked="checked"' : '');?> /><label for="enable_donation"></label></div></td>
                     </tr>
+                    <tr>
+                        <td class="key"><label for="socket_timout">Rig socket timeout:</label><i data-toggle="tooltip" title="People who know what this means may change it to the needs, other people just don't change this setting" class="icon-help-circled"></i></td>
+                        <td class="value"><input type="text" id="socket_timout" name="socket_timout" value="<?php echo (!empty($conf['socket_timout']) ? $conf['socket_timout'] : 5);?>" /></td>
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr>

@@ -148,7 +148,7 @@ class Controller {
             $rig_cfg = $this->config->rigs[$rig];
             $cache[$rig] = null;
             try {
-                $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
+                $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port'], $this->config->socket_timout);
                 $api->test_connection();
                 $cache[$rig] = $api;
             } catch (APIException $ex) {
@@ -175,7 +175,7 @@ class Controller {
      */
     public function get_rpc($rig) {
         $rig_cfg = $this->config->get_rig($rig);
-        $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key']);
+        $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key'], $this->config->socket_timout);
         $res = $rpc->ping();
         if ($res !== true) {
             throw new APIException("No connection to PHPMiner RCP on Rig <b>" . $rig . "</b>.\n\n<b>Error message</b>\n" . $res, APIException::CODE_SOCKET_CONNECT_ERROR);

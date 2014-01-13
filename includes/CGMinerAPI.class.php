@@ -38,6 +38,7 @@ class CGMinerAPI {
      * @var boolean
      */
     private $has_advanced_api = false;
+    private $timeout = null;
     
     /**
      * Creates a new api instance-
@@ -47,9 +48,10 @@ class CGMinerAPI {
      * @param int $port
      *   The remote port where cgminer is running.
      */
-    public function __construct($address, $port) {
+    public function __construct($address, $port, $timeout = 10) {
         $this->remote_ip = $address;
         $this->remote_port = $port;
+        $this->timeout = $timeout;
     }
         
     /**
@@ -66,7 +68,7 @@ class CGMinerAPI {
                 $this->socket = null;
                 throw new APIException(socket_strerror(socket_last_error()), APIException::CODE_SOCKET_CREATE_ERROR);
             }
-
+            @stream_set_timeout ($this->socket, $this->timeout);
             $res = @socket_connect($this->socket , $this->remote_ip, $this->remote_port);
             if ($res === false) {
                 @socket_close($this->socket);
@@ -192,9 +194,12 @@ class CGMinerAPI {
         if (strlen($line) == 0) {
             return $line;
         }
-        
         // Couse we always use json, we safely can just parse the response as json.
         $json = json_decode($line, true);
+
+        if (empty($json) && stripos($line, "\"BYE\"") !== false) {
+            return true;
+        }
         
         // Check for success.
         if ($json['STATUS'][0]['STATUS'] === 'E') {
@@ -203,7 +208,6 @@ class CGMinerAPI {
         
         // Remove status.
         unset($json['STATUS']);
-        
         // Get the command data.
         $response = reset($json);
         

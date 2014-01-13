@@ -36,20 +36,38 @@ function response(&$socket, $msg = 'ok', $error = false) {
     disconnect($socket);
 }
 
-function is_cgminer_running() {
+function get_cgminer_pid() {
     global $is_windows;
     if ($is_windows) {
         exec("tasklist 2>NUL", $task_list);
         foreach ($task_list AS $task) {
-            if (preg_match("/cgminer\.exe/", $task)) {
-                return true;
+            if (preg_match("/cgminer\.exe[^0-9]+([0-9]+)\s/", $task, $matches)) {
+                return $matches[1];
             }
         }
         return false;
     } else {
         $res = trim(shell_exec("ps a | grep \"cgminer -c\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
-        return !empty($res);
+        return $res;
     }
+}
+
+function kill_cgminer() {
+    global $is_windows;
+    $cgminer_pid = get_cgminer_pid();
+    if (!empty($cgminer_pid)) {
+        if ($is_windows) {
+            exec("taskkill /F /PID " . intval($cgminer_pid));
+        }
+        else {
+            exec("kill -9 " . intval($cgminer_pid));
+        }
+    }
+    return true;
+}
+function is_cgminer_running() {
+    $pid = get_cgminer_pid();
+    return !empty($pid);
 }
 
 function is_cgminer_defunc() {
@@ -62,7 +80,7 @@ function is_cgminer_defunc() {
     }
 }
 
-function restart_cgminer() {
+function restart_cgminer($socket) {
     global $is_windows, $config;
     if (is_cgminer_running()) {
         return;
@@ -77,7 +95,7 @@ function restart_cgminer() {
         }
         $cmd .= "cd " . escapeshellarg($config['cgminer_path']) . ";\n";
         $cmd .= "screen -d -m -S cgminer ./cgminer -c " . escapeshellarg($config['cgminer_config_path']) . "\n";
-
+        
         file_put_contents('/tmp/startcg', $cmd);
         @chmod('/tmp/startcg', 0777);
         shell_exec('/tmp/startcg');
@@ -303,10 +321,13 @@ while (true) {
                     response($socket, is_cgminer_running());
                     continue;
                 case 'restart_cgminer':
-                    response($socket, restart_cgminer(), true);
+                    response($socket, restart_cgminer($socket), true);
                     continue;
                 case 'reboot':
                     response($socket, reboot());
+                    continue;
+                case 'kill_cgminer':
+                    response($socket, kill_cgminer());
                     continue;
                 case 'set_config':
 

@@ -681,7 +681,7 @@ class main extends Controller {
             if (empty($this->config->rigs )) {
                 $this->config->rigs = array();
             }
-            $rpc_check = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key);
+            $rpc_check = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key, 10);
             $rpc_response = $rpc_check->ping();
             if ($rpc_response !== true) {
                 AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'RPC Error: ' . $rpc_response);

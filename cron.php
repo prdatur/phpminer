@@ -93,19 +93,30 @@ if (!$notification_config->is_empty()) {
         foreach ($rig_notifications AS $rig => $notification_data) {
 
             $rig_cfg = $config->get_rig($rig);
-            $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key']);
+            $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key'], 10);
             if (!$rpc->ping()) {
                 continue;
             }
 
             $is_cgminer_running = $rpc->is_cgminer_running();
+            $has_defunc = $rpc->is_cgminer_defunc();
 
             $need_reboot = '';
             // If PHPMiner should check for defunc.
             if (!empty($notification_data['reboot_defunc'])) {
 
                 // Check if there is a defunced cgminer process.
-                $need_reboot = $rpc->is_cgminer_defunc();
+                $need_reboot = $has_defunc;
+
+                $notify_reboot = $notification_data['notify_reboot'];
+                if (!empty($need_reboot) && $notify_reboot) {
+                    $notifications['reboot'][$rig] = array('Needed to reboot rig ' . $rig . '.');
+                }
+            }
+            
+            
+            // Restart CGMiner on DEAD/Sick
+            if (!empty($notification_data['restart_dead'])) {
 
                 $notify_reboot = $notification_data['notify_reboot'];
                 if (!empty($need_reboot) && $notify_reboot) {
@@ -126,7 +137,48 @@ if (!$notification_config->is_empty()) {
                 // Give cgminer time to start the api.
                 sleep(10);
             }
+            
+            // Precheck if cgminer is running
+            if (!empty($notification_data['restart_dead']) && $is_cgminer_running) {
+                try {
+                    $rig_cfg = $system_config['rigs'][$rig];
+                    $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
+                    $api->test_connection();
+                    
+                    $data = $api->get_devices();
+                    $dead_sick_gpu = false;
+                    
+                    foreach ($data AS $device_data) {
+                        if ($device_data['Status'] == 'Dead' || $device_data['Status'] == 'Sick') {
+                            $dead_sick_gpu = true;
+                            break;
+                        }
+                    }
+                    
+                    // Restart CGMiner if dead/sick gpu is found.
+                    if ($dead_sick_gpu) {
+                        $api->quit();
+                        // Give cgminer time to quit.
+                        sleep(10);
 
+                        // If CGMiner still running, try to kill it
+                        if ($rpc->is_cgminer_running()) {
+                            $rpc->kill_cgminer();
+                            // Give cgminer time again to quit.
+                            sleep(5);
+                        }
+
+                        // Try to restart cgminer.
+                        $rpc->restart_cgminer();
+
+                        // Give cgminer time to start the api.
+                        sleep(10);
+                        if ($notify_cgminer_restart) {
+                            $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
+                        }
+                    }
+                } catch (APIException $ex) {}
+            }
 
             // Only need to notify if at least one notification method is enabled and configurated.
             if ($email_enabled || $rapidpush_enabled || $post_enabled) {
@@ -157,7 +209,6 @@ if (!$notification_config->is_empty()) {
                     $notification_config->set_value('rigs', $rig_notifications);
                 }
                 $notification_resend_delay = $notification_data['notification_resend_delay'];
-
 
                 // Only proceed when we want to notify something and don#t want to reboot, because when we want to reboot, any notifications are not important anymore.
                 if (($notify_hw || $notify_gpu_min || $notify_gpu_max || $notify_hashrate || $notify_load || $notify_reboot || $notify_cgminer_restart) && empty($need_reboot)) {

@@ -5,10 +5,12 @@ class PHPMinerRPC extends HttpClient {
     private $ip = null;
     private $port = null;
     private $rpc_key = null;
-    public function __construct($ip, $port, $rpc_key) {
+    private $timeout = null;
+    public function __construct($ip, $port, $rpc_key, $timeout) {
         $this->ip = $ip;
         $this->port = $port;
         $this->rpc_key = $rpc_key;
+        $this->timeout = $timeout;
         parent::__construct();
     }
     
@@ -120,6 +122,14 @@ class PHPMinerRPC extends HttpClient {
         return $res['msg'];
     }
     
+    public function kill_cgminer() {
+        $res =  $this->send('kill_cgminer');
+        if (empty($res['error'])) {
+            return true;
+        }
+        return $res['msg'];
+    }
+    
     public function reboot() {
         $this->send('reboot');
     }
@@ -132,6 +142,7 @@ class PHPMinerRPC extends HttpClient {
         );
         
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        @stream_set_timeout ($socket, $this->timeout);
         if ($socket === false) {
             return array(
                 'error' => 1,
