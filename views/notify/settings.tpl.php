@@ -127,8 +127,14 @@
                                 <td class="value"><div class="slider"><input type="checkbox" id="reboot_defunc_<?php echo $rig_id; ?>" name="reboot_defunc" value="1" <?php echo (isset($rig_conf['reboot_defunc']) && $rig_conf['reboot_defunc'] == "1" ? 'checked="checked"' : '');?> /><label for="reboot_defunc_<?php echo $rig_id; ?>"></label></div></td>
                             </tr>
                             <tr>
-                                <td class="key">Restart CGMiner on Dead/Sick GPU's:</td>
-                                <td class="value"><div class="slider"><input type="checkbox" id="restart_dead_<?php echo $rig_id; ?>" name="restart_dead" value="1" <?php echo (isset($rig_conf['restart_dead']) && $rig_conf['restart_dead'] == "1" ? 'checked="checked"' : '');?> /><label for="restart_dead_<?php echo $rig_id; ?>"></label></div></td>
+                                <td class="key"><label for="restart_dead_<?php echo $rig_id; ?>">On Dead/Sick GPU's:</label></td>
+                                <td class="value">
+                                    <select name="restart_dead" id="restart_dead_<?php echo $rig_id; ?>">
+                                        <option value="" <?php echo (!isset($rig_conf['restart_dead']) || $rig_conf['restart_dead'] == "" ? 'selected="selected"' : '');?>>Do nothing</option>
+                                        <option value="restart" <?php echo (isset($rig_conf['restart_dead']) && $rig_conf['restart_dead'] == "restart" ? 'selected="selected"' : '');?>>Restart</option>
+                                        <option value="reboot" <?php echo (isset($rig_conf['restart_dead']) && $rig_conf['restart_dead'] == "reboot" ? 'selected="selected"' : '');?>>Reboot</option>
+                                    </select>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="key">Restart CGMiner if not running:</td>

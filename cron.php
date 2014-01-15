@@ -100,32 +100,19 @@ if (!$notification_config->is_empty()) {
 
             $is_cgminer_running = $rpc->is_cgminer_running();
             $has_defunc = $rpc->is_cgminer_defunc();
-
+            $notify_cgminer_restart = $notification_data['notify_cgminer_restart'];
+            $notify_reboot = $notification_data['notify_reboot'];
             $need_reboot = '';
             // If PHPMiner should check for defunc.
             if (!empty($notification_data['reboot_defunc'])) {
 
                 // Check if there is a defunced cgminer process.
                 $need_reboot = $has_defunc;
-
-                $notify_reboot = $notification_data['notify_reboot'];
                 if (!empty($need_reboot) && $notify_reboot) {
                     $notifications['reboot'][$rig] = array('Needed to reboot rig ' . $rig . '.');
                 }
             }
-            
-            
-            // Restart CGMiner on DEAD/Sick
-            if (!empty($notification_data['restart_dead'])) {
-
-                $notify_reboot = $notification_data['notify_reboot'];
-                if (!empty($need_reboot) && $notify_reboot) {
-                    $notifications['reboot'][$rig] = array('Needed to reboot rig ' . $rig . '.');
-                }
-            }
-
-            $notify_cgminer_restart = $notification_data['notify_cgminer_restart'];
-
+                 
             // Precheck if cgminer is running
             if (!empty($notification_data['restart_cgminer']) && !$is_cgminer_running) {
 
@@ -149,7 +136,7 @@ if (!$notification_config->is_empty()) {
                     $dead_sick_gpu = false;
                     
                     foreach ($data AS $device_data) {
-                        if ($device_data['Status'] == 'Dead' || $device_data['Status'] == 'Sick') {
+                        if (strtolower($device_data['Status']) == 'dead' || strtolower($device_data['Status']) == 'sick') {
                             $dead_sick_gpu = true;
                             break;
                         }
@@ -157,31 +144,39 @@ if (!$notification_config->is_empty()) {
                     
                     // Restart CGMiner if dead/sick gpu is found.
                     if ($dead_sick_gpu) {
-                        $api->quit();
-                        // Give cgminer time to quit.
-                        sleep(10);
-
-                        // If CGMiner still running, try to kill it
-                        if ($rpc->is_cgminer_running()) {
-                            $rpc->kill_cgminer();
-                            // Give cgminer time again to quit.
-                            sleep(5);
+                        if ($notification_data['restart_dead'] === 'reboot') {
+                            $need_reboot = true;
+                            if ($notify_reboot) {
+                                $notifications['reboot'][$rig] = array('Needed to reboot CGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
+                            }
                         }
+                        else {
+                            $api->quit();
+                            // Give cgminer time to quit.
+                            sleep(10);
 
-                        // Try to restart cgminer.
-                        $rpc->restart_cgminer();
+                            // If CGMiner still running, try to kill it
+                            if ($rpc->is_cgminer_running()) {
+                                $rpc->kill_cgminer();
+                                // Give cgminer time again to quit.
+                                sleep(5);
+                            }
 
-                        // Give cgminer time to start the api.
-                        sleep(10);
-                        if ($notify_cgminer_restart) {
-                            $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
+                            // Try to restart cgminer.
+                            $rpc->restart_cgminer();
+
+                            // Give cgminer time to start the api.
+                            sleep(10);
+                            if ($notify_cgminer_restart) {
+                                $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
+                            }
                         }
                     }
                 } catch (APIException $ex) {}
             }
 
-            // Only need to notify if at least one notification method is enabled and configurated.
-            if ($email_enabled || $rapidpush_enabled || $post_enabled) {
+            // Only need to notify if at least one notification method is enabled and configurated. But only when we are not need to reboot, with a reboot we just ignore all errors for this rig.
+            if (($email_enabled || $rapidpush_enabled || $post_enabled) && empty($need_reboot)) {
 
                 // Check which notification should be send.
                 $notify_gpu_min = $notification_data['notify_gpu_min'];
@@ -211,7 +206,7 @@ if (!$notification_config->is_empty()) {
                 $notification_resend_delay = $notification_data['notification_resend_delay'];
 
                 // Only proceed when we want to notify something and don#t want to reboot, because when we want to reboot, any notifications are not important anymore.
-                if (($notify_hw || $notify_gpu_min || $notify_gpu_max || $notify_hashrate || $notify_load || $notify_reboot || $notify_cgminer_restart) && empty($need_reboot)) {
+                if ($notify_hw || $notify_gpu_min || $notify_gpu_max || $notify_hashrate || $notify_load || $notify_reboot || $notify_cgminer_restart) {
 
                     try {
                         // Get the system config, here are the max and min values stored.
@@ -420,7 +415,12 @@ if (!empty($rig_notifications)) {
         $main->set_request_type('cron');
         $main->setup_controller();
 
-        $cg_conf = $main->get_rpc($rig)->get_config();
+        try {
+            $cg_conf = $main->get_rpc($rig)->get_config();
+        }
+        catch(Exception $e) {
+            continue;
+        }
 
         // Make sure rig is on scrypt.
         if ((isset($cg_conf['kernel']) && $cg_conf['kernel'] !== 'scrypt') && !isset($cg_conf['scrypt'])) {

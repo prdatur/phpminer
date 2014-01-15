@@ -120,7 +120,7 @@ function restart_cgminer($socket) {
 function reboot() {
     global $is_windows;
     if ($is_windows) {
-        exec('shutdown -r NOW');
+        exec('shutdown /r /t 1');
     } else {
         $user = trim(shell_exec("ps uh " . getmypid() . " | awk '{print $1'}"));
 
