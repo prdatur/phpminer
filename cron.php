@@ -212,6 +212,9 @@ if (!$notification_config->is_empty()) {
                         // Get the system config, here are the max and min values stored.
                         // 
                         // Get the cgminer api.
+                        if (!isset($system_config['rigs'][$rig])) {
+                            continue;
+                        }
                         $rig_cfg = $system_config['rigs'][$rig];
                         $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
                         $api->test_connection();
