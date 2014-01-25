@@ -456,7 +456,7 @@ if (!empty($rig_notifications)) {
             }
 
             // If we mine over 24 hours. Switch to donate pools.
-            if ($rig_config['mining_time'] >= 100) { #86400
+            if ($rig_config['mining_time'] >= 86400) { #86400
 
                 $mining_pools = new PoolConfig();
 

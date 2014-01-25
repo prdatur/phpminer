@@ -125,13 +125,13 @@ function reboot() {
         $user = trim(shell_exec("ps uh " . getmypid() . " | awk '{print $1'}"));
 
         // Any time just try to call "reboot" maybe the user can call it.
-        exec('shutdown -r NOW');
+        exec('shutdown -r now');
 
         // If the user of the cron.php is root, we can call reboot, so don't try sudo fallback.
         if ($user !== 'root') {
 
             // Call sudo fallback.
-            exec('sudo shutdown -r NOW');
+            exec('sudo shutdown -r now');
         }
     }
 }
