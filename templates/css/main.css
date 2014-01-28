@@ -545,3 +545,7 @@ div[data-tab] {
 .nowrap {
     white-space: nowrap;
 }
+
+#global_hashrate {
+    margin-left: 30px;
+}

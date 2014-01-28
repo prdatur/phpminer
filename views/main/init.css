@@ -85,3 +85,7 @@ table:not(.layout_table).device_list td.disabled {
 .device_list th {
     white-space: nowrap;
 }
+
+.rig_hashrate {
+    margin-left: 30px;
+}

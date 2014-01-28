@@ -636,7 +636,10 @@ class main extends Controller {
         $api = new CGMinerAPI($params->ip, $params->port);
         try {
             $version = $api->test_connection();
-
+            if (empty($version) || !isset($version['CGMiner']) || !isset($version['API'])) {
+                $message = "Could not find CGMiner version or CGMiner API version. Please check that CGMiner is running and configurated how it is written within the readme of PHPMiner.";
+                AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $message);
+            }
             $cgminer_version = explode(".", $version['CGMiner']);
             $api_version = explode(".", $version['API']);
 
