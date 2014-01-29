@@ -367,9 +367,9 @@ function set_device_list(result, rig) {
                     .append($('<td class="nowrap right"><i class="icon-check"></i>'  + get_hashrate_string(avg_data.mhs.cur) + ' (' + get_hashrate_string(avg_data.mhs.avg) + ')</td>'))
                     .append($('<td class="nowrap right shares"><i class="icon-check"></i>' + avg_data.shares.accepted + ' <i class="icon-cancel"></i>' + avg_data.shares.rejected + ' (' + Math.round((100 / avg_data.shares.accepted) * avg_data.shares.rejected, 2) + '%)</td>'))
                     .append($('<td class="nowrap right"><i class="icon-check"></i>'  + avg_data.hw + '</td>'))
-                    .append($('<td class="nowrap right"><i class="icon-check"></i>' + avg_data.fan + ' %</td>'))
-                    .append($('<td class="nowrap right"><i class="icon-check"></i>' + avg_data.engine + ' Mhz</td>'))
-                    .append($('<td class="nowrap right"><i class="icon-check"></i>' + avg_data.memory + ' Mhz</td>'))
+                    .append($('<td class="nowrap right">' + avg_data.fan + ' %</td>'))
+                    .append($('<td class="nowrap right">' + avg_data.engine + ' Mhz</td>'))
+                    .append($('<td class="nowrap right">' + avg_data.memory + ' Mhz</td>'))
                     .append($('<td class="nowrap right">' + avg_data.voltage + ' V</td>'))
                     .append($('<td class="nowrap right">' + avg_data.intensity + '</td>'));
 
