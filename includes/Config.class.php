@@ -583,6 +583,22 @@ class Config {
         }
         return $this->config['rigs'][$rig];
     }
+    
+    /**
+     * Set the rig config.
+     * 
+     * @param string $rig
+     *   The rig name.
+     * @param array $config
+     *   The config.
+     */
+    public function set_rig($rig, $config) {
+        if (!isset($this->config['rigs']) || !isset($this->config['rigs'][$rig])) {
+            return null;
+        }
+        $this->config['rigs'][$rig] = $config;
+        $this->save();
+    }
 
     /**
      * Returns the hole config.

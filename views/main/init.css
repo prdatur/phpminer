@@ -89,3 +89,7 @@ table:not(.layout_table).device_list td.disabled {
 .rig_hashrate {
     margin-left: 30px;
 }
+
+.swap_rig {
+    cursor: pointer;
+}

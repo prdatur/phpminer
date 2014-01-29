@@ -54,6 +54,27 @@ class main extends Controller {
     }
 
     /**
+     * Ajax request to switch rig collapse
+     */
+    public function set_rig_collapse() {
+        $params = new ParamStruct();
+        $params->add_required_param('rig', PDT_STRING);
+        $params->add_required_param('collapsed', PDT_BOOL);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
+        }
+        
+        $rig_config = $this->config->get_rig($params->rig);
+        if ($rig_config != null) {
+            $rig_config['collapsed'] = $params->collapsed; 
+            $this->config->set_rig($params->rig, $rig_config);
+        }
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
+    
+    /**
      * Ajax request to save new configuration settings.
      */
     public function save_settings() {
@@ -358,6 +379,7 @@ class main extends Controller {
                     'active_pool_group' => $current_active_group,
                     'pools' => $this->pool_config->get_pools($current_active_group),
                     'donating' => !empty($rigs[$rig]['switch_back_group']),
+                    'collapsed' => !empty($rigs[$rig]['collapsed']),
                 );
             } catch (Exception $e) {
                 $rig_js_data[$rig] = false;

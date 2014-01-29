@@ -25,6 +25,18 @@
       "src": "fontawesome"
     },
     {
+      "uid": "44e04715aecbca7f266a17d5a7863c68",
+      "css": "plus-1",
+      "code": 59453,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "861ab06e455e2de3232ebef67d60d708",
+      "css": "minus-1",
+      "code": 59454,
+      "src": "fontawesome"
+    },
+    {
       "uid": "17ebadd1e3f274ff0205601eef7b9cc4",
       "css": "help-circled",
       "code": 59395,

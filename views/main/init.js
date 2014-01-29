@@ -18,6 +18,8 @@ function get_config(name, default_val) {
     return cfg;
 } 
 
+var current_device_list = {};
+var rig_collapsed = {};
 Soopfw.behaviors.main_init = function() {
     
     if (refresh_device_list_timeout !== null) {
@@ -26,10 +28,10 @@ Soopfw.behaviors.main_init = function() {
 
     var c = 0;
     $.each(phpminer.settings.rig_data, function(rig, rig_data) {
-        
+        rig_collapsed[rig] = (rig_data.collapsed !== undefined) ? rig_data.collapsed : false;
         c++;
         var html  = '<div class="rig" data-rig="' + rig + '">';
-            html += '   <h2 style="display: inline;">' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2> <div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> <div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
+            html += '   <h2 style="display: inline;"><span data-rig="' + rig + '" class="swap_rig"><i class="icon-' + ((rig_data.collapsed) ? 'plus' : 'minus') + '"></i></span>' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2> <div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> <div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
             
             if (!empty(phpminer.settings.pool_groups)) {
                 html += '<div class="pool_switching_container" data-rig="' + rig + '" style="float: right;' + ((rig_data.donating) ? 'display: none;' : '') + '">';
@@ -74,21 +76,7 @@ Soopfw.behaviors.main_init = function() {
             html += '</div>';
 
         $('#rigs').append(html);
-        $('.rig_edit').off('click').on('click', function() {
-            ajax_request(murl('main', 'get_rig_data'), {rig: $(this).data('rig')}, function(rig_results) {
-                add_rig_dialog(true, rig_results);
-            });
-        });
-        $('.rig_delete').off('click').on('click', function() {
-            var rig = $(this).data('rig');
-            confirm('Do you really want to delete the rig: <b>' + rig + '</b>', 'Delete rig ' + rig + '?', function() {
-                ajax_request(murl('main', 'delete_rig'), {rig: rig}, function() {
-                    $('.rig[data-rig="' + rig + '"]').fadeOut('fast', function() {
-                        $(this).remove();
-                    });
-                });
-            });
-        });
+        
         $('.current_pool_group[data-rig="' + rig + '"]').val(rig_data.active_pool_group).off('change').on('change', function(){
             wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
             ajax_request(murl('main', 'switch_pool_group'), {rig: rig, group: $(this).val()}, function(data) {
@@ -118,6 +106,38 @@ Soopfw.behaviors.main_init = function() {
         
         set_device_list(rig_data.device_list, rig);
     });
+    $('.rig_edit').off('click').on('click', function() {
+            ajax_request(murl('main', 'get_rig_data'), {rig: $(this).data('rig')}, function(rig_results) {
+                add_rig_dialog(true, rig_results);
+            });
+        });
+        $('.rig_delete').off('click').on('click', function() {
+            var rig = $(this).data('rig');
+            confirm('Do you really want to delete the rig: <b>' + rig + '</b>', 'Delete rig ' + rig + '?', function() {
+                ajax_request(murl('main', 'delete_rig'), {rig: rig}, function() {
+                    $('.rig[data-rig="' + rig + '"]').fadeOut('fast', function() {
+                        $(this).remove();
+                    });
+                });
+            });
+        });
+        
+    $('.swap_rig').off('click').on('click', function() {
+        var datarig = $(this).data('rig');
+        var i = $('i', this);
+        if (rig_collapsed[datarig]) {
+            i.removeClass('icon-plus')
+                .addClass('icon-minus');
+        }
+        else {
+            i.removeClass('icon-minus')
+                .addClass('icon-plus');
+        }
+        rig_collapsed[datarig] = !rig_collapsed[datarig];
+        ajax_request(murl('main', 'set_rig_collapse'), {rig: datarig, collapsed: rig_collapsed[datarig]});
+        set_device_list(current_device_list[datarig], datarig);
+    });
+    
     $('#global_hashrate').html(get_hashrate_string(global_hashrate));
     $('#add_rig').off('click').on('click', function() {
         add_rig_dialog(true);
@@ -165,6 +185,7 @@ function get_hashrate_string(value) {
 
 }
 function set_device_list(result, rig) {
+    current_device_list[rig] = result;
     $('.device_list[data-rig="' + rig + '"] tbody').html("");
     if (empty(Soopfw.obj_size(result))) {
         $('.pool_switching_container[data-rig="' + rig + '"]').hide();
@@ -173,11 +194,31 @@ function set_device_list(result, rig) {
     else {
         var donating = false;        
         var rig_hashrate = 0.0;
+        var device_count = 0;
+        var avg_data = {
+            load: 0,
+            temp: 0,
+            mhs: {
+                cur: 0,
+                avg: 0
+            },
+            shares: {
+                accepted: 0,
+                rejected: 0
+            },
+            hw: 0,
+            fan: 0,
+            engine: 0,
+            memory: 0,
+            voltage: 0,
+            intensity: 0
+
+        };
+        var active_pools = {};
         foreach(result, function(index, device) {
             
             var temp_ok = false;
             device['gpu_info']['Temperature'] = parseInt(device['gpu_info']['Temperature']);
-            //console.log(get_config([rig, 'gpu_' + device['ID'], 'temperature', 'min'], 50) + ", rig" + rig+ "temp," + 'gpu_' + device['ID']);
             if (device['gpu_info']['Temperature'] >= get_config([rig, 'gpu_' + device['ID'], 'temperature', 'min'], 50) && device['gpu_info']['Temperature'] <= get_config([rig, 'gpu_' + device['ID'], 'temperature', 'max'], 85)) {
                 temp_ok = true;
             }
@@ -195,6 +236,54 @@ function set_device_list(result, rig) {
             var hw_ok = false;
             if (device['gpu_info']['Hardware Errors'] <= get_config([rig, 'gpu_' + device['ID'], 'hw', 'max'], 5)) {
                 hw_ok = true;
+            }
+            rig_hashrate += device['gpu_info']['MHS 5s'];
+            if (device['donating'] !== undefined) {
+                donating = true;
+            }
+            
+            avg_data = {
+                load: avg_data.load + parseFloat(device['gpu_info']['GPU Activity']),
+                temp: avg_data.temp + parseFloat(device['gpu_info']['Temperature']),
+                mhs: {
+                    cur: avg_data.mhs.cur + parseFloat(device['gpu_info']['MHS 5s']),
+                    avg: avg_data.mhs.avg + parseFloat(device['gpu_info']['MHS av'])
+                },
+                shares: {
+                    accepted: avg_data.shares.accepted + parseFloat(device['gpu_info']['Accepted']),
+                    rejected: avg_data.shares.rejected + parseFloat(device['gpu_info']['Rejected'])
+                },
+                hw: avg_data.hw + parseFloat(device['gpu_info']['Hardware Errors']),
+                fan: avg_data.fan + parseFloat(device['gpu_info']['Fan Percent']),
+                engine: avg_data.engine + parseFloat(device['gpu_info']['GPU Clock']),
+                memory: avg_data.memory + parseFloat(device['gpu_info']['Memory Clock']),
+                voltage: avg_data.voltage + parseFloat(device['gpu_info']['GPU Voltage']),
+                intensity: avg_data.intensity + parseFloat(device['gpu_info']['Intensity'])
+            };
+
+            device_count++;
+
+            if (device['donating'] !== undefined) {
+                if (active_pools['donating'] === undefined) {
+                    active_pools['donating'] = [];
+                }
+                active_pools['donating'].push(device['Model']);
+            }
+            else if (!empty(device['pool'])) {
+                if (active_pools[device['pool']['URL']] === undefined) {
+                    active_pools[device['pool']['URL']] = [];
+                }
+                active_pools[device['pool']['URL']].push(device['Model']);
+            }
+            else {
+                if (active_pools['waiting'] === undefined) {
+                    active_pools['waiting'] = [];
+                }
+                active_pools['waiting'].push(device['Model']);
+            }
+            
+            if (rig_collapsed[rig] && temp_ok && hashrate_ok && load_ok && hw_ok) {
+                return;
             }
             
             var tr = $('<tr></tr>')
@@ -231,8 +320,8 @@ function set_device_list(result, rig) {
                         getIntensityChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['Intensity']);
                     }));
                     
+            
             if (device['donating'] !== undefined) {
-                donating = true;
                 tr.append($('<td class="nowrap right ' + ((device['pool']['Status'] === 'Alive') ? '' : 'disabled') + '"><i class="icon-' + ((device['pool']['Status'] === 'Alive') ? 'check' : 'attention') + '"></i>Donating (' + device['donating'] + ' minutes left)</td>'));
             }
             else if (!empty(device['pool'])) {
@@ -242,8 +331,71 @@ function set_device_list(result, rig) {
                 tr.append('<td class="nowrap right">Waiting for pool</td>');
             }
             $('.device_list[data-rig="' + rig + '"] tbody').append(tr);
-            rig_hashrate += device['gpu_info']['MHS 5s'];
+            
         });
+        if (rig_collapsed[rig]) {
+            function maxRound(val) {
+                return Math.round((val / device_count)*100)/100;
+            }
+            if (device_count > 0) {
+                avg_data = {
+                    load: maxRound(avg_data.load),
+                    temp: maxRound(avg_data.temp),
+                    mhs: {
+                        cur: maxRound(avg_data.mhs.cur),
+                        avg: maxRound(avg_data.mhs.avg)
+                    },
+                    shares: {
+                        accepted: maxRound(avg_data.shares.accepted),
+                        rejected: maxRound(avg_data.shares.rejected)
+                    },
+                    hw: maxRound(avg_data.hw),
+                    fan: maxRound(avg_data.fan),
+                    engine: maxRound(avg_data.engine),
+                    memory: maxRound(avg_data.memory),
+                    voltage: maxRound(avg_data.voltage),
+                    intensity: maxRound(avg_data.intensity)
+                };
+            }
+
+            // Add average tr
+            var tr = $('<tr class="average_tr" data-rig="' + rig + '"></tr>')
+                    .append($('<td class="nowrap center clickable enabled"><i class="icon-check"></i></td>'))
+                    .append($('<td class="nowrap">Avg. values for ' + device_count + ' devices</td>'))
+                    .append($('<td class="nowrap center"><i class="icon-check"></i>' + avg_data.load + ' %</td>'))
+                    .append($('<td class="nowrap right"><i class="icon-check"></i>'  + avg_data.temp + ' c</td>'))
+                    .append($('<td class="nowrap right"><i class="icon-check"></i>'  + get_hashrate_string(avg_data.mhs.cur) + ' (' + get_hashrate_string(avg_data.mhs.avg) + ')</td>'))
+                    .append($('<td class="nowrap right shares"><i class="icon-check"></i>' + avg_data.shares.accepted + ' <i class="icon-cancel"></i>' + avg_data.shares.rejected + ' (' + Math.round((100 / avg_data.shares.accepted) * avg_data.shares.rejected, 2) + '%)</td>'))
+                    .append($('<td class="nowrap right"><i class="icon-check"></i>'  + avg_data.hw + '</td>'))
+                    .append($('<td class="nowrap right"><i class="icon-check"></i>' + avg_data.fan + ' %</td>'))
+                    .append($('<td class="nowrap right"><i class="icon-check"></i>' + avg_data.engine + ' Mhz</td>'))
+                    .append($('<td class="nowrap right"><i class="icon-check"></i>' + avg_data.memory + ' Mhz</td>'))
+                    .append($('<td class="nowrap right">' + avg_data.voltage + ' V</td>'))
+                    .append($('<td class="nowrap right">' + avg_data.intensity + '</td>'));
+
+            var active_pool_count = 0;
+            var active_key = '<i class="icon-check"></i> ';
+            for (var i in active_pools) {
+                if (active_pools.hasOwnProperty(i)) {
+                    active_pool_count++;
+                    if (active_pool_count > 1) {
+                        break;
+                    }
+                    active_key += i;
+                }
+            }
+
+            if (active_pool_count > 1) {
+                var tmp_join_array = [];
+                $.each(active_pools, function(url, devices) {
+                    tmp_join_array.push(devices.length + " Devices: " + url);
+                });
+                active_key = tmp_join_array.join('<br />');
+            }
+
+            tr.append($('<td class="nowrap right">' + active_key + '</td>'));       
+            $('.device_list[data-rig="' + rig + '"] tbody').append(tr);      
+        }
         if (donating) {
             $('.pool_switching_container[data-rig="' + rig + '"]').hide();
         }
