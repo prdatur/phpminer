@@ -17,6 +17,16 @@ This will prevent you machine from long mining timeouts.
 The CGminer API provides also the possibility to overclock your GPU live, so you don't have to set the values in the config and restart cgminer.
 You can set the fan speed, gpu engine clock, gpu memory clock, gpu intensity and the gpu voltage (*on Linux it seems setting voltage has no effect*)
 
+Quick install for debian based linux system
+============
+I have provided 2 shell scripts which installs phpminer and/or phpminer_rpcclient on your machines.
+
+The machine on which phpminer webinterface should run type:
+     sh linux_setup.sh
+
+After successfull installation copy the directory **phpminer_rpcclient** to all your rigs and on that rig type:
+     sh linux_rpcclient_setup.sh
+
 Requirements for PHPMiner
 ============
 * Apache2 with enabled mod_rewrite
@@ -183,6 +193,20 @@ Make it executeable
 Then type
 
     sudo update-rc.d phpminer_rpcclient defaults 98
+
+If this output something like 
+
+    update-rc.d: using dependency based boot sequencing
+
+then type 
+    
+    insserv phpminer_rpcclient
+
+Since debian 6.0 **insserv** is required to use. And just a hint. **bamt** and also **smos* run on Debian 6.x so **insserv** is the command you need.
+To find out on which debian version you are type: (This works on ubuntu too)
+
+    lsb_release -a
+
 
 Finally start the service the first time
 

@@ -334,8 +334,11 @@ function set_device_list(result, rig) {
             
         });
         if (rig_collapsed[rig]) {
-            function maxRound(val) {
-                return Math.round((val / device_count)*100)/100;
+            function maxRound(val, decimals) {
+                if (decimals === undefined) {
+                    decimals = 2;
+                }
+                return Math.round((val / device_count)*Math.pow(10, decimals))/Math.pow(10, decimals);
             }
             if (device_count > 0) {
                 avg_data = {
@@ -346,14 +349,14 @@ function set_device_list(result, rig) {
                         avg: maxRound(avg_data.mhs.avg)
                     },
                     shares: {
-                        accepted: maxRound(avg_data.shares.accepted),
-                        rejected: maxRound(avg_data.shares.rejected)
+                        accepted: avg_data.shares.accepted,
+                        rejected: avg_data.shares.rejected
                     },
-                    hw: maxRound(avg_data.hw),
+                    hw: avg_data.hw,
                     fan: maxRound(avg_data.fan),
                     engine: maxRound(avg_data.engine),
                     memory: maxRound(avg_data.memory),
-                    voltage: maxRound(avg_data.voltage),
+                    voltage: maxRound(avg_data.voltage, 3),
                     intensity: maxRound(avg_data.intensity)
                 };
             }
@@ -361,17 +364,17 @@ function set_device_list(result, rig) {
             // Add average tr
             var tr = $('<tr class="average_tr" data-rig="' + rig + '"></tr>')
                     .append($('<td class="nowrap center clickable enabled"><i class="icon-check"></i></td>'))
-                    .append($('<td class="nowrap">Avg. values for ' + device_count + ' devices</td>'))
-                    .append($('<td class="nowrap center"><i class="icon-check"></i>' + avg_data.load + ' %</td>'))
-                    .append($('<td class="nowrap right"><i class="icon-check"></i>'  + avg_data.temp + ' c</td>'))
-                    .append($('<td class="nowrap right"><i class="icon-check"></i>'  + get_hashrate_string(avg_data.mhs.cur) + ' (' + get_hashrate_string(avg_data.mhs.avg) + ')</td>'))
-                    .append($('<td class="nowrap right shares"><i class="icon-check"></i>' + avg_data.shares.accepted + ' <i class="icon-cancel"></i>' + avg_data.shares.rejected + ' (' + Math.round((100 / avg_data.shares.accepted) * avg_data.shares.rejected, 2) + '%)</td>'))
-                    .append($('<td class="nowrap right"><i class="icon-check"></i>'  + avg_data.hw + '</td>'))
-                    .append($('<td class="nowrap right">' + avg_data.fan + ' %</td>'))
-                    .append($('<td class="nowrap right">' + avg_data.engine + ' Mhz</td>'))
-                    .append($('<td class="nowrap right">' + avg_data.memory + ' Mhz</td>'))
-                    .append($('<td class="nowrap right">' + avg_data.voltage + ' V</td>'))
-                    .append($('<td class="nowrap right">' + avg_data.intensity + '</td>'));
+                    .append($('<td class="nowrap">' + device_count + ' GPUs</td>'))
+                    .append($('<td class="nowrap center" title="Average value of all cards"><i class="icon-check"></i>' + avg_data.load + ' %</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards"><i class="icon-check"></i>'  + avg_data.temp + ' c</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards"><i class="icon-check"></i>'  + get_hashrate_string(avg_data.mhs.cur) + ' (' + get_hashrate_string(avg_data.mhs.avg) + ')</td>'))
+                    .append($('<td class="nowrap right shares" title="Summary value of all cards"><i class="icon-check"></i>' + avg_data.shares.accepted + ' <i class="icon-cancel"></i>' + avg_data.shares.rejected + ' (' + Math.round((100 / avg_data.shares.accepted) * avg_data.shares.rejected, 2) + '%)</td>'))
+                    .append($('<td class="nowrap right" title="Summary value of all cards"><i class="icon-check"></i>'  + avg_data.hw + '</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards">' + avg_data.fan + ' %</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards">' + avg_data.engine + ' Mhz</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards">' + avg_data.memory + ' Mhz</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards">' + avg_data.voltage + ' V</td>'))
+                    .append($('<td class="nowrap right" title="Average value of all cards">' + avg_data.intensity + '</td>'));
 
             var active_pool_count = 0;
             var active_key = '<i class="icon-check"></i> ';
