@@ -85,6 +85,22 @@ BTC: 17dbqTnhn2qPLdSjaT7w2SkPLnCSMH4xFh
 
 LTC: Lh5sjSpN88N3PeG3vyQD9h6bz2jV4tdoke
 
+However you can also let the setting "Enable donation" enabled.
+
+What does this mean?
+
+To support further updates and help to improve PHPMiner, I decided to implement an auto donation system **which you can disable at any time**. 
+
+So what is auto-donation? 
+
+PHPMiner will detect when your workers have mined 24 hours, then PHPMiner will switch to donation pools where your workers will mine for me for 15 Minuntes. 
+
+After this time PHPMiner will switch back to your previous pool group. 15 Minutes within 24 Hours are just 1% if the hole mining time. 
+
+So this will not have a real effect of your profit. 
+
+It's just a little help to let me know that you want updates in the future and this tells me that my work with PHPMiner was useful.
+
 How to setup.
 ============
 
