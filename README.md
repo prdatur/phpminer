@@ -22,10 +22,12 @@ Quick install for debian based linux system
 I have provided 2 shell scripts which installs phpminer and/or phpminer_rpcclient on your machines.
 
 The machine on which phpminer webinterface should run type:
-     sh linux_setup.sh
+
+    sh linux_setup.sh
 
 After successfull installation copy the directory **phpminer_rpcclient** to all your rigs and on that rig type:
-     sh linux_rpcclient_setup.sh
+
+    sh linux_rpcclient_setup.sh
 
 Requirements for PHPMiner
 ============
