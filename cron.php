@@ -59,7 +59,7 @@ if (!$notification_config->is_empty()) {
     if ($notification_config->get_value('enable_post')) {
         $post_url = $notification_config->get_value('notify_url');
         if (!empty($post_url)) {
-            $post_url = true;        
+            $post_enabled = true;        
         }
     }
 
