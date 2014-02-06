@@ -390,7 +390,7 @@ if (!$notification_config->is_empty()) {
                 // Send custom post notification if enabled.
                 if ($post_enabled) {
                     $http = new HttpClient();
-                    $http->do_get($post_url, array(
+                    $http->do_post($post_url, array(
                         'type' => $type,
                         'msg' => $data,
                     ));
