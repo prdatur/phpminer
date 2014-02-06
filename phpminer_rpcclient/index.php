@@ -47,7 +47,7 @@ function get_cgminer_pid() {
         }
         return false;
     } else {
-        $res = trim(shell_exec("ps a | grep \"cgminer -c\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
+        $res = trim(shell_exec("ps a | grep \"cgminer -\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
         return $res;
     }
 }
