@@ -262,7 +262,7 @@ if (!$notification_config->is_empty()) {
                                     if (!isset($notifications['temp_min'][$rig])) {
                                         $notifications['temp_min'][$rig] = array();
                                     }
-                                    $notifications['temp_min'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['Temperature'] . ' min: ' . $device['notify_config']['temperature']['min'];
+                                    $notifications['temp_min'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperature on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['Temperature'] . ' min: ' . $device['notify_config']['temperature']['min'];
                                 }
                             }
                             else {
@@ -279,7 +279,7 @@ if (!$notification_config->is_empty()) {
                                     if (!isset($notifications['temp_max'][$rig])) {
                                         $notifications['temp_max'][$rig] = array();
                                     }
-                                    $notifications['temp_max'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to high. Current value: ' . $device['gpu_info']['Temperature'] . ' max: ' . $device['notify_config']['temperature']['max'];
+                                    $notifications['temp_max'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperature on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to high. Current value: ' . $device['gpu_info']['Temperature'] . ' max: ' . $device['notify_config']['temperature']['max'];
                                 }
                             }
                             else {
