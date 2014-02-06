@@ -20,6 +20,18 @@
                         <td class="value"><input type="text" id="rapidpush_apikey" name="rapidpush_apikey" value="<?php echo (!empty($conf['rapidpush_apikey']) ? $conf['rapidpush_apikey'] : '');?>" /></td>
                     </tr>
                     <tr>
+                        <td class="key">Enable Push.co notifications:<i data-toggle="tooltip" title="Push.co is an iOS push notification service, if you enable it and provide valid API details you will recieve rig problems instantly on your iOS device." class="icon-help-circled"></i></td>
+                        <td class="value"><div class="slider"><input type="checkbox" id="pushco_enable" name="pushco_enable" value="1" <?php echo (isset($conf['pushco_enable']) && $conf['pushco_enable'] == "1" ? 'checked="checked"' : '');?> /><label for="pushco_enable"></label></div></td>
+                    </tr>
+                    <tr>
+                        <td class="key"><label for="pushco_api_key">Push.co API-Key:</label><i data-toggle="tooltip" title="Get your Developer Keys details at http://push.co/apps under Developer Tab" class="icon-help-circled"></i></td>
+                        <td class="value"><input type="text" id="pushco_api_key" name="pushco_api_key" value="<?php echo (!empty($conf['pushco_api_key']) ? $conf['pushco_api_key'] : '');?>" /></td>
+                    </tr>
+                    <tr>
+                        <td class="key"><label for="pushco_api_secret">Push.co API-Secret:</label><i data-toggle="tooltip" title="Get your Developer Keys details at http://push.co/apps under Developer Tab" class="icon-help-circled"></i></td>
+                        <td class="value"><input type="text" id="pushco_api_secret" name="pushco_api_secret" value="<?php echo (!empty($conf['pushco_api_secret']) ? $conf['pushco_api_secret'] : '');?>" /></td>
+                    </tr>
+                    <tr>
                         <td class="key">Enable E-Mail notifications:</td>
                         <td class="value"><div class="slider"><input type="checkbox" id="enable_email" name="enable_email" value="1" <?php echo (isset($conf['enable_email']) && $conf['enable_email'] == "1" ? 'checked="checked"' : '');?> /><label for="enable_email"></label></div></td>
                     </tr>
