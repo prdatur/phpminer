@@ -44,11 +44,11 @@ if (!$notification_config->is_empty()) {
 
     // Check if rapidpush notification is enabled.
     $rapidpush_enabled = false;
-    $api_key = '';
+    $rapidpush_api_key = '';
     if ($notification_config->get_value('enable_rapidpush')) {
         require 'includes/RapidPush.class.php';
-        $api_key = $notification_config->get_value('rapidpush_apikey');
-        if (!empty($api_key)) {
+        $rapidpush_api_key = $notification_config->get_value('rapidpush_apikey');
+        if (!empty($rapidpush_api_key)) {
             $rapidpush_enabled = true;
         }
     }
@@ -392,7 +392,7 @@ if (!$notification_config->is_empty()) {
             try {
                 // Send rapidpush notification if enabled.
                 if ($rapidpush_enabled) {
-                    $rp = new RapidPush($api_key);
+                    $rp = new RapidPush($rapidpush_api_key);
                     $rp->notify('PHPMiner error', $data);
                 }
             }
