@@ -33,7 +33,7 @@ Soopfw.behaviors.main_settings = function() {
     
     $('#save_config').off('click').on('click', function() {
         var values = {};
-        $('input', $('#system_settings')).each(function() {
+        $('input, select', $('#system_settings')).each(function() {
             if ($(this).attr('type') === 'checkbox') {
                 values[$(this).attr('name')] = ($(this).prop('checked')) ? $(this).val() : '0';
             }

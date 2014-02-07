@@ -23,6 +23,16 @@
                         <td class="key"><label for="socket_timout">Rig socket timeout:</label><i data-toggle="tooltip" title="People who know what this means may change it to the needs, other people just don't change this setting" class="icon-help-circled"></i></td>
                         <td class="value"><input type="text" id="socket_timout" name="socket_timout" value="<?php echo (!empty($conf['socket_timout']) ? $conf['socket_timout'] : 5);?>" /></td>
                     </tr>
+                    <tr>
+                        <td class="key"><label for="overview_sort_mode">Overview rig sortmode:</label><i data-toggle="tooltip" title="Set the sort mode for the rig overview page." class="icon-help-circled"></i></td>
+                        <td class="value">
+                            <select id="overview_sort_mode" name="overview_sort_mode">
+                                <option value='configured'<?php echo (!isset($conf['overview_sort_mode']) || $conf['overview_sort_mode'] == "configured" ? 'selected="selected"' : '');?>>As configurated</option>
+                                <option value='name'<?php echo (isset($conf['overview_sort_mode']) && $conf['overview_sort_mode'] == "name" ? 'selected="selected"' : '');?>>By name</option>
+                                <option value='error'<?php echo (isset($conf['overview_sort_mode']) && $conf['overview_sort_mode'] == "error" ? 'selected="selected"' : '');?>>Rig's with error's first</option>
+                            </select>
+                        </td>
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr>

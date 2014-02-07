@@ -375,6 +375,7 @@ class main extends Controller {
                 }
                 
                 $rig_js_data[$rig] = array(
+                    'rig_name' => $rig,
                     'device_list' => $devices,
                     'active_pool_group' => $current_active_group,
                     'pools' => $this->pool_config->get_pools($current_active_group),
@@ -385,12 +386,93 @@ class main extends Controller {
                 $rig_js_data[$rig] = false;
             }
         }
-
+        
+        $sort_mode = $this->config->get_value('overview_sort_mode');
+        if (empty($sort_mode)) {
+            $sort_mode = "configured";
+        }
+        
+        if ($sort_mode == 'name') {
+            ksort($rig_js_data);
+        }
+        else if($sort_mode == 'error') {
+            uasort($rig_js_data, function($a, $b) use ($rigs)  {
+                $a_c = $this->get_error_count($a, $rigs[$a['rig_name']]);
+                $b_c = $this->get_error_count($b, $rigs[$b['rig_name']]);
+                echo $a_c."==".$b_c."\n";
+                if ($a_c == $b_c) {
+                    return 0;
+                }
+                return ($a_c > $b_c) ? -1 : 1;
+            });
+        }
+        
         // Get the pool uuid which is currently in use.
         $this->js_config('pool_groups', $this->pool_config->get_groups());
         $this->js_config('config', $this->config->get_config());
         $this->js_config('rig_data', $rig_js_data);
         $this->js_config('is_configurated', !empty($rigs));
+    }
+
+    private function get_error_count($rig, $rig_config) {
+        static $cache = array();
+        
+        if (!isset($cache[$rig['rig_name']])) {
+            $errors = 0;
+            foreach ($rig['device_list'] AS $device) {
+
+                $device_cfg_key = 'gpu_' . $device['ID'];
+                if (!isset($rig_config[$device_cfg_key])) {
+                    $rig_config[$device_cfg_key] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['temperature'])) {
+                    $rig_config[$device_cfg_key]['temperature'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['temperature']['min'])) {
+                    $rig_config[$device_cfg_key]['temperature']['min'] = 50;
+                }
+                if (!isset($rig_config[$device_cfg_key]['temperature']['max'])) {
+                    $rig_config[$device_cfg_key]['temperature']['max'] = 85;
+                }
+
+                if (!isset($rig_config[$device_cfg_key]['hashrate'])) {
+                    $rig_config[$device_cfg_key]['hashrate'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['hashrate']['min'])) {
+                    $rig_config[$device_cfg_key]['hashrate']['min'] = 100;
+                }
+
+                if (!isset($rig_config[$device_cfg_key]['load'])) {
+                    $rig_config[$device_cfg_key]['load'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['load']['min'])) {
+                    $rig_config[$device_cfg_key]['load']['min'] = 90;
+                }
+
+                if (!isset($rig_config[$device_cfg_key]['hw'])) {
+                    $rig_config[$device_cfg_key]['hw'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['hw']['max'])) {
+                    $rig_config[$device_cfg_key]['hw']['max'] = 5;
+                }
+
+                $device['gpu_info']['Temperature'] = intval($device['gpu_info']['Temperature']);
+                if ($device['gpu_info']['Temperature'] <  $rig_config[$device_cfg_key]['temperature']['min'] || $device['gpu_info']['Temperature'] > $rig_config[$device_cfg_key]['temperature']['max']) {
+                    $errors++;
+                }
+                if ($device['gpu_info']['MHS 5s'] * 1000 < $rig_config[$device_cfg_key]['hashrate']['min']) {
+                    $errors++;
+                }
+                if ($device['gpu_info']['GPU Activity'] < $rig_config[$device_cfg_key]['load']['min']) {
+                    $errors++;
+                }
+                if ($device['gpu_info']['Hardware Errors'] > $rig_config[$device_cfg_key]['hw']['max']) {
+                    $errors++;
+                }
+            }
+            $cache[$rig['rig_name']] = $errors;
+        }
+        return $cache[$rig['rig_name']];
     }
 
     /**

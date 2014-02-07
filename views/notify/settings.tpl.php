@@ -53,7 +53,8 @@
                             <select id="notify_email_smtp_security" name="notify_email_smtp_security">
                                 <option value='none'<?php echo (!isset($conf['notify_email_smtp_security']) || $conf['notify_email_smtp_security'] == "none" ? 'selected="selected"' : '');?>>None</option>
                                 <option value='tls'<?php echo (isset($conf['notify_email_smtp_security']) && $conf['notify_email_smtp_security'] == "tls" ? 'selected="selected"' : '');?>>TLS/SSL</option>
-                            </select></td>
+                            </select>
+                        </td>
                     </tr>
                     <tr>
                         <td class="key"><label for="notify_email_smtp_user">SMTP User to authenticate with SMTP Server:</label></td>
