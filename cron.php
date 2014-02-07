@@ -44,15 +44,27 @@ if (!$notification_config->is_empty()) {
 
     // Check if rapidpush notification is enabled.
     $rapidpush_enabled = false;
-    $api_key = '';
+    $rapidpush_api_key = '';
     if ($notification_config->get_value('enable_rapidpush')) {
         require 'includes/RapidPush.class.php';
-        $api_key = $notification_config->get_value('rapidpush_apikey');
-        if (!empty($api_key)) {
+        $rapidpush_api_key = $notification_config->get_value('rapidpush_apikey');
+        if (!empty($rapidpush_api_key)) {
             $rapidpush_enabled = true;
         }
     }
 
+    // Check if Push.co notification is enabled.
+    $pushco_enabled = false;
+    $pushco_api_key = '';
+    $pushco_api_secret = '';
+    if ($notification_config->get_value('pushco_enable')) {
+        $pushco_api_key = $notification_config->get_value('pushco_api_key');
+        $pushco_api_secret = $notification_config->get_value('pushco_api_secret');
+        if (!empty($pushco_api_key) && !empty($pushco_api_secret)) {
+            $pushco_enabled = true;
+        }
+    }
+    
     // Check if post url notification is enabled.
     $post_enabled = false;
     $post_url = '';
@@ -176,7 +188,7 @@ if (!$notification_config->is_empty()) {
             }
 
             // Only need to notify if at least one notification method is enabled and configurated. But only when we are not need to reboot, with a reboot we just ignore all errors for this rig.
-            if (($email_enabled || $rapidpush_enabled || $post_enabled) && empty($need_reboot)) {
+            if (($email_enabled || $rapidpush_enabled || $pushco_enabled || $post_enabled) && empty($need_reboot)) {
 
                 // Check which notification should be send.
                 $notify_gpu_min = $notification_data['notify_gpu_min'];
@@ -250,7 +262,7 @@ if (!$notification_config->is_empty()) {
                                     if (!isset($notifications['temp_min'][$rig])) {
                                         $notifications['temp_min'][$rig] = array();
                                     }
-                                    $notifications['temp_min'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['Temperature'] . ' min: ' . $device['notify_config']['temperature']['min'];
+                                    $notifications['temp_min'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperature on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to low. Current value: ' . $device['gpu_info']['Temperature'] . ' min: ' . $device['notify_config']['temperature']['min'];
                                 }
                             }
                             else {
@@ -267,7 +279,7 @@ if (!$notification_config->is_empty()) {
                                     if (!isset($notifications['temp_max'][$rig])) {
                                         $notifications['temp_max'][$rig] = array();
                                     }
-                                    $notifications['temp_max'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperatur on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to high. Current value: ' . $device['gpu_info']['Temperature'] . ' max: ' . $device['notify_config']['temperature']['max'];
+                                    $notifications['temp_max'][$rig][$gpu_id] = 'Rig ' . $rig . ' : GPU Temperature on GPU ' . $gpu_id . ' (' . $gpu_name . ') is to high. Current value: ' . $device['gpu_info']['Temperature'] . ' max: ' . $device['notify_config']['temperature']['max'];
                                 }
                             }
                             else {
@@ -380,17 +392,31 @@ if (!$notification_config->is_empty()) {
             try {
                 // Send rapidpush notification if enabled.
                 if ($rapidpush_enabled) {
-                    $rp = new RapidPush($api_key);
+                    $rp = new RapidPush($rapidpush_api_key);
                     $rp->notify('PHPMiner error', $data);
                 }
             }
             catch(Exception $e) {}
 
             try {
+                // Send Push.co notification if enabled.
+                if ($pushco_enabled) {
+                    $pushco_http = new HttpClient();
+                    $pushco_http->do_post('https://api.push.co/1.0/push', array(
+                        'api_key' => $pushco_api_key,
+                        'api_secret' => $pushco_api_secret,
+                        'notification_type' => $type,
+                        'message' => $data,
+                    ),true);
+                }
+            } 
+            catch(Exception $e) {}
+
+            try {
                 // Send custom post notification if enabled.
                 if ($post_enabled) {
                     $http = new HttpClient();
-                    $http->do_get($post_url, array(
+                    $http->do_post($post_url, array(
                         'type' => $type,
                         'msg' => $data,
                     ));
