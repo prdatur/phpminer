@@ -76,6 +76,15 @@ else
     echo "Will not use amd sdk."
 fi
 
+echo "Use alternative service installation method (Use this only if you come from a test reboot after installation and phpminer_rpcclient didn't started) To use alternative method provide any value except: 0, no, n, or false, empty value will use normal method. (Default: no):"
+SERVICE_ALTERNATIVE=""
+read SERVICE_ALTERNATE
+if [ -n "$SERVICE_ALTERNATE" ] && [ "$SERVICE_ALTERNATE" != "no" ] && [ "$SERVICE_ALTERNATE" != "n" ] && [ "$SERVICE_ALTERNATE" != "0" ] && [ "$SERVICE_ALTERNATE" != "false" ]; then
+    SERVICE_ALTERNATIVE="1"
+    echo "Using alternative service installation method."
+else
+    echo "Using normal service installation method."
+fi
 
 echo "
 <?php
@@ -110,7 +119,7 @@ echo "
 # Install required software.
 echo "Install required software."
 apt-get install -y sudo php5-cli php5-mcrypt php5-mhash curl php5-curl screen
-
+apt-get install -y chkconfig 
 # Setup sudo entries
 echo "Setup sudo entries"
 groupadd reboot
@@ -131,13 +140,28 @@ echo "cp $SERVICE_SCRIPT /etc/init.d/" | sh
 chmod +x /etc/init.d/phpminer_rpcclient
 echo "sed -i s/\\\'127.0.0.1\\\'/\\\'$IP\\\'/g $PHPMINER_PATH/config.php" | sh
 
-echo "Install service script for autostart."
-update-rc.d phpminer_rpcclient defaults 98
-insserv phpminer_rpcclient
+if [ -n "$SERVICE_ALTERNATIVE" ]; then
+    echo "Using alternative service installation method."
+    RCDIR=`find /etc/ -iname "rc2.d" | sed s/rc2\.d//g`
+    echo "ln -s /etc/init.d/phpminer_rpcclient ${RCDIR}rc2.d/S90phpminer-rpcclient" | sh
+    echo "ln -s /etc/init.d/phpminer_rpcclient ${RCDIR}rc3.d/S90phpminer-rpcclient" | sh
+    echo "ln -s /etc/init.d/phpminer_rpcclient ${RCDIR}rc4.d/S90phpminer-rpcclient" | sh
+    echo "ln -s /etc/init.d/phpminer_rpcclient ${RCDIR}rc5.d/S90phpminer-rpcclient" | sh
+
+else
+   echo "Install service script for autostart."
+    update-rc.d phpminer_rpcclient defaults 98
+
+    echo "Try installing phpminer rpc service with new debian method."
+    insserv phpminer_rpcclient
+
+    echo "Try installing phpminer rpc service with old debian method."
+    chkconfig phpminer_rpcclient on
+fi
 
 echo "Starting phpminer rpc client"
 service phpminer_rpcclient start
 
 echo "PHPMiner rig installation finshed."
-echo "If there exists 1 line of text between the lines 'Install service script for autostart.' and 'Starting phpminer rpc client'. Reboot the rig"
-echo "After rebooting type 'ps auxf | grep phpminer | grep -v grep' and check if phpminer_rpcclient is started successfully (one line should appear)'"
+echo "Please reboot the rig now. After rebooting wait 1 minute, then type 'ps auxf | grep phpminer | grep -v grep' and check if phpminer_rpcclient is started successfully (one line should appear)"
+echo "If it doesn't exist, please re-run the setup script and choose 'yes' when it asks for 'Use alternative service installation method ...'";
