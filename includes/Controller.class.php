@@ -210,10 +210,6 @@ class Controller {
 
         // Get the own config.
         $this->pool_config = new PoolConfig();
-
-        // Check if we didn't configured phpminer yet.
-        if ($this->pool_config->is_empty()) {
-        }
     }
 
     /**

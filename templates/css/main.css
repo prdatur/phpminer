@@ -549,3 +549,43 @@ div[data-tab] {
 #global_hashrate {
     margin-left: 30px;
 }
+
+/* ################## PAGER        #########################################  */
+div.pager {
+        margin: 10px 0px;
+	text-align: center;
+}
+
+div.pager > span.pager_pagelinks > * {
+	padding: 5px;
+}
+div.pager > span.pager_pagelinks > a.page_link_selected {
+	color: black !important;
+	text-decoration: none;
+}
+
+.alphapager_pages {
+	margin: 0px auto;
+	text-align: center;
+}
+
+.alphapager_pages a {
+	font-weight: normal;
+	font-size: 13px;
+	padding:2px;
+	padding-top: 1px;
+	padding-bottom: 1px;
+	margin:2px;
+	border: 1px solid #c5c5c5;
+	background-color: #ededed;
+}
+
+.alphapager_pages a:hover {
+   color: #000000;
+}
+
+.alphapager_pages a.page_link_selected {
+   color: #FFFFFF;
+   background-color: #075DC2;
+   font-weight: bold;
+}

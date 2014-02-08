@@ -75,6 +75,22 @@ class main extends Controller {
     }
     
     /**
+     * Ajax request to switch rig collapse
+     */
+    public function set_pager_mepp() {
+        $params = new ParamStruct();
+        $params->add_required_param('mepp', PDT_INT);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
+        }
+        
+        $this->config->pager_mepp = $params->mepp;
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
+    
+    /**
      * Ajax request to save new configuration settings.
      */
     public function save_settings() {
@@ -327,152 +343,24 @@ class main extends Controller {
     public function init() {
         // Get pools
         $rigs = $this->config->rigs;
-        $rig_js_data = $rig_data = array();
-
-        $this->load_pool_config();
-        foreach (array_keys($rigs) AS $rig) {
-            try {
-                $pools = $this->get_api($rig)->get_pools();
-
-                $devices = $this->get_api($rig)->get_devices_details();
-                foreach ($devices AS &$device) {
-                    if ($device['Name'] !== 'GPU') {
-                        continue;
-                    }
-                    $info = $this->get_api($rig)->get_gpu($device['ID']);
-                    $info = reset($info);
-
-                    $device['gpu_info'] = $info;
-                    // Check if we have our own cgminer fork with advanced api.
-                    if (isset($info['Current Pool'])) {
-                        $pool_check = $info['Current Pool'];
-                    } else {
-                        $pool_check = $info['Last Share Pool'];
-                    }
-
-                    foreach ($pools AS $pool) {
-                        if ($pool['POOL'] == $pool_check) {
-                            $device['pool'] = $pool;
-                        }
-                    }
-
-                    if (!empty($rigs[$rig]['switch_back_group'])) {
-                        $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
-                    }
-                }
-                // Determine which pool group we are currently using.        
-                $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
-                
-                if (empty($current_active_group)) {
-                    $rig_conf = $this->get_rpc($rig)->get_config();
-                    if (!empty($rig_conf)) {
-                        $this->pool_config->del_group('Auto created for rig: ' . $rig);
-                        foreach ($rig_conf['pools'] AS $rig_conf_pool) {
-                            $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
-                        }
-                        $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
-                    }
-                }
-                
-                $rig_js_data[$rig] = array(
-                    'rig_name' => $rig,
-                    'device_list' => $devices,
-                    'active_pool_group' => $current_active_group,
-                    'pools' => $this->pool_config->get_pools($current_active_group),
-                    'donating' => !empty($rigs[$rig]['switch_back_group']),
-                    'collapsed' => !empty($rigs[$rig]['collapsed']),
-                );
-            } catch (Exception $e) {
-                $rig_js_data[$rig] = false;
+        if (empty($this->config->enable_paging)) {
+            $rig_js_data = $this->get_device_data(true);
+        }
+        else {
+            $mepp = $this->config->pager_mepp;
+            if (empty($mepp)) {
+                $mepp = 1;
             }
+            $rig_js_data = $this->get_device_data(true, 1, $mepp);
         }
-        
-        $sort_mode = $this->config->get_value('overview_sort_mode');
-        if (empty($sort_mode)) {
-            $sort_mode = "configured";
-        }
-        
-        if ($sort_mode == 'name') {
-            ksort($rig_js_data);
-        }
-        else if($sort_mode == 'error') {
-            uasort($rig_js_data, function($a, $b) use ($rigs)  {
-                $a_c = $this->get_error_count($a, $rigs[$a['rig_name']]);
-                $b_c = $this->get_error_count($b, $rigs[$b['rig_name']]);
-                echo $a_c."==".$b_c."\n";
-                if ($a_c == $b_c) {
-                    return 0;
-                }
-                return ($a_c > $b_c) ? -1 : 1;
-            });
-        }
-        
+
         // Get the pool uuid which is currently in use.
         $this->js_config('pool_groups', $this->pool_config->get_groups());
         $this->js_config('config', $this->config->get_config());
+        $this->assign('config', $this->config->get_config());
+        $this->js_config('rig_count', count($rigs));
         $this->js_config('rig_data', $rig_js_data);
         $this->js_config('is_configurated', !empty($rigs));
-    }
-
-    private function get_error_count($rig, $rig_config) {
-        static $cache = array();
-        
-        if (!isset($cache[$rig['rig_name']])) {
-            $errors = 0;
-            foreach ($rig['device_list'] AS $device) {
-
-                $device_cfg_key = 'gpu_' . $device['ID'];
-                if (!isset($rig_config[$device_cfg_key])) {
-                    $rig_config[$device_cfg_key] = array();
-                }
-                if (!isset($rig_config[$device_cfg_key]['temperature'])) {
-                    $rig_config[$device_cfg_key]['temperature'] = array();
-                }
-                if (!isset($rig_config[$device_cfg_key]['temperature']['min'])) {
-                    $rig_config[$device_cfg_key]['temperature']['min'] = 50;
-                }
-                if (!isset($rig_config[$device_cfg_key]['temperature']['max'])) {
-                    $rig_config[$device_cfg_key]['temperature']['max'] = 85;
-                }
-
-                if (!isset($rig_config[$device_cfg_key]['hashrate'])) {
-                    $rig_config[$device_cfg_key]['hashrate'] = array();
-                }
-                if (!isset($rig_config[$device_cfg_key]['hashrate']['min'])) {
-                    $rig_config[$device_cfg_key]['hashrate']['min'] = 100;
-                }
-
-                if (!isset($rig_config[$device_cfg_key]['load'])) {
-                    $rig_config[$device_cfg_key]['load'] = array();
-                }
-                if (!isset($rig_config[$device_cfg_key]['load']['min'])) {
-                    $rig_config[$device_cfg_key]['load']['min'] = 90;
-                }
-
-                if (!isset($rig_config[$device_cfg_key]['hw'])) {
-                    $rig_config[$device_cfg_key]['hw'] = array();
-                }
-                if (!isset($rig_config[$device_cfg_key]['hw']['max'])) {
-                    $rig_config[$device_cfg_key]['hw']['max'] = 5;
-                }
-
-                $device['gpu_info']['Temperature'] = intval($device['gpu_info']['Temperature']);
-                if ($device['gpu_info']['Temperature'] <  $rig_config[$device_cfg_key]['temperature']['min'] || $device['gpu_info']['Temperature'] > $rig_config[$device_cfg_key]['temperature']['max']) {
-                    $errors++;
-                }
-                if ($device['gpu_info']['MHS 5s'] * 1000 < $rig_config[$device_cfg_key]['hashrate']['min']) {
-                    $errors++;
-                }
-                if ($device['gpu_info']['GPU Activity'] < $rig_config[$device_cfg_key]['load']['min']) {
-                    $errors++;
-                }
-                if ($device['gpu_info']['Hardware Errors'] > $rig_config[$device_cfg_key]['hw']['max']) {
-                    $errors++;
-                }
-            }
-            $cache[$rig['rig_name']] = $errors;
-        }
-        return $cache[$rig['rig_name']];
     }
 
     /**
@@ -651,57 +539,29 @@ class main extends Controller {
      * Ajax request to retrieve current configurated devices within cgminer.
      */
     public function get_device_list() {
-        $resp = array();
         
-        $this->load_pool_config();
-        foreach (array_keys($this->config->rigs) AS $rig) {
-            try {
-                $devices = $this->get_api($rig)->get_devices_details();
-                
+        $params = new ParamStruct();
+        $params->add_param('rigs', PDT_ARR, array());
+        $params->add_param('page', PDT_INT, 0);
+        $params->add_param('mepp', PDT_INT, 0);
 
-                $group_pools = $this->pool_config->get_pools($this->pool_config->get_current_active_pool_group($this->get_api($rig)));
-                foreach ($group_pools AS $k => $pool) {
-                    unset($group_pools[$k]);
-                    $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
-                }
-
-                $rigs = $this->config->rigs;
-
-                // Get pools
-                $pools = $this->get_api($rig)->get_pools();
-                foreach ($devices AS &$device) {
-                    if ($device['Name'] !== 'GPU') {
-                        continue;
-                    }
-                    $info = $this->get_api($rig)->get_gpu($device['ID']);
-                    $info = reset($info);
-
-                    $device['gpu_info'] = $info;
-
-                    if (isset($info['Current Pool'])) {
-                        $pool_check = $info['Current Pool'];
-                    } else {
-                        $pool_check = $info['Last Share Pool'];
-                    }
-
-                    foreach ($pools AS $pool) {
-                        if ($pool['POOL'] == $pool_check) {
-                            $device['pool'] = $pool;
-                        }
-                    }
-
-                    if (!empty($rigs[$rig]['switch_back_group'])) {
-                        $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
-                    }
-                }
-                $resp[$rig] = $devices;
-            } catch (Exception $ex) {
-                continue;
-            }
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
+        
+        $rigs = $params->rigs;
+        
+        if (!empty($rigs)) {
+            $resp = $this->get_device_data(false, $params->page, $params->mepp, $rigs);
+        }
+        else {
+            $resp = $this->get_device_data(true, $params->page, $params->mepp);
+        }
+        
         AjaxModul::return_code(AjaxModul::SUCCESS, $resp);
     }
-
+    
     /**
      * This method will be called when we disconnected from the cgminer api.
      * It will try to re-connect.
@@ -833,4 +693,275 @@ class main extends Controller {
         }
     }
 
+    /**
+     * Retrieve the info for all devices per rig.
+     * 
+     * @param boolean $from_init
+     *   Wether we want extra data which is need by init or not. (Optional, default = false)
+     * @param int $page
+     *   The page to show. (Optional, default = null)
+     * @param int $mepp
+     *   Max entries per page. (Optional, default = 0)
+     * 
+     * @return array
+     *   A list with the devices for each rig
+     */
+    private function get_device_data($from_init = false, $page = 0, $mepp = 0, $rigs = array()) {
+        $resp = array();
+        $rig_config = $this->config->rigs;
+
+        $sort_mode = $this->config->get_value('overview_sort_mode');
+        if (empty($sort_mode)) {
+            $sort_mode = "configured";
+        }
+        
+        $this->load_pool_config();
+        
+        if (empty($rigs)) {
+            $rig_names = array_keys($rig_config);
+
+            foreach ($rig_names AS $rig) {
+                if ($sort_mode !== 'error') {
+                    $resp[$rig] = true;
+                }
+                else {
+                    $resp[$rig] = $this->get_detailed_rig_data($rig, $from_init);
+                }
+            }
+            $this->sort_rigs($sort_mode, $resp, $rig_config);
+            $resp = $this->get_paged_entries($resp, $page, $mepp);
+
+            if ($sort_mode !== 'error') {
+                foreach ($resp AS $rig => &$entry) {
+                    $entry = $this->get_detailed_rig_data($rig, $from_init);
+                }
+            }
+        }
+        else {
+            foreach ($rigs AS $rig) {
+                $resp[$rig] = $this->get_detailed_rig_data($rig, $from_init);
+            }
+        }
+        return $resp;
+    }   
+        
+    /**
+     * 
+     * @param string $sort_mode
+     *   The sort mode
+     * @param array $rigs
+     *   The rigs which will be sorted.
+     * @param array $rig_config
+     *   The config for all rig's
+     */
+    private function sort_rigs($sort_mode, &$rigs, $rig_config) {
+        if ($sort_mode == 'name') {
+            ksort($rigs);
+        }
+        else if($sort_mode == 'error') {
+            uasort($rigs, function($a, $b) use ($rig_config)  {
+                $a_c = $this->get_error_count($a, $rig_config[$a['rig_name']]);
+                $b_c = $this->get_error_count($b, $rig_config[$b['rig_name']]);
+                if ($a_c == $b_c) {
+                    return 0;
+                }
+                return ($a_c > $b_c) ? -1 : 1;
+            });
+        }
+    }
+    
+    /**
+     * Get the paged entries.
+     * 
+     * @param array $rigs
+     *   The full rig list.
+     * @param int $page
+     *   The page to show. (Optional, default = null)
+     * @param int $mepp
+     *   Max entries per page. (Optional, default = 0)
+     * 
+     * @return array
+     *   The paged entries.
+     */
+    private function get_paged_entries($rigs, $page = 0, $mepp = 0) {
+        // Process pages.
+        if ($mepp > 0 && $page > 0) {
+            $tmp_resp = $rigs;
+            $rigs = array();
+            
+            $start = ($page - 1) * $mepp;
+            $end = $start + $mepp;
+            
+            reset($tmp_resp);
+            if (count($tmp_resp) >= $start) {
+                for($i = 0; $i < $end; $i++) {
+                    if ($i >= $start) {
+                        $rigs[key($tmp_resp)] = current($tmp_resp);                        
+                    }
+                    if (next($tmp_resp) === false) {
+                        break;
+                    }
+                }
+            }
+        }
+        return $rigs;
+    }
+    
+    /**
+     * Returns the detailed info for a rig.
+     * 
+     * @param string $rig
+     *   The rig name.
+     * @param boolean $from_init
+     *   Wether we want extra data which is need by init or not. (Optional, default = false)
+     * 
+     * @return boolean|array
+     *   The detailed info for a rig as an array or false on error.
+     */
+    private function get_detailed_rig_data($rig, $from_init = false) {
+
+        $rigs = $this->config->rigs;
+        try {
+            $pools = $this->get_api($rig)->get_pools();
+
+            $devices = $this->get_api($rig)->get_devices_details();
+            foreach ($devices AS &$device) {
+                if ($device['Name'] !== 'GPU') {
+                    continue;
+                }
+                $info = $this->get_api($rig)->get_gpu($device['ID']);
+                $info = reset($info);
+
+                $device['gpu_info'] = $info;
+
+                // Check if we have our own cgminer fork with advanced api.
+                if (isset($info['Current Pool'])) {
+                    $pool_check = $info['Current Pool'];
+                } else {
+                    $pool_check = $info['Last Share Pool'];
+                }
+
+                foreach ($pools AS $pool) {
+                    if ($pool['POOL'] == $pool_check) {
+                        $device['pool'] = $pool;
+                    }
+                }
+
+                if (!empty($rigs[$rig]['switch_back_group'])) {
+                    $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
+                }
+            }
+            if ($from_init) {
+                // Determine which pool group we are currently using.        
+                $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
+
+                if (empty($current_active_group)) {
+                    $rig_conf = $this->get_rpc($rig)->get_config();
+                    if (!empty($rig_conf)) {
+                        $this->pool_config->del_group('Auto created for rig: ' . $rig);
+                        foreach ($rig_conf['pools'] AS $rig_conf_pool) {
+                            $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
+                        }
+                        $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
+                    }
+                }
+
+                return array(
+                    'rig_name' => $rig,
+                    'device_list' => $devices,
+                    'active_pool_group' => $current_active_group,
+                    'pools' => $this->pool_config->get_pools($current_active_group),
+                    'donating' => !empty($rigs[$rig]['switch_back_group']),
+                    'collapsed' => !empty($rigs[$rig]['collapsed']),
+                );
+            }
+            else {
+                return array(
+                    'rig_name' => $rig,
+                    'device_list' => $devices,
+                    'donating' => !empty($rigs[$rig]['switch_back_group']),
+                    'collapsed' => !empty($rigs[$rig]['collapsed']),
+                );
+            }
+
+
+        } catch (Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Retrieve the error count for the given rig.
+     * 
+     * @staticvar array $cache
+     *   Save performance.
+     * 
+     * @param array $rig
+     *   The rig data. which comes from get_device_data.
+     * @param array $rig_config
+     *   The rig config which comes from $this->config->rigs
+     * 
+     * @return int
+     *   The error count.
+     */
+    private function get_error_count($rig, $rig_config) {
+        static $cache = array();
+        
+        if (!isset($cache[$rig['rig_name']])) {
+            $errors = 0;
+            foreach ($rig['device_list'] AS $device) {
+
+                $device_cfg_key = 'gpu_' . $device['ID'];
+                if (!isset($rig_config[$device_cfg_key])) {
+                    $rig_config[$device_cfg_key] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['temperature'])) {
+                    $rig_config[$device_cfg_key]['temperature'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['temperature']['min'])) {
+                    $rig_config[$device_cfg_key]['temperature']['min'] = 50;
+                }
+                if (!isset($rig_config[$device_cfg_key]['temperature']['max'])) {
+                    $rig_config[$device_cfg_key]['temperature']['max'] = 85;
+                }
+
+                if (!isset($rig_config[$device_cfg_key]['hashrate'])) {
+                    $rig_config[$device_cfg_key]['hashrate'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['hashrate']['min'])) {
+                    $rig_config[$device_cfg_key]['hashrate']['min'] = 100;
+                }
+
+                if (!isset($rig_config[$device_cfg_key]['load'])) {
+                    $rig_config[$device_cfg_key]['load'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['load']['min'])) {
+                    $rig_config[$device_cfg_key]['load']['min'] = 90;
+                }
+
+                if (!isset($rig_config[$device_cfg_key]['hw'])) {
+                    $rig_config[$device_cfg_key]['hw'] = array();
+                }
+                if (!isset($rig_config[$device_cfg_key]['hw']['max'])) {
+                    $rig_config[$device_cfg_key]['hw']['max'] = 5;
+                }
+
+                $device['gpu_info']['Temperature'] = intval($device['gpu_info']['Temperature']);
+                if ($device['gpu_info']['Temperature'] <  $rig_config[$device_cfg_key]['temperature']['min'] || $device['gpu_info']['Temperature'] > $rig_config[$device_cfg_key]['temperature']['max']) {
+                    $errors++;
+                }
+                if ($device['gpu_info']['MHS 5s'] * 1000 < $rig_config[$device_cfg_key]['hashrate']['min']) {
+                    $errors++;
+                }
+                if ($device['gpu_info']['GPU Activity'] < $rig_config[$device_cfg_key]['load']['min']) {
+                    $errors++;
+                }
+                if ($device['gpu_info']['Hardware Errors'] > $rig_config[$device_cfg_key]['hw']['max']) {
+                    $errors++;
+                }
+            }
+            $cache[$rig['rig_name']] = $errors;
+        }
+        return $cache[$rig['rig_name']];
+    }
 }

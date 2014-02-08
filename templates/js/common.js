@@ -1,3 +1,218 @@
+SoopfwPager = function(o) {
+    this._options = {
+        post_variable: '',
+        container: '',
+        effect: 'replace',
+        current_page: 0,
+        pages: 0,
+        entries: 0,
+        max_entries_per_page: 0,
+        range: 10,
+        front_range: 1,
+        end_range: 0,
+        link_template: 0,
+        is_ajax: false,
+        uuid: "",
+        callback: null,
+    };
+
+    this.containers = {
+    };
+    $.extend(this._options, o);
+
+    $.extend(SoopfwPager.prototype, {
+        build_pager: function(page) {
+
+            var pagerHTML = $("#pager_" + this._options.uuid);
+            pagerHTML.html("");
+
+            //Get our needed data
+            var current_page = 0;
+            if (page !== undefined) {
+                current_page = page;
+            }
+            else {
+                current_page = this._options.current_page;
+            }
+            var entries = this._options.entries;
+            var max_entries_per_page = this._options.max_entries_per_page;
+            var range = this._options.range;
+            var front_range = this._options.front_range;
+            var end_range = this._options.end_range;
+
+            //Calculate the pages
+            var pages = Math.ceil(entries / max_entries_per_page);
+
+            //Setup next and prev page index
+            var next_page = current_page;
+            var prev_page = current_page;
+            next_page++;
+            prev_page--;
+
+            if (next_page >= pages) { //Next page is more than we have pages so set it to first page
+                next_page = 0;
+            }
+
+            if (prev_page < 0) { //prev page is smaller than 0 so set it to the max page
+                prev_page = pages - 1;
+            }
+
+            var range_from = Math.floor(current_page - (range / 2));
+            if (range_from < 0) {
+                range_from = 0;
+            }
+
+            var range_to = range_from + range;
+            if (range_to > pages) {
+                range_to = pages;
+                range_from = range_to - range;
+            }
+
+            if (range_from < 0) {
+                range_from = 0;
+            }
+
+            //Build up previous page
+            
+
+            var first_container = $("<span class='pager_pagelinks pager_first'></span>");
+            this.containers['first_container'] = first_container;
+            if (prev_page !== pages - 1) {
+                first_container.append(this.get_page_link(0, false, Soopfw.t("First")));
+            }
+            else {
+                first_container.append("<span>First</span>");
+            }
+            pagerHTML.append(first_container);
+
+            var previous_container = $("<span class='pager_pagelinks pager_previous'></span>");
+            this.containers['previous_container'] = previous_container;
+            if (prev_page !== pages - 1) {
+                previous_container.append(this.get_page_link(prev_page, false, Soopfw.t("Previous")));
+            }
+            else {
+                first_container.append("<span>Previous</span>");
+            }
+            pagerHTML.append(previous_container);
+
+            //Build up the front range
+            var front_container = $("<span class='pager_pagelinks pager_front_range'></span>");
+            this.containers['front_container'] = front_container;
+            var front_range_start = (range_from > front_range) ? front_range : range_from;
+            if (0 < front_range_start) {
+                pagerHTML.append(front_container);
+            }
+            for (var i = 0; i < front_range_start; i++) {
+                front_container.append(this.get_page_link(i));
+            }
+
+            if (0 < front_range_start) {
+                front_container.append(" ... ");
+            }
+
+            //Build up middle range
+            var middle_container = $("<span class='pager_pagelinks pager_middle_range'></span>");
+            this.containers['middle_container'] = middle_container;
+            if (range_from < range_to) {
+                pagerHTML.append(middle_container);
+            }
+            for (i = range_from; i < range_to; i++) {
+                middle_container.append(this.get_page_link(i, (parseInt(i) === parseInt(current_page))));
+            }
+
+            //Build up the end range
+            var end_container = $("<span class='pager_pagelinks pager_end_range'> ... </span>");
+            this.containers['end_container'] = end_container;
+            var end_range_start = pages - end_range;
+            if (end_range_start <= range_to) {
+                end_range_start = range_to;
+            }
+
+            if (end_range_start < pages) {
+                pagerHTML.append(end_container);
+            }
+
+            for (i = end_range_start; i < pages; i++) {
+                end_container.append(this.get_page_link(i));
+            }
+
+            //Build up next page
+            
+
+            var next_container = $("<span class='pager_pagelinks pager_next'></span>");
+            this.containers['next_container'] = next_container;
+            if (next_page !== 0) {
+                next_container.append(this.get_page_link(next_page, false, Soopfw.t("Next")));
+            }
+            else {
+                next_container.append("<span>Next</span>");
+            }
+            pagerHTML.append(next_container);
+
+            var last_container = $("<span class='pager_pagelinks pager_last'></span>");
+            this.containers['last_container'] = last_container;
+            if (next_page !== 0) {
+                next_container.append(this.get_page_link(pages - 1, false, Soopfw.t("Last")));
+            }
+            else {
+                next_container.append("<span>Last</span>");
+            }
+            pagerHTML.append(last_container);
+            
+
+            //pagerHTML.append("<div class=\"clean\"></div>");
+
+        },
+        get_page_link: function(page, selected, text) {
+            if (text === undefined || text === null) {
+                text = page + 1;
+                if (text < 10) {
+                    text = "0" + text;
+                }
+            }
+
+            if (this._options.is_ajax === false) {
+                if (selected === true) {
+                    return "<b>" + text + "</b>";
+                }
+
+                return "<a  href=\"" + str_replace("%page%", page, this._options.link_template) + "\">" + text + "</a>";
+            }
+            else {
+                var css_class = "";
+                if (selected === true) {
+                    css_class = " page_link_selected";
+                }
+                var link = $("<a href=\"javascript:void(0);\" page=\"" + page + "\" class=\"" + css_class + "\">" + text + "</a>");
+                var that = this;
+                link.click(function() {
+                    var page = $(this).attr("page");
+                    var post_data = {};
+                    if (that._options.post_variable !== undefined && that._options.post_variable !== "") {
+                        post_data[that._options.post_variable] = page;
+                    }
+                    $('a', that.containers['middle_container']).removeClass("page_link_selected");
+                    $('a[page="' + page + '"]', that.containers['middle_container']).addClass("page_link_selected");
+                   
+                    if (that._options.effect === "fade") {
+                        $(that._options.container).hide('slow', function() {
+                            that._options.callback(page);
+                        });
+                    }
+                    else {
+                        that._options.callback(page);
+                        
+                    }
+                    that.build_pager(page);
+                      
+                });
+            }
+            return link[0];
+
+        }
+    });
+};
+
 var KEY_ENTER = 13;
 var VK_ENTER = 13;
 
@@ -64,17 +279,17 @@ function soopfw_extend(original, new_elements) {
         matcher.lastIndex = 0;
 
         var expr = match[3], m, check, val, allMatch = null, foundMatch = false;
-        while (m = matcher.exec(expr)) {
+        while (m === matcher.exec(expr)) {
 
             check = m[3];
             val = $(el).data(m[1]);
 
             switch (m[2]) {
                 case '==':
-                    foundMatch = val == check;
+                    foundMatch = val === check;
                     break;
                 case '!=':
-                    foundMatch = val != check;
+                    foundMatch = val !== check;
                     break;
                 case '<=':
                     foundMatch = val <= check;
@@ -106,7 +321,7 @@ String.prototype.br2nl =
 
 function uuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
@@ -114,8 +329,8 @@ function uuid() {
 function foreach(arr, callback_func) {
     var i = "";
     for (i in arr) {
-        if (arr.hasOwnProperty(i) == true) {
-            if (callback_func(i, arr[i]) == true) {
+        if (arr.hasOwnProperty(i) === true) {
+            if (callback_func(i, arr[i]) === true) {
                 return;
             }
         }
@@ -139,9 +354,9 @@ function gmdate(format, timestamp) {
 
 Array.prototype.remove = function(removeItem) {
     $.grep(this, function(val) {
-        return val != removeItem;
+        return val !== removeItem;
     });
-}
+};
 
 /**
  * Generate a password and return it, if elm is provided set the "value" attribute to the generated password
@@ -153,11 +368,11 @@ Array.prototype.remove = function(removeItem) {
  */
 function generate_password(length, elm, charSet) {
     var rc = "";
-    if (charSet == undefined) {
+    if (charSet === undefined) {
         charSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ";
     }
     var charArr = charSet.shuffleString();
-    if (length == undefined) {
+    if (length === undefined) {
         length = 10;
     }
     for (var i = 0; i < length; i++)
@@ -165,7 +380,7 @@ function generate_password(length, elm, charSet) {
         charArr.shuffleString();
         rc += charArr.charAt(getRandomNum(0, charArr.length));
     }
-    if (elm != undefined) {
+    if (elm !== undefined) {
         $(elm).prop("value", rc);
     }
     return rc;
@@ -187,7 +402,7 @@ String.prototype.shuffleString = function()
         returnString += tmpArr[i];
     }
     return returnString;
-}
+};
 
 Array.prototype.shuffle = function()
 {
@@ -199,7 +414,7 @@ Array.prototype.shuffle = function()
         this[i] = this[rand];
         this[rand] = tmp;
     }
-}
+};
 
 function getRandomNum(lbound, ubound) {
     return (Math.floor(Math.random() * (ubound - lbound)) + lbound);
@@ -207,16 +422,16 @@ function getRandomNum(lbound, ubound) {
 
 function success_alert(msg, callback, title, timeout)
 {
-    if (msg == undefined) {
+    if (msg === undefined) {
         msg = Soopfw.t("Operation successfully executed");
     }
 
-    if (callback == undefined) {
+    if (callback === undefined) {
         callback = function() {
         };
     }
 
-    if (title == undefined) {
+    if (title === undefined) {
         title = Soopfw.t("Status");
     }
     $.alerts.iconClass = "success";
@@ -232,21 +447,27 @@ function success_alert(msg, callback, title, timeout)
  * click on "ok".
  * Questions are the same as confirmations but with a different icon
  *
- * @param string msg
+ * @param {string} msg
  *   The message to display.
- * @param string title
+ * @param {string} html
+ *   The html for this question.
+ * @param {string} title
  *   The title for the dialog.
- * @param mixed callback_function
+ * @param {mixed} callback_function
  *   An anonymous function or a function name as a string
+ * @param {mixed} cancel_callback
+ *   An anonymous function or a function name as a string
+ * @param {object} options
+ *   The options
  */
 function question(msg, html, title, callback_function, cancel_callback, options)
 {
     $.alerts.cancelButton = Soopfw.t("cancel");
     var data = {
         msg: msg,
-        html: html,
+        html: html
     };
-    
+
     if (options !== undefined) {
         if (options['ok'] !== undefined) {
             data['ok'] = options['ok'];
@@ -255,9 +476,9 @@ function question(msg, html, title, callback_function, cancel_callback, options)
             data['cancel'] = options['cancel'];
         }
     }
-    
+
     jQuestion(data, title, function(a, b) {
-        if (a == true) {
+        if (a === true) {
             callback_function(b);
         }
         else if (cancel_callback !== undefined) {
@@ -270,49 +491,48 @@ function question(msg, html, title, callback_function, cancel_callback, options)
  * Displays a confirmation dialog and execute the callback_function if the user
  * click on "ok".
  *
- * @param string msg
+ * @param {string} msg
  *   The message to display.
- * @param string title
+ * @param {string} title
  *   The title for the dialog.
- * @param mixed callback_function
+ * @param {mixed} callback_function
  *   An anonymous function or a function name as a string
- * @param boolean parse_result
+ * @param {boolean} parse_result
  *   If set to true we do not just execute the callback function if the user
  *   choose 'ok' instead we call EVERYTIME the callback function and provide
  *   as the first parameter the result if the use clicked 'ok' or 'cancel'
  */
 function confirm(msg, title, callback_function, parse_result)
 {
-    if (callback_function == undefined) {
+    if (callback_function === undefined) {
         callback_function = function() {
         };
     }
     $.alerts.cancelButton = Soopfw.t("cancel");
     return jConfirm(msg, title, function(r) {
-        if (parse_result == true) {
+        if (parse_result === true) {
             return callback_function(r);
         }
-        if (r == true) {
+        if (r === true) {
             return callback_function();
         }
     });
 
 }
-
 /**
  * Displays a alert dialog and execute the callback_function if the user
  * click on "ok" or closes the dialog.
  *
- * @param string msg
+ * @param {string} msg
  *   The message to display.
- * @param string title
+ * @param {string} title
  *   The title for the dialog.
- * @param mixed callback_function
+ * @param {mixed} callback_function
  *   An anonymous function or a function name as a string
  */
 function alert(msg, title, callback_function)
 {
-    if (callback_function == undefined) {
+    if (callback_function === undefined) {
         callback_function = function() {
         };
     }
@@ -325,10 +545,10 @@ function alert(msg, title, callback_function)
 
 function wait_dialog(msg, title)
 {
-    if (title == undefined) {
+    if (title === undefined) {
         title = Soopfw.t("Please wait");
     }
-    if (msg == undefined) {
+    if (msg === undefined) {
         msg = Soopfw.t("Action pending, please be patience");
     }
     return jWaitDialog(title, msg);
@@ -336,29 +556,29 @@ function wait_dialog(msg, title)
 
 function get_form_by_class(classname, selector, checkboxFalse)
 {
-    if (selector == undefined || selector == null) {
+    if (selector === undefined || selector === null) {
         selector = "name";
     }
-    if (classname == undefined) {
+    if (classname === undefined) {
         classname = ".default_form";
     }
     else {
         var firstchar = classname.substr(0, 1);
-        if (firstchar != '.' && firstchar != '#') {
+        if (firstchar !== '.' && firstchar !== '#') {
             classname = "." + classname;
         }
     }
     var formVariables = {};
     $(classname).each(function(k, v) {
-        if ($(v)[0].type == "checkbox") {
+        if ($(v)[0].type === "checkbox") {
             if ($(v).prop("checked")) {
                 formVariables[$(v).prop(selector)] = $(v).prop("value");
             }
-            else if (checkboxFalse == true) {
+            else if (checkboxFalse === true) {
                 formVariables[$(v).prop(selector)] = "0";
             }
         }
-        else if ($(v)[0].type == "radio") {
+        else if ($(v)[0].type === "radio") {
             if ($(v).prop("selected") || $(v).prop("checked")) {
                 formVariables[$(v).prop(selector)] = $(v).prop("value");
             }
@@ -370,22 +590,22 @@ function get_form_by_class(classname, selector, checkboxFalse)
             formVariables[$(v).prop(selector)] = $(v).prop("value");
         }
     });
-    return formVariables
+    return formVariables;
 }
 
 function htmlspecialchars(str, typ) {
-    if (typeof str == "undefined")
+    if (typeof str === "undefined")
         str = "";
-    if (typeof typ != "number")
+    if (typeof typ !== "number")
         typ = 2;
     typ = Math.max(0, Math.min(3, parseInt(typ)));
     var from = new Array(/&/g, /</g, />/g);
     var to = new Array("&amp;", "&lt;", "&gt;");
-    if (typ == 1 || typ == 3) {
+    if (typ === 1 || typ === 3) {
         from.push(/'/g);
         to.push("&#039;");
     }
-    if (typ == 2 || typ == 3) {
+    if (typ === 2 || typ === 3) {
         from.push(/"/g);
         to.push("&quot;");
     }
@@ -460,7 +680,7 @@ function parse_ajax_result(result, return_function, additionalParams, error_func
         }
         return false;
     }
-    
+
     if (code === 701) {
         confirm(result.desc, 'Confirm action', function() {
             if (prev_request_options['dataArray'] === undefined) {
@@ -519,10 +739,10 @@ function ajax_request(url, dataArray, return_function, error_function, options, 
 {
     var prev_request_options = {
         url: url,
-        dataArray: dataArray, 
-        return_function: return_function, 
-        error_function: error_function, 
-        options: options, 
+        dataArray: dataArray,
+        return_function: return_function,
+        error_function: error_function,
+        options: options,
         silent: silent
     };
     $.ajax($.extend({
@@ -540,7 +760,7 @@ function ajax_request(url, dataArray, return_function, error_function, options, 
                 return_function = function() {
                 };
             }
-            
+
             parse_ajax_result(result, function(result, code, desc, additionalParams) {
                 return_function(result, code, desc, additionalParams);
             }, null, error_function, silent, prev_request_options);
@@ -595,7 +815,7 @@ function explode(delimiter, string, limit) {
     var emptyArray = {0: ''};
 
     // third argument is not required
-    if (arguments.length < 2 || typeof arguments[0] == 'undefined' || typeof arguments[1] == 'undefined')
+    if (arguments.length < 2 || typeof arguments[0] === 'undefined' || typeof arguments[1] === 'undefined')
     {
         return null;
     }
@@ -605,7 +825,7 @@ function explode(delimiter, string, limit) {
         return false;
     }
 
-    if (typeof delimiter == 'function' || typeof delimiter == 'object' || typeof string == 'function' || typeof string == 'object')
+    if (typeof delimiter === 'function' || typeof delimiter === 'object' || typeof string === 'function' || typeof string === 'object')
     {
         return emptyArray;
     }
@@ -633,13 +853,13 @@ function call_user_func(cb) {
     if (typeof cb === 'string') {
         func = (typeof this[cb] === 'function') ? this[cb] : func = (new Function(null, 'return ' + cb))();
     } else if (Object.prototype.toString.call(cb) === '[object Array]') {
-        func = (typeof cb[0] == 'string') ? eval(cb[0] + "['" + cb[1] + "']") : func = cb[0][cb[1]];
+        func = (typeof cb[0] === 'string') ? eval(cb[0] + "['" + cb[1] + "']") : func = cb[0][cb[1]];
     }
     else if (typeof cb === 'function') {
         func = cb;
     }
 
-    if (typeof func != 'function') {
+    if (typeof func !== 'function') {
         throw new Error(func + ' is not a valid function');
     }
     var parameters = Array.prototype.slice.call(arguments, 1);
@@ -698,7 +918,7 @@ function count(mixed_var, mode) {
 
     for (key in mixed_var) {
         cnt++;
-        if (mode == 1 && mixed_var[key] && (mixed_var[key].constructor === Array || mixed_var[key].constructor === Object)) {
+        if (mode === 1 && mixed_var[key] && (mixed_var[key].constructor === Array || mixed_var[key].constructor === Object)) {
             cnt += this.count(mixed_var[key], 1);
         }
     }
@@ -713,10 +933,10 @@ function array_keys(input, search_value, argStrict) {
 
     for (key in input) {
         include = true;
-        if (search_value != undefined) {
+        if (search_value !== undefined) {
             if (strict && input[key] !== search_value) {
                 include = false;
-            } else if (input[key] != search_value) {
+            } else if (input[key] !== search_value) {
                 include = false;
             }
         }
@@ -770,17 +990,17 @@ function date_format(date, format)
 function format_date(date, format)
 {
 
-    if (format == undefined)
+    if (format === undefined)
     {
         format = "dd.mm.yyyy HH:MM:ss";
     }
-    if (date == undefined || date == null)
+    if (date === undefined || date === null)
     {
         date = new Date();
     }
     else
     {
-        if (parseInt(date) != date && parseFloat(date) != date)
+        if (parseInt(date) !== date && parseFloat(date) !== date)
         {
             date = date + " GMT+0100";
             date = Date.parse(date);
@@ -793,7 +1013,7 @@ function format_date(date, format)
 function date_compare(todate, fromdate)
 {
     //console.log(todate);
-    if (parseInt(todate) != todate)
+    if (parseInt(todate) !== todate)
     {
         todate = todate + " GMT+0100";
         todate = Date.parse(todate);
@@ -804,7 +1024,7 @@ function date_compare(todate, fromdate)
     }
 
 
-    if (fromdate == undefined)
+    if (fromdate === undefined)
     {
         fromdate = new Date();
     }
@@ -848,7 +1068,7 @@ function empty(mixed_var) {
             ) {
         return true;
     }
-    if (typeof mixed_var == 'object') {
+    if (typeof mixed_var === 'object') {
         for (key in mixed_var) {
             return false;
         }
@@ -859,12 +1079,12 @@ function empty(mixed_var) {
 }
 
 function parseID(value, index, splitchar) {
-    if (splitchar == undefined)
+    if (splitchar === undefined)
     {
         splitchar = "_";
     }
 
-    if (index == undefined)
+    if (index === undefined)
     {
         return $(value).prop("id").split(splitchar);
     }
@@ -890,7 +1110,7 @@ function NumberFormat(num, inputDecimal)
     this.LEFT_DASH = 0;
     this.RIGHT_DASH = 1;
     this.PARENTHESIS = 2;
-    this.NO_ROUNDING = -1
+    this.NO_ROUNDING = -1;
     this.num;
     this.numOriginal;
     this.hasSeparators = false;
@@ -930,7 +1150,7 @@ function NumberFormat(num, inputDecimal)
     this.moveDecimalAsString = moveDecimalAsStringNF;
     this.moveDecimal = moveDecimalNF;
     this.addSeparators = addSeparatorsNF;
-    if (inputDecimal == null) {
+    if (inputDecimal === null) {
         this.setNumber(num, this.PERIOD);
     } else {
         this.setNumber(num, inputDecimal);
@@ -948,7 +1168,7 @@ function setInputDecimalNF(val)
 }
 function setNumberNF(num, inputDecimal)
 {
-    if (inputDecimal != null) {
+    if (inputDecimal !== null) {
         this.setInputDecimal(inputDecimal);
     }
     this.numOriginal = num;
@@ -973,12 +1193,12 @@ function setNegativeRedNF(isRed)
 function setSeparatorsNF(isC, separator, decimal)
 {
     this.hasSeparators = isC;
-    if (separator == null)
+    if (separator === null)
         separator = this.COMMA;
-    if (decimal == null)
+    if (decimal === null)
         decimal = this.PERIOD;
-    if (separator == decimal) {
-        this.decimalValue = (decimal == this.PERIOD) ? this.COMMA : this.PERIOD;
+    if (separator === decimal) {
+        this.decimalValue = (decimal === this.PERIOD) ? this.COMMA : this.PERIOD;
     } else {
         this.decimalValue = decimal;
     }
@@ -1003,12 +1223,12 @@ function setCurrencyPrefixNF(cp)
 }
 function setCurrencyPositionNF(cp)
 {
-    this.currencyPosition = cp
+    this.currencyPosition = cp;
 }
 function setPlacesNF(p, tr)
 {
-    this.roundToPlaces = !(p == this.NO_ROUNDING);
-    this.truncate = (tr != null && tr);
+    this.roundToPlaces = !(p === this.NO_ROUNDING);
+    this.truncate = (tr !== null && tr);
     this.places = (p < 0) ? 0 : p;
 }
 function addSeparatorsNF(nStr, inD, outD, sep)
@@ -1016,7 +1236,7 @@ function addSeparatorsNF(nStr, inD, outD, sep)
     nStr += '';
     var dpos = nStr.indexOf(inD);
     var nStrEnd = '';
-    if (dpos != -1) {
+    if (dpos !== -1) {
         nStrEnd = outD + nStr.substring(dpos + 1, nStr.length);
         nStr = nStr.substring(0, dpos);
     }
@@ -1051,42 +1271,42 @@ function toFormattedNF()
     var c2 = '';
     var n3 = '';
     var c3 = '';
-    var negSignL = (this.negativeFormat == this.PARENTHESIS) ? this.LEFT_PAREN : this.DASH;
-    var negSignR = (this.negativeFormat == this.PARENTHESIS) ? this.RIGHT_PAREN : this.DASH;
-    if (this.currencyPosition == this.LEFT_OUTSIDE) {
+    var negSignL = (this.negativeFormat === this.PARENTHESIS) ? this.LEFT_PAREN : this.DASH;
+    var negSignR = (this.negativeFormat === this.PARENTHESIS) ? this.RIGHT_PAREN : this.DASH;
+    if (this.currencyPosition === this.LEFT_OUTSIDE) {
         if (nNum < 0) {
-            if (this.negativeFormat == this.LEFT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.LEFT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n1 = negSignL;
-            if (this.negativeFormat == this.RIGHT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.RIGHT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n2 = negSignR;
         }
         if (this.hasCurrency)
             c0 = this.currencyValue + " ";
-    } else if (this.currencyPosition == this.LEFT_INSIDE) {
+    } else if (this.currencyPosition === this.LEFT_INSIDE) {
         if (nNum < 0) {
-            if (this.negativeFormat == this.LEFT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.LEFT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n0 = negSignL;
-            if (this.negativeFormat == this.RIGHT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.RIGHT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n3 = negSignR;
         }
         if (this.hasCurrency)
             c1 = this.currencyValue + " ";
     }
-    else if (this.currencyPosition == this.RIGHT_INSIDE) {
+    else if (this.currencyPosition === this.RIGHT_INSIDE) {
         if (nNum < 0) {
-            if (this.negativeFormat == this.LEFT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.LEFT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n0 = negSignL;
-            if (this.negativeFormat == this.RIGHT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.RIGHT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n3 = negSignR;
         }
         if (this.hasCurrency)
             c2 = " " + this.currencyValue;
     }
-    else if (this.currencyPosition == this.RIGHT_OUTSIDE) {
+    else if (this.currencyPosition === this.RIGHT_OUTSIDE) {
         if (nNum < 0) {
-            if (this.negativeFormat == this.LEFT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.LEFT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n1 = negSignL;
-            if (this.negativeFormat == this.RIGHT_DASH || this.negativeFormat == this.PARENTHESIS)
+            if (this.negativeFormat === this.RIGHT_DASH || this.negativeFormat === this.PARENTHESIS)
                 n2 = negSignR;
         }
         if (this.hasCurrency)
@@ -1119,15 +1339,15 @@ function expandExponentialNF(origVal)
         return origVal;
     var newVal = parseFloat(origVal) + '';
     var eLoc = newVal.toLowerCase().indexOf('e');
-    if (eLoc != -1) {
+    if (eLoc !== -1) {
         var plusLoc = newVal.toLowerCase().indexOf('+');
         var negLoc = newVal.toLowerCase().indexOf('-', eLoc);
         var justNumber = newVal.substring(0, eLoc);
-        if (negLoc != -1) {
+        if (negLoc !== -1) {
             var places = newVal.substring(negLoc + 1, newVal.length);
             justNumber = this.moveDecimalAsString(justNumber, true, parseInt(places));
         } else {
-            if (plusLoc == -1)
+            if (plusLoc === -1)
                 plusLoc = eLoc;
             var places = newVal.substring(plusLoc + 1, newVal.length);
             justNumber = this.moveDecimalAsString(justNumber, false, parseInt(places));
@@ -1139,7 +1359,7 @@ function expandExponentialNF(origVal)
 function moveDecimalRightNF(val, places)
 {
     var newVal = '';
-    if (places == null) {
+    if (places === null) {
         newVal = this.moveDecimal(val, false);
     } else {
         newVal = this.moveDecimal(val, false, places);
@@ -1149,7 +1369,7 @@ function moveDecimalRightNF(val, places)
 function moveDecimalLeftNF(val, places)
 {
     var newVal = '';
-    if (places == null) {
+    if (places === null) {
         newVal = this.moveDecimal(val, true);
     } else {
         newVal = this.moveDecimal(val, true, places);
@@ -1170,7 +1390,7 @@ function moveDecimalAsStringNF(val, left, places)
         newVal = newVal.replace(re2, '$1$2.$3');
     } else {
         var reArray = re1.exec(newVal);
-        if (reArray != null) {
+        if (reArray !== null) {
             newVal = newVal.substring(0, reArray.index) + reArray[1] + extraZ + newVal.substring(reArray.index + reArray[0].length);
         }
         var re2 = new RegExp('(-?)([0-9]*)(\\.?)([0-9]{' + spaces + '})');
@@ -1182,7 +1402,7 @@ function moveDecimalAsStringNF(val, left, places)
 function moveDecimalNF(val, left, places)
 {
     var newVal = '';
-    if (places == null) {
+    if (places === null) {
         newVal = this.moveDecimalAsString(val, left);
     } else {
         newVal = this.moveDecimalAsString(val, left, places);
@@ -1207,7 +1427,7 @@ function preserveZerosNF(val)
     if (this.places <= 0)
         return val;
     var decimalPos = val.indexOf('.');
-    if (decimalPos == -1) {
+    if (decimalPos === -1) {
         val += '.';
         for (i = 0; i < this.places; i++) {
             val += '0';
@@ -1225,7 +1445,7 @@ function justNumberNF(val)
 {
     newVal = val + '';
     var isPercentage = false;
-    if (newVal.indexOf('%') != -1) {
+    if (newVal.indexOf('%') !== -1) {
         newVal = newVal.replace(/\%/g, '');
         isPercentage = true;
     }
@@ -1233,16 +1453,16 @@ function justNumberNF(val)
     newVal = newVal.replace(re, '');
     var tempRe = new RegExp('[' + this.inputDecimalValue + ']', 'g');
     var treArray = tempRe.exec(newVal);
-    if (treArray != null) {
+    if (treArray !== null) {
         var tempRight = newVal.substring(treArray.index + treArray[0].length);
         newVal = newVal.substring(0, treArray.index) + this.PERIOD + tempRight.replace(tempRe, '');
     }
-    if (newVal.charAt(newVal.length - 1) == this.DASH) {
+    if (newVal.charAt(newVal.length - 1) === this.DASH) {
         newVal = newVal.substring(0, newVal.length - 1);
         newVal = '-' + newVal;
     }
-    else if (newVal.charAt(0) == this.LEFT_PAREN
-            && newVal.charAt(newVal.length - 1) == this.RIGHT_PAREN) {
+    else if (newVal.charAt(0) === this.LEFT_PAREN
+            && newVal.charAt(newVal.length - 1) === this.RIGHT_PAREN) {
         newVal = newVal.substring(1, newVal.length - 1);
         newVal = '-' + newVal;
     }
@@ -1301,7 +1521,7 @@ function money_format(value, currency)
 //
 (function($) {
 
-    
+
     $.alerts = {
         // These properties can be read/written by accessing $.alerts.propertyName from your scripts at any time
 
@@ -1475,7 +1695,7 @@ function money_format(value, currency)
                     }
                     //msg['html'] = msg['html'].html();
                     $("#popup_message").after('<div id="popup_panel"><button id="popup_ok" style="margin-right: 10px;" class="btn btn-primary">' + msg['ok'] + '</button> <button id="popup_cancel"  class="btn btn-primary">' + msg['cancel'] + '</button></div>');
-                    if (msg['html'] !== undefined && msg['html'] !== null) { 
+                    if (msg['html'] !== undefined && msg['html'] !== null) {
                         msg['html'].css("margin-bottom", "10px");
                         $("#popup_panel").prepend(msg['html']);
                     }
@@ -1602,7 +1822,7 @@ function money_format(value, currency)
                     $("#popup_prompt").focus().select();
                     break;
             }
-            
+
             // Make draggable
             if ($.alerts.draggable) {
                 try {
@@ -1734,7 +1954,7 @@ function strtotime(str, now) {
     strTmp = str;
     strTmp = strTmp.replace(/\s{2,}|^\s|\s$/g, ' '); // unecessary spaces
     strTmp = strTmp.replace(/[\t\r\n]/g, ''); // unecessary chars
-    if (strTmp == 'now') {
+    if (strTmp === 'now') {
         return (new Date()).getTime() / 1000; // Return seconds, not milli-seconds
     } else if (!isNaN(parse = Date.parse(strTmp))) {
         return (parse / 1000);
@@ -1767,8 +1987,8 @@ function strtotime(str, now) {
         }
     };
     var process = function(m) {
-        var ago = (m[2] && m[2] == 'ago');
-        var num = (num = m[0] == 'last' ? -1 : 1) * (ago ? -1 : 1);
+        var ago = (m[2] && m[2] === 'ago');
+        var num = (num = m[0] === 'last' ? -1 : 1) * (ago ? -1 : 1);
 
         switch (m[0]) {
             case 'last':
@@ -1797,16 +2017,16 @@ function strtotime(str, now) {
                         break;
                     default:
                         var day;
-                        if (typeof (day = __is.day[m[1].substring(0, 3)]) != 'undefined') {
+                        if (typeof (day = __is.day[m[1].substring(0, 3)]) !== 'undefined') {
                             var diff = day - now.getDay();
-                            if (diff == 0) {
+                            if (diff === 0) {
                                 diff = 7 * num;
                             } else if (diff > 0) {
-                                if (m[0] == 'last') {
+                                if (m[0] === 'last') {
                                     diff -= 7;
                                 }
                             } else {
-                                if (m[0] == 'next') {
+                                if (m[0] === 'next') {
                                     diff += 7;
                                 }
                             }
@@ -1851,7 +2071,7 @@ function strtotime(str, now) {
     };
 
     match = strTmp.match(/^(\d{2,4}-\d{2}-\d{2})(?:\s(\d{1,2}:\d{2}(:\d{2})?)?(?:\.(\d+))?)?$/);
-    if (match != null) {
+    if (match !== null) {
         if (!match[2]) {
             match[2] = '00:00:00';
         } else if (!match[3]) {
@@ -1861,7 +2081,7 @@ function strtotime(str, now) {
         s = match[1].split(/-/g);
 
         for (i in __is.mon) {
-            if (__is.mon[i] == s[1] - 1) {
+            if (__is.mon[i] === s[1] - 1) {
                 s[1] = i;
             }
         }
@@ -1872,7 +2092,7 @@ function strtotime(str, now) {
     var regex = '([+-]?\\d+\\s' + '(years?|months?|weeks?|days?|hours?|min|minutes?|sec|seconds?' + '|sun\\.?|sunday|mon\\.?|monday|tue\\.?|tuesday|wed\\.?|wednesday' + '|thu\\.?|thursday|fri\\.?|friday|sat\\.?|saturday)' + '|(last|next)\\s' + '(years?|months?|weeks?|days?|hours?|min|minutes?|sec|seconds?' + '|sun\\.?|sunday|mon\\.?|monday|tue\\.?|tuesday|wed\\.?|wednesday' + '|thu\\.?|thursday|fri\\.?|friday|sat\\.?|saturday))' + '(\\sago)?';
 
     match = strTmp.match(new RegExp(regex, 'gi')); // Brett: seems should be case insensitive per docs, so added 'i'
-    if (match == null) {
+    if (match === null) {
         return false;
     }
 
@@ -1911,7 +2131,7 @@ function in_array(needle, haystack, argStrict) {
         }
     } else {
         for (key in haystack) {
-            if (haystack[key] == needle) {
+            if (haystack[key] === needle) {
                 return true;
             }
         }

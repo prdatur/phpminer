@@ -1,5 +1,5 @@
 Soopfw.behaviors.main_settings = function() {
-
+    
     $.each(phpminer.settings.config.rigs, function(rig, rig_data) {
         var configs_to_add = $.extend({}, phpminer.settings.possible_configs);
         

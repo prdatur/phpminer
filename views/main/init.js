@@ -1,7 +1,4 @@
 var refresh_device_list_timeout = null;
-var mem = 1375;
-var ttt = null;
-var iii = 30;
 var global_hashrate = 0;
 function get_config(name, default_val) {    
     if (phpminer.settings.config.rigs === undefined) {
@@ -20,108 +17,39 @@ function get_config(name, default_val) {
 
 var current_device_list = {};
 var rig_collapsed = {};
+var pagerdata = {
+    mepp: 0,
+};
+var rig_counter = 0;
 Soopfw.behaviors.main_init = function() {
     
     if (refresh_device_list_timeout !== null) {
         clearInterval(refresh_device_list_timeout);
     }
 
-    var c = 0;
+    
     $.each(phpminer.settings.rig_data, function(rig, rig_data) {
-        rig_collapsed[rig] = (rig_data.collapsed !== undefined) ? rig_data.collapsed : false;
-        c++;
-        var html  = '<div class="rig" data-rig="' + rig + '">';
-            html += '   <h2 style="display: inline;"><span data-rig="' + rig + '" class="swap_rig"><i class="icon-' + ((rig_data.collapsed) ? 'plus' : 'minus') + '"></i></span>' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2> <div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> <div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
-            
-            if (!empty(phpminer.settings.pool_groups)) {
-                html += '<div class="pool_switching_container" data-rig="' + rig + '" style="float: right;' + ((rig_data.donating) ? 'display: none;' : '') + '">';
-                html += '   <select class="current_pool_pool" data-rig="' + rig + '" id="' + c + '_current_pool_pool"style="float: right;"><option value="">Please wait, loading pools.</option></select>';
-                html += '   <label for="' + c + '_current_pool_pool" style="float: right; margin-left: 10px;">Change mining pool:&nbsp;&nbsp;</label>';
-                html += '   <select id="' + c + '_current_pool_group" class="current_pool_group" data-rig="' + rig + '" style="float: right;">';
-                
-                $.each(phpminer.settings.pool_groups, function(tmp, group) {
-                    if (group === 'donate') {
-                        return;
-                    }
-                    html += '   <option value="' + group + '">' + group + '</option>';
-                });
-                
-                html += '   </select>';
-                
-                html += '   <label for="' + c + '_current_pool_group" style="float: right;">Change mining group:&nbsp;&nbsp;</label>';
-                html += '</div>';
-            }
-
-            html += '   <table class="device_list" data-rig="' + rig + '">';
-            html += '       <thead>';
-            html += '           <tr>';
-            html += '               <th style="width:70px;" class="center">Enabled</th>';
-            html += '               <th>Name</th>';
-            html += '               <th style="width: 70px;" class="right"><i class="icon-signal"></i>Load</th>';
-            html += '               <th style="width: 65px;" class="right"><i class="icon-thermometer"></i>Temp</th>';
-            html += '               <th style="width: 140px;" class="right"><i class="icon-chart-line"></i>Hashrate 5s (avg)</th>';
-            html += '               <th style="width: 145px; class="right"><i class="icon-link-ext"></i>Shares</th>';
-            html += '               <th style="width: 65px; class="right"><i class="icon-attention"></i>HW</th>';
-            html += '               <th style="width: 60px;" class="right"><i class="icon-air"></i>Fan</th>';
-            html += '               <th style="width: 75px;" class="right"><i class="icon-clock"></i>Engine</th>';
-            html += '               <th style="width: 83px;" class="right"><i class="icon-clock"></i>Memory</th>';
-            html += '               <th style="width: 80px;" class="right"><i class="icon-flash"></i>Voltage</th>';
-            html += '               <th style="width: 85px;" class="right"><i class="icon-fire"></i>Intensity</th>';
-            html += '               <th style="width: 310px; class="right"><i class="icon-group"></i>Current pool</th>';
-            html += '           </tr>';
-            html += '       </thead>';
-            html += '       <tbody>';
-            html += '       </tbody>';
-            html += '   </table>';
-            html += '</div>';
-
-        $('#rigs').append(html);
-        
-        $('.current_pool_group[data-rig="' + rig + '"]').val(rig_data.active_pool_group).off('change').on('change', function(){
-            wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
-            ajax_request(murl('main', 'switch_pool_group'), {rig: rig, group: $(this).val()}, function(data) {
-                $.alerts._hide();
-                if(data.errors !== undefined) {
-                    var err_str = 'There are some rig\'s which produced errors. Here is a list of all errors which occured:\n';
-                    $.each(data.errors, function(k, v) {
-                        err_str += " - " + v + "\n";
-                    });
-                    alert(err_str);
-                }
-                if(data.success !== undefined) {
-                    $.each(data.success, function(k, v) {
-                        update_pools(k, data.new_pools);
-                    });
-                }
-            });
-        });
-        var rig_pools = $('.current_pool_pool[data-rig="' + rig + '"]');
-        rig_pools.off('change').on('change', function(){
-            ajax_request(murl('main', 'switch_pool'), {rig: rig, pool: $(this).val()}, function() {
-                success_alert('Pool switched successfully, Within the overview, the pool will be updated after the first accepted share was send to the new pool, this can take some time.', null, null, 10000);
-            });
-            rig_pools.val("");
-        });
+        add_rig(rig, rig_data);
         update_pools(rig, rig_data.pools);
         
         set_device_list(rig_data.device_list, rig);
     });
     $('.rig_edit').off('click').on('click', function() {
-            ajax_request(murl('main', 'get_rig_data'), {rig: $(this).data('rig')}, function(rig_results) {
-                add_rig_dialog(true, rig_results);
-            });
+        ajax_request(murl('main', 'get_rig_data'), {rig: $(this).data('rig')}, function(rig_results) {
+            add_rig_dialog(true, rig_results);
         });
-        $('.rig_delete').off('click').on('click', function() {
-            var rig = $(this).data('rig');
-            confirm('Do you really want to delete the rig: <b>' + rig + '</b>', 'Delete rig ' + rig + '?', function() {
-                ajax_request(murl('main', 'delete_rig'), {rig: rig}, function() {
-                    $('.rig[data-rig="' + rig + '"]').fadeOut('fast', function() {
-                        $(this).remove();
-                    });
+    });
+    $('.rig_delete').off('click').on('click', function() {
+        var rig = $(this).data('rig');
+        confirm('Do you really want to delete the rig: <b>' + rig + '</b>', 'Delete rig ' + rig + '?', function() {
+            ajax_request(murl('main', 'delete_rig'), {rig: rig}, function() {
+                $('.rig[data-rig="' + rig + '"]').fadeOut('fast', function() {
+                    $(this).remove();
                 });
             });
         });
-        
+    });
+
     $('.swap_rig').off('click').on('click', function() {
         var datarig = $(this).data('rig');
         var i = $('i', this);
@@ -138,13 +66,121 @@ Soopfw.behaviors.main_init = function() {
         set_device_list(current_device_list[datarig], datarig);
     });
     
+    
+    
     $('#global_hashrate').html(get_hashrate_string(global_hashrate));
     $('#add_rig').off('click').on('click', function() {
         add_rig_dialog(true);
     });
-    refresh_device_list_timeout = setInterval(refresh_device_list, get_config('ajax_refresh_intervall', 5000));
+
+    refresh_device_list_timeout = setInterval(refresh_update_device_list, get_config('ajax_refresh_intervall', 5000));
+    init_pager();
 };
 
+function add_rig(rig, rig_data) {
+    rig_collapsed[rig] = (rig_data.collapsed !== undefined) ? rig_data.collapsed : false;
+    rig_counter++;
+    var html  = '<div class="rig" data-rig="' + rig + '">';
+        html += '   <h2 style="display: inline;"><span data-rig="' + rig + '" class="swap_rig"><i class="icon-' + ((rig_data.collapsed) ? 'plus' : 'minus') + '"></i></span>' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2> <div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> <div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
+
+        if (!empty(phpminer.settings.pool_groups)) {
+            html += '<div class="pool_switching_container" data-rig="' + rig + '" style="float: right;' + ((rig_data.donating) ? 'display: none;' : '') + '">';
+            html += '   <select class="current_pool_pool" data-rig="' + rig + '" id="' + rig_counter + '_current_pool_pool"style="float: right;"><option value="">Please wait, loading pools.</option></select>';
+            html += '   <label for="' + rig_counter + '_current_pool_pool" style="float: right; margin-left: 10px;">Change mining pool:&nbsp;&nbsp;</label>';
+            html += '   <select id="' + rig_counter + '_current_pool_group" class="current_pool_group" data-rig="' + rig + '" style="float: right;">';
+
+            $.each(phpminer.settings.pool_groups, function(tmp, group) {
+                if (group === 'donate') {
+                    return;
+                }
+                html += '   <option value="' + group + '">' + group + '</option>';
+            });
+
+            html += '   </select>';
+
+            html += '   <label for="' + rig_counter + '_current_pool_group" style="float: right;">Change mining group:&nbsp;&nbsp;</label>';
+            html += '</div>';
+        }
+
+        html += '   <table class="device_list" data-rig="' + rig + '">';
+        html += '       <thead>';
+        html += '           <tr>';
+        html += '               <th style="width:70px;" class="center">Enabled</th>';
+        html += '               <th>Name</th>';
+        html += '               <th style="width: 70px;" class="right"><i class="icon-signal"></i>Load</th>';
+        html += '               <th style="width: 65px;" class="right"><i class="icon-thermometer"></i>Temp</th>';
+        html += '               <th style="width: 140px;" class="right"><i class="icon-chart-line"></i>Hashrate 5s (avg)</th>';
+        html += '               <th style="width: 145px; class="right"><i class="icon-link-ext"></i>Shares</th>';
+        html += '               <th style="width: 65px; class="right"><i class="icon-attention"></i>HW</th>';
+        html += '               <th style="width: 60px;" class="right"><i class="icon-air"></i>Fan</th>';
+        html += '               <th style="width: 75px;" class="right"><i class="icon-clock"></i>Engine</th>';
+        html += '               <th style="width: 83px;" class="right"><i class="icon-clock"></i>Memory</th>';
+        html += '               <th style="width: 80px;" class="right"><i class="icon-flash"></i>Voltage</th>';
+        html += '               <th style="width: 85px;" class="right"><i class="icon-fire"></i>Intensity</th>';
+        html += '               <th style="width: 310px; class="right"><i class="icon-group"></i>Current pool</th>';
+        html += '           </tr>';
+        html += '       </thead>';
+        html += '       <tbody>';
+        html += '       </tbody>';
+        html += '   </table>';
+        html += '</div>';
+
+    $('#rigs').append(html);
+
+    $('.current_pool_group[data-rig="' + rig + '"]').val(rig_data.active_pool_group).off('change').on('change', function(){
+        wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
+        ajax_request(murl('main', 'switch_pool_group'), {rig: rig, group: $(this).val()}, function(data) {
+            $.alerts._hide();
+            if(data.errors !== undefined) {
+                var err_str = 'There are some rig\'s which produced errors. Here is a list of all errors which occured:\n';
+                $.each(data.errors, function(k, v) {
+                    err_str += " - " + v + "\n";
+                });
+                alert(err_str);
+            }
+            if(data.success !== undefined) {
+                $.each(data.success, function(k, v) {
+                    update_pools(k, data.new_pools);
+                });
+            }
+        });
+    });
+    var rig_pools = $('.current_pool_pool[data-rig="' + rig + '"]');
+    rig_pools.off('change').on('change', function(){
+        ajax_request(murl('main', 'switch_pool'), {rig: rig, pool: $(this).val()}, function() {
+            success_alert('Pool switched successfully, Within the overview, the pool will be updated after the first accepted share was send to the new pool, this can take some time.', null, null, 10000);
+        });
+        rig_pools.val("");
+    });
+}
+
+function init_pager() {
+    if (phpminer.settings.config.enable_paging === undefined || phpminer.settings.config.enable_paging === "0") {
+        return;
+    }
+    
+    pagerdata.mepp = $('#pager').off('change').on('change', function() {
+        phpminer.settings.config.pager_mepp = $(this).val();
+        ajax_request(murl('main', 'set_pager_mepp'), {mepp: phpminer.settings.config.pager_mepp});
+        refresh_device_list(1, phpminer.settings.config.pager_mepp);
+        init_pager();
+    }).val();
+    
+    if (phpminer.settings.config.pager_mepp === undefined) {
+        phpminer.settings.config.pager_mepp = 1;
+    }
+    var pager = new SoopfwPager({
+        entries: phpminer.settings.rig_count,
+        max_entries_per_page: phpminer.settings.config.pager_mepp,
+        is_ajax: true,
+        uuid: "init_device_pager",
+        callback: function(current_page) {
+            refresh_device_list((parseInt(current_page) + 1), pagerdata.mepp);
+        },
+    });
+    pager.build_pager();
+    
+}
 function update_pools(rig, new_pools) {
     if (new_pools !== undefined && new_pools !== null) {
         phpminer.settings.rig_data[rig].pools = new_pools;
@@ -162,13 +198,42 @@ function update_pools(rig, new_pools) {
     });
 }
 
-function refresh_device_list() {
-    ajax_request(murl('main', 'get_device_list'), null, function(result) {
+function refresh_update_device_list() {
+    var rigs_to_update = [];
+    $.each(current_device_list, function(rig, data) {
+        rigs_to_update.push(rig);
+    });
+    ajax_request(murl('main', 'get_device_list'), {rigs: rigs_to_update}, function(result) {
         global_hashrate = 0;
         $.each(result, function(rig, devices) {
-            set_device_list(devices, rig);
+            if (devices['device_list'] === undefined) {
+                devices['device_list'] = {};
+            }
+            set_device_list(devices.device_list, rig);
         })
         $('#global_hashrate').html(get_hashrate_string(global_hashrate));
+    });
+}
+
+function refresh_device_list(page, mepp) {
+    if (refresh_device_list_timeout !== null) {
+        clearInterval(refresh_device_list_timeout);
+    }
+    ajax_request(murl('main', 'get_device_list'), {page: page, mepp: mepp}, function(result) {
+        $('#rigs').html("");
+        
+        current_device_list = {};
+        global_hashrate = 0;
+        $.each(result, function(rig, devices) {
+            add_rig(rig, devices);
+            update_pools(rig, devices.pools);
+            if (devices['device_list'] === undefined) {
+                devices['device_list'] = {};
+            }
+            set_device_list(devices.device_list, rig);
+        })
+        $('#global_hashrate').html(get_hashrate_string(global_hashrate));
+        refresh_device_list_timeout = setInterval(refresh_update_device_list, get_config('ajax_refresh_intervall', 5000));
     });
 }
 

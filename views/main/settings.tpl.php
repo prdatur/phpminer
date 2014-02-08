@@ -33,6 +33,10 @@
                             </select>
                         </td>
                     </tr>
+                    <tr>
+                        <td class="key"><label for="enable_paging">Enable rig paging:</label><i data-toggle="tooltip" title="When you have many rig's it will be much cleaner and more has more performance to enable paging within the overview." class="icon-help-circled"></i></td>
+                        <td class="value"><div class="slider"><input type="checkbox" id="enable_paging" name="enable_paging" value="1" <?php echo (isset($conf['enable_paging']) && $conf['enable_paging'] == "1" ? 'checked="checked"' : '');?> /><label for="enable_paging"></label></div></td>
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr>
