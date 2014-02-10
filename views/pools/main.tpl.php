@@ -23,6 +23,7 @@
                 <th style="width:200px;">Username</th>
                 <th style="width:200px;">Password</th>
                 <th>Group</th>
+                <th>Rig based</th>
             </tr>
         </thead>
         <tbody>
@@ -37,7 +38,7 @@
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan='3'>No pools configurated within cgminer</td>
+                    <td colspan='3'>No pools configurated within CGMiner/SGMiner</td>
                 </tr>
             <?php endif; ?>
         </tbody>
@@ -53,12 +54,12 @@
         <div class="panel panel-default" data-grp="<?php echo $group; ?>">
             <div class="panel-heading">
                 <h4 class="panel-title">
-                    <a data-toggle="collapse" href="#collapse_<?php echo preg_replace("[^a-zA-Z0-9]", "_", $group); ?>">
+                    <a data-toggle="collapse" href="#collapse_<?php echo preg_replace("/[^a-zA-Z0-9]/", "_", $group); ?>">
                         Group: <?php echo $group; ?>
                     </a>
                 </h4>
             </div>
-            <div id="collapse_<?php echo preg_replace("[^a-zA-Z0-9]", "_", $group); ?>" class="panel-collapse collapse in">
+            <div id="collapse_<?php echo preg_replace("/[^a-zA-Z0-9]/", "_", $group); ?>" class="panel-collapse collapse in">
                 <div class="panel-body">
                     <a class="btn btn-primary btn-sm" data-add-pool-group="<?php echo $group; ?>" style="margin-bottom: 10px;padding-left: 5px;"><i class="icon-plus"></i>Add a pool</a>
                     <a class="btn btn-danger btn-sm" data-del-pool-group="<?php echo $group; ?>" style="margin-bottom: 10px;padding-left: 5px; float: right;"><i class="icon-minus"></i>Delete group</a>
@@ -69,6 +70,7 @@
                                 <th style="width:200px;">Username</th>
                                 <th style="width:200px;">Password</th>
                                 <th style="width:60px;">Quota</th>
+                                <th style="width:60px;">Rig based</th>
                                 <th style="width:120px;">Options</th>
                             </tr>
                         </thead>
@@ -79,6 +81,7 @@
                                 <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="user" data-type="text" data-pk="<?php echo $uuid; ?>|<?php echo $group; ?>" data-url="<?php echo murl('pools', 'change_pool', null, true); ?>" data-title="Enter worker username"><?php echo $pool['user']; ?></a></td>
                                 <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="pass" data-type="text" data-pk="<?php echo $uuid; ?>|<?php echo $group; ?>" data-url="<?php echo murl('pools', 'change_pool', null, true); ?>" data-title="Enter worker password"><?php echo $pool['pass']; ?></a></td>
                                 <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="quota" data-type="text" data-pk="<?php echo $uuid; ?>|<?php echo $group; ?>" data-url="<?php echo murl('pools', 'change_pool', null, true); ?>" data-title="Pool Quota"><?php echo (isset($pool['quota'])) ? $pool['quota'] : '1'; ?></a></td>
+                                <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="rig_based" data-type="checklist" data-pk="<?php echo $uuid; ?>|<?php echo $group; ?>" data-url="<?php echo murl('pools', 'change_pool', null, true); ?>" data-title="Enable rig based pool"><?php echo (isset($pool['rig_based']) && $pool['rig_based'] === true) ? 'Enabled' : 'Disabled'; ?></a></td>
                                 <td><a href="javascript:void(0);" class="option-action" data-uuid="<?php echo $uuid; ?>|<?php echo $group; ?>" data-name="<?php echo $pool['url']; ?>" data-group="<?php echo $group; ?>" data-action="delete-pool" title="Delete"><i class="icon-trash"></i></a></td>
                             </tr>
                             <?php endforeach; ?>

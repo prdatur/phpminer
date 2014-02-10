@@ -2,10 +2,32 @@ Soopfw.behaviors.pools_main = function() {
     
     function reload_editable() {
         
-        $('*[data-pk]').editable('destroy').editable({
+       $('*[data-pk]:not(*[data-name="rig_based"])').editable('destroy').editable({
             ajaxOptions: {
                 dataType: 'json'
             },
+            success: function(response, new_value) {
+                parse_ajax_result(response, function(data) {
+                    var new_pk = data.new + '|' + data.group;
+                    var tr = $('tr[data-uuid="' + data.old + '|' + data.group + '"]');
+                    tr.attr('data-uuid', new_pk).data('uuid', new_pk);
+                    $('*[data-pk]', tr).attr('data-pk', new_pk).data("pk", new_pk);
+                    $('*[data-uuid]', tr).attr('data-uuid', new_pk).data("uuid", new_pk);
+                    $('a[data-action="delete-pool"]', tr).attr('name', data.url).data("name", data.url);
+                    setTimeout(function() {
+                        reload_editable();
+                    }, 100);
+                });
+            }
+        });
+        $('*[data-name="rig_based"]').editable('destroy').editable({
+            ajaxOptions: {
+                dataType: 'json'
+            },
+            source: [
+                    {value: 'Enabled', text: 'Enabled'},
+            ],
+            emptytext: 'Disabled',
             success: function(response, new_value) {
                 parse_ajax_result(response, function(data) {
                     var new_pk = data.new + '|' + data.group;
@@ -160,6 +182,7 @@ Soopfw.behaviors.pools_main = function() {
                                 '                    <th style="width:200px;">Username</th>' + 
                                 '                    <th style="width:200px;">Password</th>' + 
                                 '                    <th style="width:60px;">Quota</th>' + 
+                                '                    <th style="width:60px;">Rig based</th>' + 
                                 '                    <th style="width:120px;">Options</th>' + 
                                 '                </tr>' + 
                                 '            </thead>' + 
@@ -203,19 +226,23 @@ Soopfw.behaviors.pools_main = function() {
         dialog += '    <div class="simpleform">';
         dialog += '        <div class="form-element">';
         dialog += '            <label for="url">Pool url:</label>';
-        dialog += '            <input type="text" id="url" style="position: absolute;margin-left: 190px;width: 300px;"></input>';
+        dialog += '            <input type="text" id="url" style="position: absolute;margin-left: 210px;width: 300px;"></input>';
         dialog += '        </div>';
         dialog += '        <div class="form-element">';
         dialog += '            <label for="username">Worker username:</label>';
-        dialog += '            <input type="text" id="username" style="position: absolute;margin-left: 190px;width: 300px;"></input>';
+        dialog += '            <input type="text" id="username" style="position: absolute;margin-left: 210px;width: 300px;"></input>';
         dialog += '        </div>';
         dialog += '        <div class="form-element">';
         dialog += '            <label for="password">Worker password:</label>';
-        dialog += '            <input type="text" id="password" style="position: absolute;margin-left: 190px;width: 300px;"></input>';
+        dialog += '            <input type="text" id="password" style="position: absolute;margin-left: 210px;width: 300px;"></input>';
         dialog += '        </div>';
         dialog += '        <div class="form-element">';
         dialog += '            <label for="quota">Pool Quota for load balance:</label>';
-        dialog += '            <input type="text" id="quota" value="1" style="position: absolute;margin-left: 190px;width: 300px;"></input>';
+        dialog += '            <input type="text" id="quota" value="1" style="position: absolute;margin-left: 210px;width: 300px;"></input>';
+        dialog += '        </div>';
+        dialog += '        <div class="form-element" id="rig_based_elm">';
+        dialog += '            <label for="rig_based">Enable rig-based usernames:<i data-toggle="tooltip" title="When you enable this and switch with one rig to this pool, the username which is used for this pool will be appended with \'_rb_{rigname}\' where {rigname} will be replaced with the rigname. Notice all characters which are not a-z, A-Z or 0-9 will be removed. This is helpfull when using mining pools which have VARDIF activated. For example you have 2 rigs first name is: \'My rig 5\', second \'My other rig 1\' and you provide the userame \'user.myrigs\'. When you switch with rig \'My rig 5\' the used username will be \'user.myrigs_rb_myrig5\' now you also switch with  \'My other rig 1\' then the used username will be \'user.myrigs_rb_myotherrig1\'. Don\'t be afraid, after you activate the checkbox all required usernames will be displayed." class="icon-help-circled"></i></label>';
+        dialog += '            <input type="checkbox" id="rig_based" value="Enabled" style="position: absolute;margin-left: 210px;width: 16px;height: 16px;margin-top: 10px;"></input>';
         dialog += '        </div>';
         dialog += '    </div>';
         
@@ -229,7 +256,7 @@ Soopfw.behaviors.pools_main = function() {
                 },
                 click: function() {
                     wait_dialog('Please wait');
-                    ajax_request(murl('pools', 'add_pool'), {url: $('#url').val(), user: $('#username').val(), pass: $('#password').val(), group: group, quota: $('#quota').val()}, function(result) {
+                    ajax_request(murl('pools', 'add_pool'), {url: $('#url').val(), user: $('#username').val(), pass: $('#password').val(), group: group, quota: $('#quota').val(), rig_based: $('#rig_based').prop('checked')}, function(result) {
                         $.alerts._hide();
                         $('.pools[data-pool_group="' + group + '"]').append(
                              '<tr data-uuid="' + result.uuid + '|' + group + '">' + 
@@ -237,6 +264,7 @@ Soopfw.behaviors.pools_main = function() {
                              '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="user" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter worker username">' + result.user + '</a></td>' + 
                              '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="pass" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter worker password">' + $('#password').val() + '</a></td>' + 
                              '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="quota" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Pool Quota">' + $('#quota').val() + '</a></td>' + 
+                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="rig_based" data-type="checklist" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Rig based pool">' + $('#rig_based').val() + '</a></td>' + 
                              '   <td><a href="javascript:void(0);" class="option-action" data-uuid="' + result.uuid + '|' + group + '" data-name="' + result.url + '" data-group="' + group + '" data-action="delete-pool" title="Delete"><i class="icon-trash"></i></a></td>' + 
                              '</tr>').hide().fadeIn();
                      
@@ -249,8 +277,40 @@ Soopfw.behaviors.pools_main = function() {
                 }
             }
         ], {
-            width: 660
+            width: 660,
+            show: function() {
+                
+                
+                function check_rig_based() {
+                    $('#rig_based_elm > #rig_based_help').html("");
+                    if ($('#rig_based').prop('checked')) {
+                        
+                        var help_div = $('<div id="rig_based_help">Required usernames at the given pool:<br /></div>');
+                        var help = $('<ul></ul>');
+                        
+                        $.each(phpminer.settings.rig_names, function(k, v) {
+                            help.append('<li>For rig "<b>' + v + '</b>" the required usernames is: "<b>' + $('#username').val() + '_rb_' +  v.replace(/[^a-zA-Z0-9]/, "") + '</b>"</li>');
+                        });
+                        help_div.append(help);
+                        $('#rig_based_elm').append(help_div);
+                        
+                    }
+                }
+                
+                $('*[data-toggle="tooltip"]').tooltip();
+                $('#rig_based').off('click').on('click', function() {
+                    check_rig_based();
+                });
+                $('#username').off('change').on('change', function() {
+                    check_rig_based();
+                });
+                $('#username').off('keyup').on('keyup', function() {
+                    check_rig_based();
+                });
+            }
         });
+        
+        
 
     });
 };

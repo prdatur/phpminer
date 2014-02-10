@@ -75,7 +75,7 @@ table:not(.layout_table).device_list td.disabled {
     margin-bottom: 20px;
 }
 
-.rig_edit, .rig_delete {
+.rig_edit, .rig_delete, .reset_stats {
     display: inline-block;
     vertical-align: text-bottom;
     margin-left: 15px;

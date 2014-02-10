@@ -21,7 +21,7 @@ class main extends Controller {
 
         $cgminer_config = new Config($this->config->cgminer_config_path);
         if (!$cgminer_config->is_writeable()) {
-            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'The cgminer config file <b>' . $this->config->cgminer_config_path . '</b> is not writeable.');
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'The CGMiner/SGMiner config file <b>' . $this->config->cgminer_config_path . '</b> is not writeable.');
         }
 
         foreach ($this->config->cgminer_conf as $key => $val) {
@@ -181,7 +181,7 @@ class main extends Controller {
         $success = array();
         foreach ($rigs AS $current_rig) {
             if (!$this->get_rpc($current_rig)->check_cgminer_config_path()) {
-                $errors[] = 'The cgminer config file for rig <b>' . $current_rig . '</b> is not writeable.';
+                $errors[] = 'The CGMiner/SGMiner config file for rig <b>' . $current_rig . '</b> is not writeable.';
                 continue;
             }
 
@@ -204,7 +204,11 @@ class main extends Controller {
 
             foreach ($pools_to_add AS $pool) {
                 // Add the pool.
-                $this->get_api($current_rig)->addpool($pool['url'], $pool['user'], $pool['pass'], !empty($pool['quota']) ? $pool['quota'] : 1);
+                $user = "";
+                if (!empty($pool['rig_based'])) {
+                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $current_rig);
+                }
+                $this->get_api($current_rig)->addpool($pool['url'], $pool['user'] . $user, $pool['pass']);
                 usleep(100000); // Wait 100 milliseconds to let the pool to be alived.
             }
 
@@ -358,6 +362,9 @@ class main extends Controller {
         $this->js_config('pool_groups', $this->pool_config->get_groups());
         $this->js_config('config', $this->config->get_config());
         $this->assign('config', $this->config->get_config());
+        /** DEBUG PAGER
+         * $this->js_config('rig_count', count($rigs) + 20);
+         */
         $this->js_config('rig_count', count($rigs));
         $this->js_config('rig_data', $rig_js_data);
         $this->js_config('is_configurated', !empty($rigs));
@@ -538,6 +545,35 @@ class main extends Controller {
     /**
      * Ajax request to retrieve current configurated devices within cgminer.
      */
+    public function reset_stats() {
+        
+        $params = new ParamStruct();
+        $params->add_param('rig', PDT_STRING, '');
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
+        }
+        
+        $rig = $params->rig;
+        $rigs = array();
+        if (!empty($rig)) {
+            $rigs[] = $rig;
+        }
+        else {
+            $rigs = array_keys($this->config->rigs);
+        }
+        
+        foreach ($rigs AS $rig) {
+            $this->get_api($rig)->zero();
+        }
+        
+        AjaxModul::return_code(AjaxModul::SUCCESS, null, true, 'Rig stats resetted');
+    }
+    
+    /**
+     * Ajax request to retrieve current configurated devices within cgminer.
+     */
     public function get_device_list() {
         
         $params = new ParamStruct();
@@ -600,14 +636,24 @@ class main extends Controller {
         $api = new CGMinerAPI($params->ip, $params->port);
         try {
             $version = $api->test_connection();
-            if (empty($version) || !isset($version['CGMiner']) || !isset($version['API'])) {
-                $message = "Could not find CGMiner version or CGMiner API version. Please check that CGMiner is running and configurated how it is written within the readme of PHPMiner.";
+            if (empty($version) || (!isset($version['CGMiner']) && !isset($version['SGMiner'])) || !isset($version['API'])) {
+                $message = "Could not find CGMiner/SGminer version or CGMiner/SGminer API version. Please check that CGMiner/SGminer is running and configurated how it is written within the readme of PHPMiner.";
                 AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $message);
             }
-            $cgminer_version = explode(".", $version['CGMiner']);
+            
+            if (isset($version['CGMiner'])) {
+                $type = "CGMiner";
+                $orig_version = $version['CGMiner'];
+                $cgminer_version = explode(".", $version['CGMiner']);
+                $required_cgminer_version = array(3, 7, 2);
+            }
+            else if (isset($version['SGMiner'])) {
+                $type = "SGMiner";
+                $orig_version = $version['SGMiner'];
+                $cgminer_version = explode(".", $version['SGMiner']);
+                $required_cgminer_version = array(3, 7, 2);
+            }
             $api_version = explode(".", $version['API']);
-
-            $required_cgminer_version = array(3, 7, 2);
             $required_api_version = array(1, 32);
 
             $cgminer_version_valid = false;
@@ -633,15 +679,15 @@ class main extends Controller {
             }
 
             if ($cgminer_version_valid === false || $api_version_valid === false) {
-                $message = "PHPMiner could connect to cgminer, but cgminer runs in a unsupported version.\n\n";
+                $message = "PHPMiner could connect to CGMiner/SGMiner, but CGMiner/SGMiner runs in a unsupported version.\n\n";
 
                 $message .= "PHPMiner requires version: \n";
-                $message .= "CGMiner: <b>" . implode(".", $required_cgminer_version) . "</b>\n";
-                $message .= "CGMiner API: <b>" . implode(".", $required_api_version) . "</b>\n\n";
+                $message .= $type . ": <b>" . implode(".", $required_cgminer_version) . "</b>\n";
+                $message .= $type . " API: <b>" . implode(".", $required_api_version) . "</b>\n\n";
 
                 $message .= "Your version: \n";
-                $message .= "CGMiner: <b>" . $version['CGMiner'] . "</b>\n";
-                $message .= "CGMiner API: <b>" . $version['API'] . "</b>\n";
+                $message .= $type . ": <b>" . $orig_version . "</b>\n";
+                $message .= $type . " API: <b>" . $version['API'] . "</b>\n";
                 AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $message);
             }
 
@@ -685,7 +731,7 @@ class main extends Controller {
 
             $this->config->rigs = $new_rigs;
             AjaxModul::return_code(AjaxModul::SUCCESS, array(
-                'cgminer' => $version['CGMiner'],
+                'cgminer' => $orig_version,
                 'api' => $version['API'],
             ));
         } catch (APIException $ex) {
@@ -710,6 +756,15 @@ class main extends Controller {
         $resp = array();
         $rig_config = $this->config->rigs;
 
+        /* DEBUG PAGER
+         * $first = reset($rig_config);
+        for($i = 0; $i < 20;$i++ ) {
+            $first['name'] = uniqid() . $i;
+            $rig_config[$first['name']] = $first;
+        }
+         * 
+         */
+        
         $sort_mode = $this->config->get_value('overview_sort_mode');
         if (empty($sort_mode)) {
             $sort_mode = "configured";
@@ -819,7 +874,10 @@ class main extends Controller {
      *   The detailed info for a rig as an array or false on error.
      */
     private function get_detailed_rig_data($rig, $from_init = false) {
-
+        $orig = $rig;
+        /*DEBUG PAGER
+         * $rig = 'localhost';
+         */
         $rigs = $this->config->rigs;
         try {
             $pools = $this->get_api($rig)->get_pools();
@@ -867,7 +925,7 @@ class main extends Controller {
                 }
 
                 return array(
-                    'rig_name' => $rig,
+                    'rig_name' => $orig,
                     'device_list' => $devices,
                     'active_pool_group' => $current_active_group,
                     'pools' => $this->pool_config->get_pools($current_active_group),
@@ -877,7 +935,7 @@ class main extends Controller {
             }
             else {
                 return array(
-                    'rig_name' => $rig,
+                    'rig_name' => $orig,
                     'device_list' => $devices,
                     'donating' => !empty($rigs[$rig]['switch_back_group']),
                     'collapsed' => !empty($rigs[$rig]['collapsed']),

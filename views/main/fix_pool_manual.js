@@ -43,14 +43,14 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
             var data = uuid.split('|');
             var url = data[0];
             var user = data[1];
-            confirm("Are you sure you want to add the following pool to cgminer?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Add pool to cgminer', function() {
+            confirm("Are you sure you want to add the following pool to CGMiner/SGMiner?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Add pool to CGMiner/SGMiner', function() {
                 wait_dialog();
                 ajax_request(murl('main', 'fix_pool_manual_action'), {type: 3, url: url, user: user, pass: pass}, function() {
                     $.alerts._hide();
                     var html = '<tr data-uuid="' + url + '|' + user + '" data-pass="' + pass + '">'
                         + '    <td>' + url + '</td>'
                         + '    <td>' + user + '</td>'
-                        + '    <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_cgminer">Add to cgminer</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_group">Remove from pool</a></td>'
+                        + '    <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_cgminer">Add to CGMiner/SGMiner</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_group">Remove from pool</a></td>'
                         + '</tr>';
                     $('#cgminer_pools').append($(html).hide().fadeIn());
                     update_cfg_pools();
@@ -120,7 +120,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
                             var html = '<tr data-uuid="' + url + '|' + user + '" data-pass="' + pass + '">'
                                   + '    <td>' + url + '</td>'
                                   + '    <td>' + user + '</td>'
-                                  + '    <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_cgminer">Add to cgminer</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_group">Remove from pool</a></td>'
+                                  + '    <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_cgminer">Add to CGMiner/SGMiner</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_group">Remove from pool</a></td>'
                                   + '</tr>';
                             $('#group_pools').append($(html).hide().fadeIn());
                             update_cfg_pools();
@@ -141,7 +141,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
             var data = parent.data('uuid').split('|');
             var url = data[0];
             var user = data[1];
-            confirm("Are you sure you want to remove the following pool from cgminer?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Remove pool from cgminer', function() {
+            confirm("Are you sure you want to remove the following pool from CGMiner/SGMiner?\nPool: <b>" + url + "</b>\nUser: <b>" + user + "</b>", 'Remove pool from CGMiner/SGMiner', function() {
                 wait_dialog();
                 ajax_request(murl('main', 'fix_pool_manual_action'), {type: 1, url: url, user: user}, function() {
                     $.alerts._hide();
@@ -170,7 +170,7 @@ Soopfw.behaviors.main_fix_pool_manual = function() {
                 html += '<tr data-uuid="' + pool.url + '|' + pool.user + '" data-pass="' + pool.pass + '">'
                       + '    <td>' + pool.url + '</td>'
                       + '    <td>' + pool.user + '</td>'
-                      + '    <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_cgminer">Add to cgminer</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_group">Remove from pool</a></td>'
+                      + '    <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_cgminer">Add to CGMiner/SGMiner</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_group">Remove from pool</a></td>'
                       + '</tr>';
             });
         }

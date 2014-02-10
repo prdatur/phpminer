@@ -3,7 +3,7 @@
     <head>
         <TITLE>PHPMiner - Mine better</TITLE>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-        <meta name="description" content="PHPMiner is fully implemented api client for cgminer."/>
+        <meta name="description" content="PHPMiner is fully implemented api client for CGMiner/SGMiner."/>
         <meta name="ROBOTS" content="INDEX, FOLLOW">
 
         <!-- Add CSS files -->

@@ -30,7 +30,7 @@ class Config {
             'multivalue' => true,
         ),
         'api-description' => array(
-            'description' => "Description placed in the API status header, default: cgminer version",
+            'description' => "Description placed in the API status header, default: CGMiner/SGMiner version",
             'values' => PDT_STRING,
         ),
         'api-groups' => array(
@@ -86,7 +86,7 @@ class Config {
             'values' => PDT_BOOL,
         ),
         'benchmark' => array(
-            'description' => "Run cgminer in benchmark mode - produces no shares",
+            'description' => "Run CGMiner/SGMiner in benchmark mode - produces no shares",
             'values' => PDT_BOOL,
         ),
         'bfl-range' => array(

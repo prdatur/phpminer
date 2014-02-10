@@ -29,8 +29,10 @@ class PoolConfig extends Config {
      *   The group to retrieve. (optional, default="default")
      * @param int $quota
      *   The pool quota. (Optional, default = 1)
+     * @param boolean $rig_based
+     *   If this pool is rigbased or not. (Optional, default = false)
      */
-    public function add_pool($url, $user, $pass, $group = 'default', $quota = 1) {
+    public function add_pool($url, $user, $pass, $group = 'default', $quota = 1, $rig_based = false) {
         // Create the group if it doesn't exist yet.
         if (!isset($this->config[$group])) {
             $this->config[$group] = array();
@@ -42,6 +44,7 @@ class PoolConfig extends Config {
             'pass' => $pass,
             'group' => $group,
             'quota' => $quota,
+            'rig_based' => $rig_based,
         );
         
         // Save the new config instantly.
@@ -126,6 +129,7 @@ class PoolConfig extends Config {
         if (empty($user)) {
             return md5($url);
         }
+        $user = preg_replace("/_rb_[a-zA-Z0-9]+$/", "", $user);
         return md5($url . '|' . $user);
     }
         
@@ -143,12 +147,19 @@ class PoolConfig extends Config {
      *   True if all ok, else the error as a human readable string.
      */
     public function check_pool($url, $user, $pass) {
+        static $config = null;
+        if ($config === null) {
+            $config = new Config(SITEPATH . '/config/config.json');
+        }
         
         // Get the url parts.
         $url_parts = parse_url($url);
         $connection_check = new HttpClient();
         if (!isset($url_parts['host'])) {
             return 'Invalid pool url.';
+        }
+        if ($config->allow_offline_pools) {
+            return true;
         }
         return $connection_check->check_pool($url_parts['host'], $url_parts['port'], (isset($url_parts['scheme']) && $url_parts['scheme'] === 'stratum+tcp') ? 'stratum' : 'http', $user, $pass);
     }
@@ -174,6 +185,9 @@ class PoolConfig extends Config {
      *   The uuid.
      * @param string $group
      *   The group to retrieve. (optional, default="default")
+     * 
+     * @return boolean
+     *   True if pool was found and removed, else false.
      */
     public function remove_pool_by_uuid($uuid, $group = 'default') {
         
@@ -186,8 +200,10 @@ class PoolConfig extends Config {
                 
                 // Save the new values.
                 $this->save();
+                return true;
             }
         }
+        return false;
     }
     
     /**
@@ -203,8 +219,10 @@ class PoolConfig extends Config {
      *   The new password.
      * @param int $quota
      *   The quota (Optional, default = 1).
+     * @param boolean $rig_based
+     *   If this pool is rigbased or not. (Optional, default = false)
      */
-    public function update_pool($old_pool_id, $url, $user, $pass, $quota = 1) {
+    public function update_pool($old_pool_id, $url, $user, $pass, $quota = 1, $rig_based = false) {
         
         // Loop through each pool.
         foreach ($this->config AS $pool_group => $pool_data) {
@@ -215,7 +233,7 @@ class PoolConfig extends Config {
                 unset($this->config[$pool_group][$old_pool_id]);
                 
                 // Add the pool with the new data.
-                $this->add_pool($url, $user, $pass, $pool_group, $quota);
+                $this->add_pool($url, $user, $pass, $pool_group, $quota, $rig_based);
             }
             
         }

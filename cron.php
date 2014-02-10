@@ -131,7 +131,7 @@ if (!$notification_config->is_empty()) {
                 // Try to restart cgminer.
                 $rpc->restart_cgminer();
                 if ($notify_cgminer_restart) {
-                    $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . '.');
+                    $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner/SGMiner on rig ' . $rig . '.');
                 }
                 // Give cgminer time to start the api.
                 sleep(10);
@@ -159,7 +159,7 @@ if (!$notification_config->is_empty()) {
                         if ($notification_data['restart_dead'] === 'reboot') {
                             $need_reboot = true;
                             if ($notify_reboot) {
-                                $notifications['reboot'][$rig] = array('Needed to reboot CGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
+                                $notifications['reboot'][$rig] = array('Needed to reboot CGMiner/SGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
                             }
                         }
                         else {
@@ -180,7 +180,7 @@ if (!$notification_config->is_empty()) {
                             // Give cgminer time to start the api.
                             sleep(10);
                             if ($notify_cgminer_restart) {
-                                $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
+                                $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner/SGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
                             }
                         }
                     }
@@ -345,7 +345,7 @@ if (!$notification_config->is_empty()) {
                             // Try to restart cgminer.
                             $rpc->restart_cgminer();
                             if ($notify_cgminer_restart) {
-                                $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner on rig ' . $rig . '.');
+                                $notifications['cgminer_restart'][$rig] = array('Needed to restart CGMiner/SGMiner on rig ' . $rig . '.');
                             }
                         }
                     }

@@ -132,7 +132,7 @@
                                 <td class="value"><div class="slider"><input type="checkbox" id="notify_reboot_<?php echo $rig_id; ?>" name="notify_reboot" value="1" <?php echo (isset($rig_conf['notify_reboot']) && $rig_conf['notify_reboot'] == "1" ? 'checked="checked"' : '');?> /><label for="notify_reboot_<?php echo $rig_id; ?>"></label></div></td>
                             </tr>
                             <tr>
-                                <td class="key">Notify on cgminer restart:</td>
+                                <td class="key">Notify on CGMiner/SGMiner restart:</td>
                                 <td class="value"><div class="slider"><input type="checkbox" id="notify_cgminer_restart_<?php echo $rig_id; ?>" name="notify_cgminer_restart" value="1" <?php echo (isset($rig_conf['notify_cgminer_restart']) && $rig_conf['notify_cgminer_restart'] == "1" ? 'checked="checked"' : '');?> /><label for="notify_cgminer_restart_<?php echo $rig_id; ?>"></label></div></td>
                             </tr>
                             <tr>
@@ -150,7 +150,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="key">Restart CGMiner if not running:</td>
+                                <td class="key">Restart CGMiner/SGMiner if not running:</td>
                                 <td class="value"><div class="slider"><input type="checkbox" id="restart_cgminer_<?php echo $rig_id; ?>" name="restart_cgminer" value="1" <?php echo (isset($rig_conf['restart_cgminer']) && $rig_conf['restart_cgminer'] == "1" ? 'checked="checked"' : '');?> /><label for="restart_cgminer_<?php echo $rig_id; ?>"></label></div></td>
                             </tr>
                         </tbody>

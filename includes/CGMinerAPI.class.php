@@ -811,6 +811,19 @@ class CGMinerAPI {
     }
     
     /**
+     * Reset stats.
+     * 
+     * @param string $type
+     *   The type to reset, can be 'bestshare' or 'all'. (Optional, default = 'all')
+     * 
+     * @return array
+     *   API Response.
+     */
+    public function zero($type = 'all') {
+        return $this->request('zero', false, array(($type !== 'all') ? 'bestshare' : 'all', 'f'), false);
+    }
+    
+    /**
      * Returns wether the given api command exists or not.
      * 
      * @param string $cmd 

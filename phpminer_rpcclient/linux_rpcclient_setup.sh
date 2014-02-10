@@ -57,16 +57,16 @@ else
     exit 0
 fi
 
-echo "Please provide the path to cgminer.conf. If you don't have a config file yet, provide a directory where '$USER' has read AND write access (Default: /opt/cgminer):"
+echo "Please provide the path to cgminer.conf/sgminer.conf. If you don't have a config file yet, provide a directory where '$USER' has read AND write access (Default: /opt/cgminer):"
 read CGMINER_PATH
 if [ -n "$CGMINER_PATH" ]; then
-    echo "Using cgminer path: $CGMINER_PATH"
+    echo "Using CGMiner/SGMiner path: $CGMINER_PATH"
 else
     CGMINER_PATH="/opt/cgminer"
-    echo "Using cgminer path: $CGMINER_PATH"
+    echo "Using CGMiner/SGMiner path: $CGMINER_PATH"
 fi
 CGMINER_CONFIG="$CGMINER_PATH/cgminer.conf"
-echo "Using cgminer config file: $CGMINER_CONFIG"
+echo "Using CGMiner/SGMiner config file: $CGMINER_CONFIG"
 
 echo "Please provide the amd sdk path. At some machines this is required to enable overclocking. (Default: empty):"
 read AMD_SDK
@@ -130,6 +130,12 @@ echo "%reboot ALL=(root) NOPASSWD: /sbin/reboot" >> /etc/sudoers
 echo "%reboot ALL=(root) NOPASSWD: /sbin/shutdown" >> /etc/sudoers
 
 # Install cronjob
+echo "Install cronjob."
+echo "# /etc/cron.d/phpminer_rpcclient: crontab fragment for phpminer_rpcclient" > /etc/cron.d/phpminer_rpcclient
+echo "#  This will run the cronjob script for phpminer to send notifications and other periodic tasks." >> /etc/cron.d/phpminer_rpcclient
+echo "* * * * * root sh $PHPMINER_PATH/rpcclient_cron.sh" >>  /etc/cron.d/phpminer_rpcclient
+
+# Install service script
 echo "Config service script."
 
 SEARCH=$(echo "{/PATH/TO/phpminer_rpcclient}" | sed -e 's/[]\/()$*.^|[]/\\&/g')
@@ -160,7 +166,8 @@ else
 fi
 
 echo "Starting phpminer rpc client"
-service phpminer_rpcclient start
+/etc/init.d/phpminer_rpcclient start
+
 
 echo "PHPMiner rig installation finshed."
 echo "Please reboot the rig now. After rebooting wait 1 minute, then type 'ps auxf | grep phpminer | grep -v grep' and check if phpminer_rpcclient is started successfully (one line should appear)"

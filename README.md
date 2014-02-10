@@ -1,20 +1,20 @@
     Description
 ===========
-PHPMiner is a nice looking web interface for cgminer in conjunction with a graphiccard.
+PHPMiner is a nice looking web interface for cgminer/sgminer in conjunction with a graphiccard.
 If you running your mining machine under Linux or Windows, this is probably the system you want.
 
 PHPMiner has multi rig support, so you can add all your rig's to PHPMiner and controll them via one interface.
 
 How does it work?
 ===========
-PHPMiner connects through the API from CGMiner, there you will be able to get the current status of your devices.
+PHPMiner connects through the API from CGMiner/SGMiner, there you will be able to get the current status of your devices.
 Also you can set monitor values for temperature, load and hashrate. PHPMiner is able to check those values periodicly and can send notifications to different systems if 
 for example the GPU Temerature is too high.
-PHPMiner can also check if CGMiner is running and if not it can automatically try to restart it.
+PHPMiner can also check if CGMiner/SGMiner is running and if not it can automatically try to restart it.
 If a GPU Died and a CGMiner "defunc" process exist, PHPMiner can check those issues too and can reboot your machine.
 This will prevent you machine from long mining timeouts.
 .... but this is not all.
-The CGminer API provides also the possibility to overclock your GPU live, so you don't have to set the values in the config and restart cgminer.
+The CGminer/SGMiner API provides also the possibility to overclock your GPU live, so you don't have to set the values in the config and restart CGMiner/SGMiner.
 You can set the fan speed, gpu engine clock, gpu memory clock, gpu intensity and the gpu voltage (*on Linux it seems setting voltage has no effect*)
 
 Quick install for debian based linux system
@@ -36,18 +36,19 @@ Requirements for PHPMiner
 * php5-cli
 * PHP 5.3+
  * php5-curl (for notifications with rapidpush and/or custom post)
+ * php5-json
 
-The original CGMiner v3.7.2 is required. 
-However some API commands are slowing down PHPMiner experience like switching pools. With the original CGMiner, PHPMiner have to wait that each device send a accepted share to the new pool after switching pool groups, else it can not determine that the pool switch succeed.
+The original CGMiner v3.7.2 or SGMiner >= 4.1.0 is required. 
+However some API commands are slowing down PHPMiner experience like switching pools. With the original CGMiner/SGMiner, PHPMiner have to wait that each device send a accepted share to the new pool after switching pool groups, else it can not determine that the pool switch succeed.
 In a fork of cgminer v3.7.2 I implented some more API Commands including to retrieve the current mining pool directly.
 To have the best experience get the forked version and use them instead of the original, I only improved the API commands, the rest works as the original.
 Just a notice:
 No worry about updates. you will not miss updates from cgminer, because cgminer v3.7.2 is the last versions with scrypt support and the author will not update it, so you just benefit from my repo.
 https://github.com/prdatur/cgminer
 
-Requirements for rebooting machine on defunc cgminer process.
+Requirements for rebooting machine on defunc CGMiner/SGMiner process.
 ===========
-If you want to allow PHPMiner to reboot your machine after it detects a defunced cgminer script. 
+If you want to allow PHPMiner to reboot your machine after it detects a defunced CGMiner/SGMiner script. 
 You either need to run the phpminer_rpcclient/index.php as root or the user which runs the phpminer_rcpclient needs sudo access to reboot without password.
 
 With normal user:
@@ -133,7 +134,7 @@ with sheduled tasks, or you can use cronjob software nncron:
 http://www.nncron.ru/ - lightweight and free
 
 
-## Pre-requirements within the config of CGMiner.
+## Pre-requirements within the config of CGMiner/SGMiner.
 
 API needs to be enabled:
 
@@ -199,7 +200,7 @@ Within the phpminer_rpcclient directory, there exists a file **phpminer_rpc**.
 
 Open this file and replace:
 
-    **{USER}** - With a user which can reboot your machine (config from above) and can start cgminer
+    **{USER}** - With a user which can reboot your machine (config from above) and can start CGMiner/SGMiner
     **{/PATH/TO/phpminer_rpcclient}** to the path where you copied the phpminer_rpcclient.
 
 Now copy the file into **/etc/init.d/**
@@ -239,6 +240,25 @@ The command which needs to be executed is:
    php -f {/PATH/TO/phpminer_rpcclient}/index.php
 
 Replace **{/PATH/TO/phpminer_rpcclient}** to the path where you copied the phpminer_rpcclient.
+
+### Installing RPC-Client cronjob 
+
+The cronjob will make sure that phpminer_rpcclient is up and running.
+
+#### Linux
+Please add a file named **phpminer_rpcclient** to **/etc/cron.d/** with the following contents:
+
+    # /etc/cron.d/phpminer_rpcclient: crontab fragment for phpminer_rpcclient
+    #  This will run the cronjob script for phpminer to send notifications and other periodic tasks.
+    * * * * * root sh {/path/to/phpminer_rpcclient}/rpcclient_cron.sh
+
+Please replace:
+
+**{/path/to/phpminer_rpcclient}** with the path to your phpminer rpcclient directory.
+
+### Windows
+
+For now this check script only exist for linux, if any one want to provide a script for Windows, let me know.
 
 ### Finish configuration
 

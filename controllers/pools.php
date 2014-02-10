@@ -13,13 +13,14 @@ class pools extends Controller {
         if ($this->pool_config->is_empty()) {
             $this->pool_config->add_group('default', 0, 0);
         }
+        $this->js_config('rig_names', array_keys($this->config->rigs));
     }
 
     public function change_pool() {
         $params = new ParamStruct();
         $params->add_required_param('pk', PDT_STRING);
         $params->add_required_param('name', PDT_STRING);
-        $params->add_required_param('value', PDT_STRING);
+        $params->add_isset_param('value', PDT_STRING);
 
         $params->fill();
         if (!$params->is_valid(true)) {
@@ -27,6 +28,14 @@ class pools extends Controller {
             echo implode("\n", $params->get_errors());
             exit();
         }
+        
+        if ($params->name === 'rig_based') {
+            $val = ($params->value === 'Enabled') ? true : false;
+        }
+        else {
+            $val = $params->value;
+        }
+        
         list($uuid, $group) = explode("|", $params->pk, 2);
         $this->load_pool_config();
         $old_pool = $this->pool_config->get_pool($uuid, $group);
@@ -35,7 +44,7 @@ class pools extends Controller {
             echo 'No such pool';
             exit();
         }
-        $old_pool[$params->name] = $params->value;
+        $old_pool[$params->name] = $val;
         
         foreach (array_keys($this->config->rigs) AS $rig) {
             if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $group)  {
@@ -52,7 +61,7 @@ class pools extends Controller {
             exit();
         }
         
-        $this->pool_config->update_pool($uuid, $old_pool['url'], $old_pool['user'], $old_pool['pass'], $old_pool['quota']);
+        $this->pool_config->update_pool($uuid, $old_pool['url'], $old_pool['user'], $old_pool['pass'], $old_pool['quota'], $old_pool['rig_based']);
         AjaxModul::return_code(AjaxModul::SUCCESS, array(
             'group' => $group,
             'old' => $uuid,
@@ -173,7 +182,7 @@ class pools extends Controller {
 
                     // After removing active pool, check if there are some alive ones to which we can switch else we can't delete the pool.
                     if (empty($alive_pools)) {
-                        AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not delete the only active pool, there are no other pools which we can switch to it. CGMiner will not let you delete the pool which is currently in use');
+                        AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not delete the only active pool, there are no other pools which we can switch to it. CGMiner/SGMiner will not let you delete the pool which is currently in use');
                     }
 
                     // Get the pool where we can switch to.
@@ -223,6 +232,7 @@ class pools extends Controller {
         $params->add_required_param('pass', PDT_STRING);
         $params->add_param('group', PDT_STRING, 'default');
         $params->add_param('quota', PDT_INT, 1);
+        $params->add_param('rig_based', PDT_BOOL, false);
 
         $params->fill();
         if (!$params->is_valid()) {
@@ -232,33 +242,54 @@ class pools extends Controller {
             ));
         }
 
+        if (preg_match("/_rb_/", $params->user)) {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'Due to the internal system a worker username can not include the substring "_rb_".');
+        }
         if ($params->group === 'donate') {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not add pools to donate group.');
         }
         
         $this->load_pool_config();
-        $result = $this->pool_config->check_pool($params->url, $params->user, $params->pass);
-        if ($result !== true) {
-            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
-                'url' => $params->url,
-                'user' => $params->user,
+        if ($params->rig_based) {
+            foreach ($this->config->rigs AS $rig_name => $tmp) {
+                $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
+                $result = $this->pool_config->check_pool($params->url, $params->user . '_rb_' . $user, $params->pass);
+        
+                if ($result !== true) {
+                    AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
+                        'url' => $params->url,
+                        'user' => $params->user . '_' . $user,
                     ), true, $result);
+                }
+            }
+        }
+        else {
+            $result = $this->pool_config->check_pool($params->url, $params->user, $params->pass);
+
+            if ($result !== true) {
+                AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
+                    'url' => $params->url,
+                    'user' => $params->user,
+                ), true, $result);
+            }
         }
         $this->load_pool_config();
         
         // Before we adding the pool we have to check if the group to which we add the pool is in a rig active, if so we have to add the pool into the cgminer of the rig.
         foreach (array_keys($this->config->rigs) AS $rig) {
             if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group) {
-                $this->get_api($rig)->addpool($params->url, $params->user, $params->pass);
+                $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
+                $this->get_api($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
             }
         }
         
         // Now add the pool to the config.
-        $this->pool_config->add_pool($params->url, $params->user, $params->pass, $params->group, $params->quota);
+        $this->pool_config->add_pool($params->url, $params->user, $params->pass, $params->group, $params->quota, $params->rig_based);
                 
         AjaxModul::return_code(AjaxModul::SUCCESS, array(
             'url' => $params->url,
             'user' => $params->user,
+            'rig_based' => $params->rig_based,
             'uuid' => $this->pool_config->get_pool_uuid($params->url, $params->user),
         ));
     }

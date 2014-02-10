@@ -246,7 +246,14 @@ function prettyPrint($json) {
 }
 
 log_console('Starting RPC Server at ' . $config['ip'] . ' on port ' . $config['port']);
-$master = stream_socket_server('tcp://' . $config['ip'] . ':' . $config['port'], $errno, $err, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, stream_context_create()) or die("socket_create() failed");
+$master = @stream_socket_server('tcp://' . $config['ip'] . ':' . $config['port'], $errno, $err, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, stream_context_create());
+if ($master === false) {
+    if (!empty($check_file)) {
+        @unlink($check_file);
+        log_console("Could not start rpc client, Network interface not available");
+        exit;
+    }
+}
 $sockets[] = $master;
 
 function &get_user_by_socket($socket) {
@@ -390,3 +397,7 @@ while (true) {
     }
 }
 
+// Just make sure that tmp pid file is removed after script end.
+if (!empty($check_file)) {
+    @unlink($check_file);
+}

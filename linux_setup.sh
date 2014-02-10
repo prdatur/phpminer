@@ -7,6 +7,7 @@ fi
 # Instal required software.
 echo "Install required software."
 apt-get install -y apache2 libapache2-mod-php5 php5-cli php5-mcrypt php5-mhash curl php5-curl
+apt-get install -y php5-json
 
 # Setup required variables.
 echo "Setup required variables."
@@ -25,7 +26,7 @@ echo "# /etc/cron.d/phpminer: crontab fragment for phpminer" > /etc/cron.d/phpmi
 echo "#  This will run the cronjob script for phpminer to send notifications and other periodic tasks." >> /etc/cron.d/phpminer
 echo "* * * * * $APACHE_USER php -f $PHPMINER_PATH/cron.php" >>  /etc/cron.d/phpminer
 
-# Install cronjob
+# Install apache vhost
 echo "Install apache2 vhost."
 echo "<VirtualHost *:$APACHE_PORT>
         ServerAdmin webmaster@$DOMAIN

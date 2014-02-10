@@ -235,7 +235,7 @@ Editableform is linked with one of input types, e.g. 'text', 'select' etc.
 
             //convert value for submitting to server
             var submitValue = this.input.value2submit(newValue);
-            
+            console.log(submitValue, 'submitValue');
             this.isSaving = true;
             
             //sending data to server
@@ -3186,7 +3186,23 @@ $(function(){
                 }
             });            
         },
-       
+       //set checked on required checkboxes
+       value2input: function(value) {
+            this.$input.prop('selected', false);
+            if($.isArray(value) && value.length) {
+               this.$input.each(function(i, el) {
+                   var $el = $(el);
+                   // cannot use $.inArray as it performs strict comparison
+                   $.each(value, function(j, val){
+                       /*jslint eqeq: true*/
+                       if($el.val() == val) {
+                       /*jslint eqeq: false*/                           
+                           $el.prop('selected', true);
+                       }
+                   });
+               }); 
+            }  
+        },  
         value2htmlFinal: function(value, element) {
             var text = '', 
                 items = $.fn.editableutils.itemsByValue(value, this.sourceData);
@@ -3272,9 +3288,10 @@ $(function(){
             this.$input = this.$tpl.find('input[type="checkbox"]');
             this.setClass();
         },
-       
+       html2value: function (html) {return html;},
        value2str: function(value) {
-           return $.isArray(value) ? value.sort().join($.trim(this.options.separator)) : '';
+           console.log(value, 'value');
+           return value;
        },  
        
        //parse separated string
@@ -3284,9 +3301,9 @@ $(function(){
                reg = new RegExp('\\s*'+$.trim(this.options.separator)+'\\s*');
                value = str.split(reg);
            } else if($.isArray(str)) {
-               value = str; 
+               value = str.join(); 
            } else {
-               value = [str];
+               value = str;
            }
            return value;
         },       
@@ -3310,9 +3327,10 @@ $(function(){
         },  
         
        input2value: function() { 
-           var checked = [];
+           var checked = "";
            this.$input.filter(':checked').each(function(i, el) {
-               checked.push($(el).val());
+               checked = $(el).val();
+               return false;
            });
            return checked;
        },            

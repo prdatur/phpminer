@@ -153,7 +153,7 @@ class Controller {
                 $cache[$rig] = $api;
             } catch (APIException $ex) {
                 // Not configured and also no config. Switch to setup.
-                throw new APIException('No connection to cgminer at rig: ' . $rig, APIException::CODE_SOCKET_CONNECT_ERROR);
+                throw new APIException('No connection to CGMiner/SGMiner at rig: ' . $rig, APIException::CODE_SOCKET_CONNECT_ERROR);
             }
 
             

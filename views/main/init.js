@@ -49,6 +49,10 @@ Soopfw.behaviors.main_init = function() {
             });
         });
     });
+    
+    $('.reset_stats').off('click').on('click', function() {
+        reset_stats($(this).data('rig'));
+    });
 
     $('.swap_rig').off('click').on('click', function() {
         var datarig = $(this).data('rig');
@@ -72,16 +76,39 @@ Soopfw.behaviors.main_init = function() {
     $('#add_rig').off('click').on('click', function() {
         add_rig_dialog(true);
     });
+    
+    $('#reset_all_rig_stats').off('click').on('click', function() {
+        var that = this;
+        confirm('Do you really want to reset stats for all rigs?', 'Resets stats', function() {
+            reset_stats();
+        });
+    });
 
     refresh_device_list_timeout = setInterval(refresh_update_device_list, get_config('ajax_refresh_intervall', 5000));
     init_pager();
 };
 
+function reset_stats(rig) {
+    var data = {};
+    if (rig !== undefined) {
+        data['rig'] = rig;
+    }
+    ajax_request(murl('main', 'reset_stats'), data, function() {
+        success_alert('Stats resetted');
+    });
+}
+
 function add_rig(rig, rig_data) {
+    if (phpminer.settings.rig_data[rig] === undefined) {
+        phpminer.settings.rig_data[rig] = rig_data;
+    }
     rig_collapsed[rig] = (rig_data.collapsed !== undefined) ? rig_data.collapsed : false;
     rig_counter++;
     var html  = '<div class="rig" data-rig="' + rig + '">';
-        html += '   <h2 style="display: inline;"><span data-rig="' + rig + '" class="swap_rig"><i class="icon-' + ((rig_data.collapsed) ? 'plus' : 'minus') + '"></i></span>' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2> <div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> <div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
+        html += '   <h2 style="display: inline;"><span data-rig="' + rig + '" class="swap_rig"><i class="icon-' + ((rig_data.collapsed) ? 'plus' : 'minus') + '"></i></span>' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2>';
+        html += '<div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> ';
+        html += '<div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
+        html += '<div class="reset_stats" data-rig="' + rig + '"><i class="icon-ccw">Reset stats</i></div>';
 
         if (!empty(phpminer.settings.pool_groups)) {
             html += '<div class="pool_switching_container" data-rig="' + rig + '" style="float: right;' + ((rig_data.donating) ? 'display: none;' : '') + '">';
@@ -206,6 +233,7 @@ function refresh_update_device_list() {
     ajax_request(murl('main', 'get_device_list'), {rigs: rigs_to_update}, function(result) {
         global_hashrate = 0;
         $.each(result, function(rig, devices) {
+            
             if (devices['device_list'] === undefined) {
                 devices['device_list'] = {};
             }

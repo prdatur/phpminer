@@ -196,7 +196,7 @@ function murl($controller, $action, $data, $is_html) {
 
 Soopfw.system_footer_behaviour = function() {
         $('#save_cg_miner_config').off('click').on('click', function() {
-            confirm("You are going to save the current changed values to cgminer config.\nAfter saving, when cgminer starts it will use the new settings.\n<b>Please make sure that your system runs stable with all overclocked settings.<b>", 'Warning', function() {
+            confirm("You are going to save the current changed values to CGMiner/SGMiner config.\nAfter saving, when CGMiner/SGMiner starts it will use the new settings.\n<b>Please make sure that your system runs stable with all overclocked settings.<b>", 'Warning', function() {
                ajax_request(murl('main', 'save_config'), null, function() {
                    success_alert('Config saved', function() {
                        $('#save_cg_miner_config_container').fadeOut('slow');
@@ -249,8 +249,8 @@ function add_rig_dialog(add, data) {
        title  = 'Add a new rig'; 
     }
     
-    dialog += '    Please provide the connection settings to your cgminer. <br />';
-    dialog += '    You can find it within cgminer.conf <br />';
+    dialog += '    Please provide the connection settings to your CGMiner/SGMiner. <br />';
+    dialog += '    You can find it within cgminer.conf/sgminer.conf <br />';
     dialog += '    Please make sure to enable api-listen and set "api-allow": "W:{YOUR_IP}" where <b>{YOUR_IP}</b> is the ip-address of the server which runs the main script of phpminer<br />';
     dialog += '    The port is written at <b>api-port</b> (default: 4028)<br />';
     dialog += '    <div class="simpleform">';
@@ -259,16 +259,16 @@ function add_rig_dialog(add, data) {
     dialog += '            <input type="text" name="name" id="name" value="' + ((data.name !== undefined) ? data.name : 'localhost') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
     dialog += '        <div class="form-element">';
-    dialog += '            <label for="ip">CGminer API IP:</label>';
+    dialog += '            <label for="ip">CGMiner/SGMiner API IP:</label>';
     dialog += '            <input type="text" name="ip" id="ip" value="' + ((data.ip !== undefined) ? data.ip : '127.0.0.1') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
     dialog += '        <div class="form-element">';
-    dialog += '            <label for="port">CGminer API Port:</label>';
+    dialog += '            <label for="port">CGMiner/SGMiner API Port:</label>';
     dialog += '            <input type="text" name="port" id="port" value="' + ((data.port !== undefined) ? data.port : '4028') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
     dialog += '        <div>';
-    dialog += '        Because PHPMiner can handle multiple mining rigs, it is required that at each mining rig the phpminer_rpcclient is running. It must run under the user where it can start cgminer';
-    dialog += '        This is required in order to restart cgminer (linux + windows) or reboot machine (linux only) from the main system. A instructions how to set it up is found within README.md';
+    dialog += '        Because PHPMiner can handle multiple mining rigs, it is required that at each mining rig the phpminer_rpcclient is running. It must run under the user where it can start CGMiner/SGMiner';
+    dialog += '        This is required in order to restart CGMiner/SGMiner (linux + windows) or reboot machine (linux only) from the main system. A instructions how to set it up is found within README.md';
     dialog += '        </div>';
     dialog += '        <div class="form-element">';
     dialog += '            <label for="http_ip">PHPMiner RPC Host/IP:</label>';
@@ -279,7 +279,7 @@ function add_rig_dialog(add, data) {
     dialog += '            <input type="text" name="http_port" id="http_port" value="' + ((data.http_port !== undefined) ? data.http_port : '11111') + '"  style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
     dialog += '        <div>';
-    dialog += '        This key you have to configure in the index.php within the phpminer_rpcclient folder.';
+    dialog += '        This key you have to configure in the config.php within the phpminer_rpcclient folder.';
     dialog += '        </div>';
     dialog += '        <div class="form-element">';
     dialog += '            <label for="rpc_key">PHPMiner RPC Key:</label>';

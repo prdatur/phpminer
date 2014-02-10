@@ -20,6 +20,10 @@
                         <td class="value"><div class="slider"><input type="checkbox" id="enable_donation" name="enable_donation" value="1" <?php echo (!isset($conf['enable_donation']) || $conf['enable_donation'] == "1" ? 'checked="checked"' : '');?> /><label for="enable_donation"></label></div></td>
                     </tr>
                     <tr>
+                        <td class="key">Allow offline pools:<i data-toggle="tooltip" title="Enable this option to allow adding pools which are offline or credentials are invalid." class="icon-help-circled"></i></td>
+                        <td class="value"><div class="slider"><input type="checkbox" id="allow_offline_pools" name="allow_offline_pools" value="1" <?php echo (isset($conf['allow_offline_pools']) && $conf['allow_offline_pools'] == "1" ? 'checked="checked"' : '');?> /><label for="allow_offline_pools"></label></div></td>
+                    </tr>
+                    <tr>
                         <td class="key"><label for="socket_timout">Rig socket timeout:</label><i data-toggle="tooltip" title="People who know what this means may change it to the needs, other people just don't change this setting" class="icon-help-circled"></i></td>
                         <td class="value"><input type="text" id="socket_timout" name="socket_timout" value="<?php echo (!empty($conf['socket_timout']) ? $conf['socket_timout'] : 5);?>" /></td>
                     </tr>
@@ -46,7 +50,7 @@
             </table>
         </td>
         <td style="width:50%">
-            <h2>CGMiner config per rig</h2>
+            <h2>CGMiner/SGMiner config per rig</h2>
             <div class="tabs">
             <?php if (empty($conf['rigs'])): ?>
                 No rigs are configurated, please configurate at least one rig.
@@ -71,7 +75,7 @@
                                     <td colspan="3" style="border-left:0px;"><select class="add_config_key" data-rig="<?php echo $rig; ?>"><option value="">Select config key which you want to add.</option></select></td>
                                 </tr>
                                 <tr>
-                                    <td></td><td colspan="2" style="border-left:0px;"><div class="btn btn-primary save_cgminer_config">Save cgminer config</div></td>
+                                    <td></td><td colspan="2" style="border-left:0px;"><div class="btn btn-primary save_cgminer_config">Save CGMiner/SGMiner config</div></td>
                                 </tr>
                             </tfoot>
                         </table>

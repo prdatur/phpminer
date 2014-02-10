@@ -1,17 +1,17 @@
-Here you can merge an existing group with the current cgminer configurated pools.<br />
-PHPMiner could not find a group where the same pools are configurated as currently in cgminer, so you have to create a pool where this match.<br /><br />
+Here you can merge an existing group with the current CGMiner/SGMiner configurated pools.<br />
+PHPMiner could not find a group where the same pools are configurated as currently in CGMiner/SGMiner, so you have to create a pool where this match.<br /><br />
 <b>You have the following possibilities:</b><br />
-- You can delete a non-active pool from cgminer<br />
-- You can add a pool to cgminer which is only within the selected group.<br />
-- You can delete a pool within the selected group which is not configurated within cgminer.<br />
-- You can add a pool within the selected group which is configurated within cgminer but no in the group.<br />
+- You can delete a non-active pool from CGMiner/SGMiner<br />
+- You can add a pool to CGMiner/SGMiner which is only within the selected group.<br />
+- You can delete a pool within the selected group which is not configurated within CGMiner/SGMiner.<br />
+- You can add a pool within the selected group which is configurated within CGMiner/SGMiner but no in the group.<br />
 <br />
 <br />
 <b>
-    The result must be, that in both systems (cgminer and group) the same pools exist. The order is NOT important.<br />
+    The result must be, that in both systems (CGMiner/SGMiner and group) the same pools exist. The order is NOT important.<br />
     You can proceed if all pool entries have a green background.</b>
     <br /><br />
-<b>CGMiner configurated pools:</b>
+<b>CGMiner/SGMiner configurated pools:</b>
 <table>
     <thead>
         <tr>
@@ -25,7 +25,7 @@ PHPMiner could not find a group where the same pools are configurated as current
         <tr data-uuid="<?php echo $pool['URL']; ?>|<?php echo $pool['User']; ?>">
             <td><?php echo $pool['URL']; ?></td>
             <td><?php echo $pool['User']; ?></td>
-            <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_group">Add to group</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_cgminer">Remove from cgminer</a></td>
+            <td class="options"><a href="javascript:void(0);" class="btn btn-success add_to_group">Add to group</a> - <a href="javascript:void(0);" class="btn btn-danger remove_from_cgminer">Remove from CGMiner/SGMiner</a></td>
         </tr>
 <?php endforeach; ?>
     </tbody>

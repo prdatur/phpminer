@@ -620,7 +620,7 @@ function try_reconnect(from_timeout) {
         if (reconnect_in_progress === true) {
             return;
         }
-        wait_dialog('PHPMiner can not connect to cgminer api, it will now try to reconnect periodicly.', 'Connection to cgminer lost');
+        wait_dialog('PHPMiner can not connect to CGMiner/SGMiner api, it will now try to reconnect periodicly.', 'Connection to CGMiner/SGMiner lost');
     }
     reconnect_in_progress = true;
     ajax_request(murl('main', 'connection_reconnect'), null, function() {
