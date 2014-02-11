@@ -48,6 +48,10 @@
                         <td class="value"><input type="text" id="notify_email_smtp_port" name="notify_email_smtp_port" value="<?php echo (!empty($conf['notify_email_smtp_port']) ? $conf['notify_email_smtp_port'] : '');?>" /></td>
                     </tr>
                     <tr>
+                        <td class="key"><label for="notify_email_smtp_from">SMTP From address:</label></td>
+                        <td class="value"><input type="text" id="notify_email_smtp_from" name="notify_email_smtp_from" value="<?php echo (!empty($conf['notify_email_smtp_from']) ? $conf['notify_email_smtp_from'] : '');?>" /></td>
+                    </tr>
+                    <tr>
                         <td class="key"><label for="notify_email_smtp_security">SMTP Security:</label></td>
                         <td class="value">
                             <select id="notify_email_smtp_security" name="notify_email_smtp_security">

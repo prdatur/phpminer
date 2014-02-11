@@ -95,6 +95,7 @@ if (!$notification_config->is_empty()) {
         }
 
         if (!empty($reciever_mail)) {
+            $smtp['from'] = $notification_config->get_value('notify_email_smtp_from');
             $email_enabled = true;
         }
     }
@@ -377,10 +378,15 @@ if (!$notification_config->is_empty()) {
                     $mail->CharSet = 'UTF-8';
                     $mail->Host = $smtp['server'];
                     $mail->Port = $smtp['port'];
-                    $mail->SMTPAuth = true;
-                    $mail->SMTPSecure = 'ssl';
+                    if (!empty($smtp['security']) && $smtp['security'] !== 'none') {
+                        $mail->SMTPAuth = true;
+                        $mail->SMTPSecure = 'ssl';
+                    }
                     $mail->Username = $smtp['user'];
                     $mail->Password = $smtp['pass'];
+                    if (!empty($smtp['from'])) {
+                        $mail->From = $smtp['from'];
+                    }
                     $mail->addAddress($reciever_mail);
                     $mail->Subject = 'PHPMiner error';
                     $mail->Body = $data;
