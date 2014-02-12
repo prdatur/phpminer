@@ -11,6 +11,12 @@ $config['ip'] = '127.0.0.1';
 // Service port, change it to your needs, please keep in mind, in Linux ports lower 1000 can only be created by user root.
 $config['port'] = 11111;
 
+// Miner, can be cgminer or sgminer
+$config['miner'] = 'cgminer';
+
+// Miner binary, this can be left empty if the binary is the same as the miner. For example miner = cgminer, miner_binary = cgminer or on windows cgminer.exe
+$config['miner_binary'] = '';
+
 // RPC Secret key.
 $config['rpc_key'] = '3_Kebju-55Xn-EigZb';
 

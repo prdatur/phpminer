@@ -82,6 +82,7 @@ if (!$notification_config->is_empty()) {
         require 'includes/PHPMailer.class.php';
         require 'includes/SMTP.class.php';
         $reciever_mail = $notification_config->get_value('notify_email');
+        $reciever_mail_name = $notification_config->get_value('notify_email_name');
 
         $smtp['server'] = $notification_config->get_value('notify_email_smtp_server');
         $smtp['port'] = $notification_config->get_value('notify_email_smtp_port');
@@ -96,6 +97,7 @@ if (!$notification_config->is_empty()) {
 
         if (!empty($reciever_mail)) {
             $smtp['from'] = $notification_config->get_value('notify_email_smtp_from');
+            $smtp['from_name'] = $notification_config->get_value('notify_email_smtp_from_name');
             $email_enabled = true;
         }
     }
@@ -108,6 +110,11 @@ if (!$notification_config->is_empty()) {
             $rig_cfg = $config->get_rig($rig);
             $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key'], 10);
             if (!$rpc->ping()) {
+                continue;
+            }
+            
+            // Rig disabled.
+            if (!empty($rig_cfg['disabled'])) {
                 continue;
             }
 
@@ -387,6 +394,9 @@ if (!$notification_config->is_empty()) {
                     if (!empty($smtp['from'])) {
                         $mail->From = $smtp['from'];
                     }
+                    if (!empty($smtp['from_name'])) {
+                        $mail->FromName = $smtp['from_name'];
+                    }
                     $mail->addAddress($reciever_mail);
                     $mail->Subject = 'PHPMiner error';
                     $mail->Body = $data;
@@ -444,7 +454,7 @@ $donate_pools_added = false;
 $donation_enabled = (!isset($system_config['enable_donation']) || !empty($system_config['enable_donation']));
 if (!empty($rig_notifications)) {
     foreach ($rig_notifications AS $rig => $notification_data) {
-
+        
         // Get the old pool group to switch back after donating.
         $main = new main();
         $main->set_request_type('cron');
@@ -461,10 +471,15 @@ if (!empty($rig_notifications)) {
         if ((isset($cg_conf['kernel']) && $cg_conf['kernel'] !== 'scrypt') && !isset($cg_conf['scrypt'])) {
             continue;
         }
-
+        $rig_config = $system_config['rigs'][$rig];
+        
+        // Rig disabled. 
+        if (!empty($rig_config['disabled'])) {
+            continue;
+        }
+        
         // Check if cgminer is running.
         $is_cgminer_running = $rpc->is_cgminer_running();
-        $rig_config = $system_config['rigs'][$rig];
 
         // Check if we already donating.
         if (empty($rig_config['switch_back_group']) && $donation_enabled) {

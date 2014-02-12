@@ -48,6 +48,24 @@ else
     echo "Using port: $PORT"
 fi
 
+echo "Miner, can be cgminer or sgminer (Default: cgminer):"
+read MINER
+if [ -n "$MINER" ]; then
+    echo "Using miner: $MINER"
+else
+    MINER="cgminer"
+    echo "Using miner: $MINER"
+fi
+
+echo "Miner binary, this can be left empty if the binary is the same as the miner. For example miner = cgminer, miner_binary = cgminer (Default: empty):"
+read MINER_BINARY
+if [ -n "$MINER_BINARY" ]; then
+    echo "Using miner binary: $MINER_BINARY"
+else
+    MINER_BINARY=""
+    echo "Using miner binary: $MINER_BINARY"
+fi
+exit 0;
 echo "Please enter the the RPC-Key, this key is used to make sure that no other client than phpminer can operate with this service. THIS CAN NOT BE EMPTY"
 read RPCKEY
 if [ -n "$RPCKEY" ]; then
@@ -99,6 +117,12 @@ echo "
 
 // Service port, change it to your needs, please keep in mind, in Linux ports lower 1000 can only be created by user root.
 \$config['port'] = $PORT;
+
+// Miner, can be cgminer or sgminer
+\$config['miner'] = '$MINER';
+
+// Miner binary, this can be left empty if the binary is the same as the miner. For example miner = cgminer, miner_binary = cgminer or on windows cgminer.exe
+\$config['miner_binary'] = '$MINER_BINARY';
 
 // RPC Secret key.
 \$config['rpc_key'] = '$RPCKEY';

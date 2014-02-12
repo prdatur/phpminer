@@ -1,7 +1,19 @@
 <?php
 declare(ticks = 1);
 include dirname(__FILE__) . '/config.php';
+$is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
+// When no miner is configurated, fallback to cgminer.
+if (empty($config['miner'])) {
+    $config['miner'] = 'cgminer';
+}
 
+// When no miner binaray is configurated or invalid one, fallback to .exe on windows
+if (empty($config['miner_binary'])) {
+    $config['miner_binary'] = $config['miner'];
+    if ($is_windows) {
+        $config['miner_binary'] .= '.exe';
+    }
+}
 
 if (function_exists('pcntl_signal')) {
     $check_file = '/tmp/phpminer_rpcclient.pid';
@@ -24,7 +36,7 @@ if (function_exists('pcntl_signal')) {
 
     file_put_contents($check_file, getmypid());
 }
-$is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
+
 $sockets = $clients = array();
 
 function response(&$socket, $msg = 'ok', $error = false) {
@@ -37,17 +49,18 @@ function response(&$socket, $msg = 'ok', $error = false) {
 }
 
 function get_cgminer_pid() {
-    global $is_windows;
+    global $is_windows, $config;
     if ($is_windows) {
+        $task_list = array();
         exec("tasklist 2>NUL", $task_list);
         foreach ($task_list AS $task) {
-            if (preg_match("/cgminer\.exe[^0-9]+([0-9]+)\s/", $task, $matches)) {
+            if (preg_match("/" . preg_quote($config['miner_binary'], '/') . "[^0-9]+([0-9]+)\s/", $task, $matches)) {
                 return $matches[1];
             }
         }
         return false;
     } else {
-        $res = trim(shell_exec("ps a | grep \"cgminer -\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
+        $res = trim(shell_exec("ps a | grep \"" . $config['miner_binary'] . " -\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
         return $res;
     }
 }
@@ -71,11 +84,12 @@ function is_cgminer_running() {
 }
 
 function is_cgminer_defunc() {
-    global $is_windows;
+    global $is_windows, $config;
     if ($is_windows) {
         return false;
     } else {
-        $res = trim(shell_exec("ps a | grep cgminer | grep defunc | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
+        
+        $res = trim(shell_exec("ps a | grep " . $config['miner_binary'] . " | grep defunc | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
         return !empty($res);
     }
 }
@@ -94,7 +108,7 @@ function restart_cgminer($socket) {
             $cmd .= "export LD_LIBRARY_PATH=" . escapeshellarg($config['amd_sdk']) . ":;\n";
         }
         $cmd .= "cd " . escapeshellarg($config['cgminer_path']) . ";\n";
-        $cmd .= "screen -d -m -S cgminer ./cgminer -c " . escapeshellarg($config['cgminer_config_path']) . "\n";
+        $cmd .= "screen -d -m -S " . $config['miner'] . " ./" . $config['miner_binary'] . " -c " . escapeshellarg($config['cgminer_config_path']) . "\n";
         
         file_put_contents('/tmp/startcg', $cmd);
         @chmod('/tmp/startcg', 0777);
@@ -105,7 +119,7 @@ function restart_cgminer($socket) {
                 . "setx GPU_MAX_ALLOC_PERCENT 100\n"
                 . "setx GPU_USE_SYNC_OBJECTS 1\n";
         $cmd .= "cd " . escapeshellarg($config['cgminer_path']) . "\n";
-        $cmd .= "cgminer.exe -c " . escapeshellarg($config['cgminer_config_path']) . "\n";
+        $cmd .= $config['miner_binary'] . " -c " . escapeshellarg($config['cgminer_config_path']) . "\n";
         $temp = sys_get_temp_dir();
         if (!preg_match("/(\/|\\)$/", $temp)) {
             $temp .= "\\";

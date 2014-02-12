@@ -32,7 +32,7 @@ Soopfw.behaviors.main_init = function() {
         add_rig(rig, rig_data);
         update_pools(rig, rig_data.pools);
         
-        set_device_list(rig_data.device_list, rig);
+        set_device_list(rig_data.device_list, rig, rig_data.disabled);
     });
     $('.rig_edit').off('click').on('click', function() {
         ajax_request(murl('main', 'get_rig_data'), {rig: $(this).data('rig')}, function(rig_results) {
@@ -67,7 +67,20 @@ Soopfw.behaviors.main_init = function() {
         }
         rig_collapsed[datarig] = !rig_collapsed[datarig];
         ajax_request(murl('main', 'set_rig_collapse'), {rig: datarig, collapsed: rig_collapsed[datarig]});
-        set_device_list(current_device_list[datarig], datarig);
+        set_device_list(current_device_list[datarig].list, datarig, current_device_list[datarig].disabled);
+    });
+    
+    $('.stop_rig').off('click').on('click', function() {
+        var datarig = $(this).data('rig');
+        var disabled = get_config([datarig, 'disabled'], false);
+        confirm('Do you really want to ' + ((disabled) ? 'start' : 'stop') + ' mining at rig "' + datarig + '"?', 'Stop mining / Disable rig', function() {
+            ajax_request(murl('main', 'start_stop_mining'), {rig: datarig, stop: !disabled}, function() {
+                phpminer.settings.config.rigs[datarig]['disabled'] = !disabled;
+                set_device_list(current_device_list[datarig].list, datarig, current_device_list[datarig].disabled);
+                refresh_update_device_list();
+            });
+        });
+        
     });
     
     
@@ -78,7 +91,6 @@ Soopfw.behaviors.main_init = function() {
     });
     
     $('#reset_all_rig_stats').off('click').on('click', function() {
-        var that = this;
         confirm('Do you really want to reset stats for all rigs?', 'Resets stats', function() {
             reset_stats();
         });
@@ -106,9 +118,10 @@ function add_rig(rig, rig_data) {
     rig_counter++;
     var html  = '<div class="rig" data-rig="' + rig + '">';
         html += '   <h2 style="display: inline;"><span data-rig="' + rig + '" class="swap_rig"><i class="icon-' + ((rig_data.collapsed) ? 'plus' : 'minus') + '"></i></span>' + rig + '<span data-rig="' + rig + '" class="rig_hashrate"></span></h2>';
-        html += '<div class="rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> ';
-        html += '<div class="rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
-        html += '<div class="reset_stats" data-rig="' + rig + '"><i class="icon-ccw">Reset stats</i></div>';
+        html += '<div class="rig_btn rig_edit" data-rig="' + rig + '"><i class="icon-edit">Edit</i></div> ';
+        html += '<div class="rig_btn rig_delete" data-rig="' + rig + '"><i class="icon-trash">Delete</i></div>';
+        html += '<div class="rig_btn reset_stats" data-rig="' + rig + '"><i class="icon-ccw">Reset stats</i></div>';
+        html += '<div class="rig_btn stop_rig" data-rig="' + rig + '"><i class="icon-off">Stop rig</i></div>';
 
         if (!empty(phpminer.settings.pool_groups)) {
             html += '<div class="pool_switching_container" data-rig="' + rig + '" style="float: right;' + ((rig_data.donating) ? 'display: none;' : '') + '">';
@@ -237,7 +250,8 @@ function refresh_update_device_list() {
             if (devices['device_list'] === undefined) {
                 devices['device_list'] = {};
             }
-            set_device_list(devices.device_list, rig);
+            
+            set_device_list(devices.device_list, rig, devices.disabled);
         })
         $('#global_hashrate').html(get_hashrate_string(global_hashrate));
     });
@@ -258,7 +272,8 @@ function refresh_device_list(page, mepp) {
             if (devices['device_list'] === undefined) {
                 devices['device_list'] = {};
             }
-            set_device_list(devices.device_list, rig);
+            
+            set_device_list(devices.device_list, rig, devices.disabled);
         })
         $('#global_hashrate').html(get_hashrate_string(global_hashrate));
         refresh_device_list_timeout = setInterval(refresh_update_device_list, get_config('ajax_refresh_intervall', 5000));
@@ -277,12 +292,18 @@ function get_hashrate_string(value) {
     return (Math.round(value * 100)/100) + " Mh/s";
 
 }
-function set_device_list(result, rig) {
-    current_device_list[rig] = result;
+function set_device_list(result, rig, disabled) {
+    current_device_list[rig] =   {list: result, disabled: disabled};
     $('.device_list[data-rig="' + rig + '"] tbody').html("");
-    if (empty(Soopfw.obj_size(result))) {
+    $('.rig_btn.stop_rig[data-rig="' + rig + '"] i').html('Stop rig');
+    if (disabled !== undefined && disabled === true) {
         $('.pool_switching_container[data-rig="' + rig + '"]').hide();
-        $('.device_list[data-rig="' + rig + '"] tbody').html('<tr><td colspan="12" class="center">No devices found or rig is not alive</td></tr>');
+        $('.device_list[data-rig="' + rig + '"] tbody').html('<tr><td colspan="13" class="center">Rig is disabled</td></tr>');
+        $('.rig_btn.stop_rig[data-rig="' + rig + '"] i').html('Start rig');
+    }
+    else if (empty(Soopfw.obj_size(result))) {
+        $('.pool_switching_container[data-rig="' + rig + '"]').hide();
+        $('.device_list[data-rig="' + rig + '"] tbody').html('<tr><td colspan="13" class="center">No devices found or rig is not alive</td></tr>');
     }
     else {
         var donating = false;        

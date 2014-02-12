@@ -46,7 +46,10 @@ class pools extends Controller {
         }
         $old_pool[$params->name] = $val;
         
-        foreach (array_keys($this->config->rigs) AS $rig) {
+        foreach ($this->config->rigs AS $rig => $rig_data) {
+            if (!empty($rig_data['disabled'])) {
+                continue;
+            }
             if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $group)  {
                 header("HTTP/1.0 400 Bad request");
                 echo 'The active pool group can not be changed.';
@@ -95,8 +98,12 @@ class pools extends Controller {
         }
         $wait_msg = '';
         $pools_needs_to_switch = array();
-        foreach (array_keys($this->config->rigs) AS $rig) {
+        foreach ($this->config->rigs AS $rig => $rig_data) {
         
+            if (!empty($rig_data['disabled'])) {
+                continue;
+            }
+            
             // Get all configured pools within cgminer.
             $pools = $this->get_api($rig)->get_pools();
 
@@ -251,7 +258,12 @@ class pools extends Controller {
         
         $this->load_pool_config();
         if ($params->rig_based) {
-            foreach ($this->config->rigs AS $rig_name => $tmp) {
+            foreach ($this->config->rigs AS $rig_name => $rig_data) {
+                
+                if (!empty($rig_data['disabled'])) {
+                    continue;
+                }
+                
                 $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
                 $result = $this->pool_config->check_pool($params->url, $params->user . '_rb_' . $user, $params->pass);
         
@@ -276,10 +288,21 @@ class pools extends Controller {
         $this->load_pool_config();
         
         // Before we adding the pool we have to check if the group to which we add the pool is in a rig active, if so we have to add the pool into the cgminer of the rig.
-        foreach (array_keys($this->config->rigs) AS $rig) {
+        foreach ($this->config->rigs AS $rig => $rig_data) {
+            if (!empty($rig_data['disabled'])) {
+                continue;
+            }
             if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group) {
                 $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
                 $this->get_api($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
+                
+                $miner_config = $this->get_rpc($rig)->get_config();
+                $miner_config['pools'][] = array(
+                    'url' => $params->url,
+                    'user' => $params->user . '_rb_' . $user,
+                    'pass' => $params->pass,
+                );
+                $this->get_rpc($rig)->set_config('pools', $miner_config['pools']);
             }
         }
         
@@ -312,7 +335,10 @@ class pools extends Controller {
         $this->load_pool_config();
         
         $rigs_in_use = array();
-        foreach (array_keys($this->config->rigs) AS $rig) {
+        foreach ($this->config->rigs AS $rig => $rig_data) {
+            if (!empty($rig_data['disabled'])) {
+                continue;
+            }
             if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group)  {
                 $rigs_in_use[] = ' - ' . $rig;
             }

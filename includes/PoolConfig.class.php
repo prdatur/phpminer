@@ -55,6 +55,29 @@ class PoolConfig extends Config {
      * Returns the current active pool group.
      * It will search within the configurated pool groups if the current configurated cgminer pools are match all pools in a group.
      * 
+     * @param PHPMinerRPC $rpc
+     *   The cgminer api, it's needed to retrieve current configurated pools within cgminer.
+     * 
+     * @return null|array
+     *   the active pool group as an array or null if no active group could be found.
+     */
+    public function get_current_active_pool_group_from_rpc($rpc) {
+        $config = $rpc->get_config();
+        $pools = array();
+        foreach ($config['pools'] AS $pool) {
+            $pools[] = array(
+                'URL' => $pool['url'],
+                'User' => $pool['user'],
+            );
+        }
+        return $this->get_current_active_pool_group_from_pools($pools);
+        
+    }
+    
+    /**
+     * Returns the current active pool group.
+     * It will search within the configurated pool groups if the current configurated cgminer pools are match all pools in a group.
+     * 
      * @param CGMinerAPI $api
      *   The cgminer api, it's needed to retrieve current configurated pools within cgminer.
      * 
@@ -62,11 +85,22 @@ class PoolConfig extends Config {
      *   the active pool group as an array or null if no active group could be found.
      */
     public function get_current_active_pool_group($api) {
+        return $this->get_current_active_pool_group_from_pools($api->get_pools());
+    }
+    
+    /**
+     * Returns the current active pool group.
+     * It will search within the configurated pool groups if the current configurated cgminer pools are match all pools in a group.
+     * 
+     * @param array $pools
+     *   The pools.
+     * 
+     * @return null|array
+     *   the active pool group as an array or null if no active group could be found.
+     */
+    private function get_current_active_pool_group_from_pools($pools) {
         $cfg_groups = $this->get_config();
-        
-        // Get all configured pools within cgminer.
-        $pools = $api->get_pools();
-        
+                
         // Determine which pool group we are currently using.        
         $current_active_group = null;
         foreach ($cfg_groups AS $check_group => $cfg_groups_pools) {

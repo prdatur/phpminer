@@ -107,6 +107,57 @@ class main extends Controller {
         }
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
+    /**
+     * Ajax request to save new configuration settings.
+     */
+    public function start_stop_mining() {
+        $params = new ParamStruct();
+        $params->add_required_param('rig', PDT_STRING);
+        $params->add_required_param('stop', PDT_BOOL);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
+        }
+
+        if ($params->stop) {
+            $this->get_rpc($params->rig)->kill_cgminer();
+        }
+        else {
+            $this->load_pool_config();
+            // Determine active pool group based on rpc client which reads currnt cgminer config.
+            $current_active_group = $this->pool_config->get_current_active_pool_group_from_rpc($this->get_rpc($params->rig));
+            
+            // If we have one, we need to update the pools to make sure changed settings are up to date.
+            if ($current_active_group !== null) {
+                // This will be the new pool array.
+                $new_pools = array();
+                
+                // Loop through each configurated pools.
+                foreach ($this->pool_config->get_pools($current_active_group) AS $pool) {
+                    // Setup the pool for cgminer.
+                    $user = "";
+                    if (!empty($pool['rig_based'])) {
+                        $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $params->rig);
+                    }
+                    
+                    // Ad this pool.
+                    $new_pools[] = array(
+                        'url' => $pool['url'],
+                        'user' => $pool['user'] . $user,
+                        'pass' => $pool['pass'],
+                    );
+                }
+                // Store new pool config.
+                $this->get_rpc($params->rig)->set_config('pools', $new_pools);
+            }
+            $this->get_rpc($params->rig)->restart_cgminer();
+        }
+        $rig_cfg = $this->config->get_rig($params->rig);
+        $rig_cfg['disabled'] = $params->stop;
+        $this->config->set_rig($params->rig, $rig_cfg);
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
 
     /**
      * Ajax request to add a new pool.
@@ -141,6 +192,8 @@ class main extends Controller {
             'user' => $params->user,
         ));
     }
+    
+    
 
     /**
      * Action: Switch to the given pool group
@@ -242,10 +295,14 @@ class main extends Controller {
             foreach ($group_pools AS $k => $pool) {
                 unset($group_pools[$k]);
                 $group_pools[$this->pool_config->get_pool_uuid($pool['url'], $pool['user'])] = $pool;
-
+                // Add the pool.
+                $user = "";
+                if (!empty($pool['rig_based'])) {
+                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $current_rig);
+                }
                 $cgminer_config_pools[] = array(
                     'url' => $pool['url'],
-                    'user' => $pool['user'],
+                    'user' => $pool['user'] . $user,
                     'pass' => $pool['pass'],
                 );
             }
@@ -319,7 +376,6 @@ class main extends Controller {
                         }
                     }
                 }
-                $this->get_rpc($current_rig)->set_config('pools', $cgminer_config_pools);
                 $success[$current_rig] = true;
             } else {
                 $errors['noalivepool'] = 'Could not find an alive pool from the new group, switched back to previous pool group';
@@ -931,6 +987,7 @@ class main extends Controller {
                     'pools' => $this->pool_config->get_pools($current_active_group),
                     'donating' => !empty($rigs[$rig]['switch_back_group']),
                     'collapsed' => !empty($rigs[$rig]['collapsed']),
+                    'disabled' => !empty($rigs[$rig]['disabled']),
                 );
             }
             else {
@@ -939,11 +996,21 @@ class main extends Controller {
                     'device_list' => $devices,
                     'donating' => !empty($rigs[$rig]['switch_back_group']),
                     'collapsed' => !empty($rigs[$rig]['collapsed']),
+                    'disabled' => !empty($rigs[$rig]['disabled']),
                 );
             }
 
 
         } catch (Exception $ex) {
+            if (!empty($rigs[$rig]['disabled'])) {
+                return array(
+                    'rig_name' => $orig,
+                    'device_list' => array(),
+                    'donating' => !empty($rigs[$rig]['switch_back_group']),
+                    'collapsed' => !empty($rigs[$rig]['collapsed']),
+                    'disabled' => !empty($rigs[$rig]['disabled']),
+                );
+            }
             return false;
         }
     }
