@@ -96,11 +96,10 @@ class RPCClientServer {
                     $client = $this->get_user_by_socket($socket);
                     
                     // Proccess client.
-                    if ($client->process_connection($this->config)) {
+                    $client->process_connection($this->config);
                         
-                        // If client didn't sent valid data, disconnect him.
-                        $this->disconnect($socket);
-                    }
+                    // Disconnection client.
+                    $this->disconnect($socket);
                 }
             }
         }
@@ -142,7 +141,7 @@ class RPCClientServer {
                         
             // Remove from client list.
             unset($this->sockets[$client->getId()]);
-            unset($this->clients[(int) $this->socket]);
+            unset($this->clients[(int) $socket]);
         }
     }
 }
