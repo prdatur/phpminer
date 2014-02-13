@@ -53,6 +53,7 @@ class RPCClientConnection {
         // Check if client really sent some data.
         $bytes = strlen($data);
         if ($bytes === 0 || $data === false) {
+            return $this->response('No data', true);
         }
 
         // Parse the json data. PHPMiner always send json.
