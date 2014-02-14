@@ -87,9 +87,14 @@ class RPCClientApi {
                 exec("taskkill /F /PID " . intval($cgminer_pid));
             }
             else {
-                
-                // Kill miner on linux.
-                exec("kill -9 " . intval($cgminer_pid));
+                // DEBUGGING ALWAYS TRUE
+                $useMineService = true;
+                if ($useMineService) {
+                    exec("mine stop");
+                } else {
+                    // Kill miner on linux.
+                    exec("kill -9 " . intval($cgminer_pid));
+                }
             }
         }
         return true;
@@ -156,7 +161,13 @@ class RPCClientApi {
             }
             $cmd .= "cd " . escapeshellarg($this->config['cgminer_path']) . ";\n";
             $cmd .= "screen -d -m -S " . $this->config['miner'] . " ./" . $this->config['miner_binary'] . " -c " . escapeshellarg($this->config['cgminer_config_path']) . "\n";
-
+            
+            // DEBUGGING ALWAYS TRUE
+            $useMineService = true;
+            if ($useMineService) {
+                $cmd = "mine restart";
+            }
+            
             file_put_contents('/tmp/startcg', $cmd);
             @chmod('/tmp/startcg', 0777);
             shell_exec('/tmp/startcg');
