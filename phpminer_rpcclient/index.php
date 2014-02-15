@@ -1,8 +1,24 @@
 <?php
 declare(ticks = 1);
+
+// Load default config.
+$config = array();
+include dirname(__FILE__) . '/config.dist.php';
+$dist_config = $config;
+
+// Load user config.
+$config = array();
 include dirname(__FILE__) . '/config.php';
 
+// Extend config with not existing dist config's.
+foreach ($dist_config AS $k => $v) {
+    if (!isset($config[$k])) {
+        $config[$k] = $v;
+    }
+}
+
 include dirname(__FILE__) . '/includes/common.php';
+include dirname(__FILE__) . '/includes/CGMinerAPI.class.php';
 include dirname(__FILE__) . '/includes/RPCClientApi.class.php';
 include dirname(__FILE__) . '/includes/RPCClientConnection.class.php';
 include dirname(__FILE__) . '/includes/RPCClientServer.class.php';

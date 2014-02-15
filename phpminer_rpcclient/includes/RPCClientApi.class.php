@@ -17,7 +17,7 @@ class RPCClientApi {
      * @var array
      */
     private $config = array();
-    
+        
     /**
      * Creates a new API.
      * 
@@ -251,22 +251,22 @@ class RPCClientApi {
         $conf = json_decode(file_get_contents($this->config['cgminer_config_path']), true);
         
         // When the value is empty, we have to remove it from the cgminer config.
-        if (empty($data['data']['value'])) {
-            if (isset($conf[$data['data']['key']])) {
-                unset($conf[$data['data']['key']]);
+        if (empty($data['value'])) {
+            if (isset($conf[$data['key']])) {
+                unset($conf[$data['key']]);
             }
         } else {
             
             // When we have a gpu key, then we have a multi value field. This means values can be seperated by , (comma).
-            if (isset($data['data']['gpu'])) {
+            if (isset($data['gpu'])) {
 
                 // If config key doesn't exist yet, create it.
-                if (!isset($conf[$data['data']['key']])) {
-                    $conf[$data['data']['key']] = '';
+                if (!isset($conf[$data['key']])) {
+                    $conf[$data['key']] = '';
                 }
                 
                 // Get current config values per gpu.
-                $config_values = explode(",", $conf[$data['data']['key']]);
+                $config_values = explode(",", $conf[$data['key']]);
                 
                 // If there are no config values yet, create an empty array.
                 if (empty($config_values)) {
@@ -275,15 +275,15 @@ class RPCClientApi {
 
                 // Get the provided values, which should be set per gpu.
                 $device_values = array();
-                if (isset($data['data']['current_values']) && !empty($data['data']['current_values'])) {
-                    $device_values = explode(",", $data['data']['current_values']);
+                if (isset($data['current_values']) && !empty($data['current_values'])) {
+                    $device_values = explode(",", $data['current_values']);
                     if (empty($device_values)) {
                         $device_values = array();
                     }
                 }
                 
                 // Get the device count, so we can create the correct comma seperated value.
-                $device_count = $data['data']['devices'];
+                $device_count = $data['devices'];
                 
                 // Loop through each device.
                 for ($i = 0; $i < $device_count; $i++) {
@@ -293,24 +293,24 @@ class RPCClientApi {
                     }
                 }
                 // Set the given gpu value.
-                $config_values[$data['data']['gpu']] = $data['data']['value'];
+                $config_values[$data['gpu']] = $data['value'];
                 
                 // Get the end result of the config key with all gpu values.
-                $conf[$data['data']['key']] = implode(",", $config_values);
+                $conf[$data['key']] = implode(",", $config_values);
             } else {
                 
                 // Parse "true" to boolean true
-                if ($data['data']['value'] === 'true') {
-                    $data['data']['value'] = true;
+                if ($data['value'] === 'true') {
+                    $data['value'] = true;
                 }
                 
                 // Parse "false" to boolean false
-                if ($data['data']['value'] === 'false') {
-                    $data['data']['value'] = false;
+                if ($data['value'] === 'false') {
+                    $data['value'] = false;
                 }
                 
                 // Set new config key value.
-                $conf[$data['data']['key']] = $data['data']['value'];
+                $conf[$data['key']] = $data['value'];
             }
         }
 

@@ -82,21 +82,49 @@ class RPCClientConnection {
             log_console('Incoming data request: ' . $rpc_data['command']);
         }
 
-        // Get the rpc api.
-        $rpc_client_api = new RPCClientApi($config);
+        $client_api = null;
+        
+        // Check which api is required.
+        if (!isset($rpc_data['api_proxy']) || empty($rpc_data['api_proxy'])) {
+            // Get the rpc api.
+            $client_api = new RPCClientApi($config);
+        }
+        else {
+            // Get miner api
+            $client_api = new CGMinerAPI($config['miner_api_ip'], $config['miner_api_port']);
+        }
 
         // Get the method which will be called.
         $method = $rpc_data['command'];
 
         // Verify api command exists.
-        if (method_exists($rpc_client_api, $method)) {
+        if (method_exists($client_api, $method)) {
 
             // Try to call the api command.
             try {
-
-                // Call the api command and get the result back.
-                $result = $rpc_client_api->$method($rpc_data);
-
+                $result = null;
+                
+                
+                if (!empty($rpc_data['data']) || (!is_array($rpc_data['data']) && $rpc_data['data'] !== "0")) {
+                    
+                    if (!isset($rpc_data['api_proxy']) || empty($rpc_data['api_proxy'])) {
+                        $result = call_user_method($method, $client_api, $rpc_data['data']);
+                    }
+                    else {
+                        $call_args = $rpc_data['data'];
+                        if (empty($call_args) && !is_array($call_args) && $call_args . "" !== "0") {
+                            $call_args = array();
+                        }
+                        else if (!is_array($call_args)) {
+                            $call_args = array($call_args);
+                        }
+                        $result = call_user_method_array($method, $client_api, $call_args);
+                    }
+                }
+                else {
+                    $result = call_user_method($method, $client_api);
+                }
+                
                 // When result is empty but not an empty string, replace it with default 'ok' 
                 if (empty($result) && $result !== '') {
                     $result = 'ok';
@@ -110,6 +138,9 @@ class RPCClientConnection {
                 return $this->response($ex->getMessage(), true);
             }
         }
+   
+            
+            
     }
 
     /**

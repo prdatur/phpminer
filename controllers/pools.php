@@ -50,7 +50,7 @@ class pools extends Controller {
             if (!empty($rig_data['disabled'])) {
                 continue;
             }
-            if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $group)  {
+            if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $group)  {
                 header("HTTP/1.0 400 Bad request");
                 echo 'The active pool group can not be changed.';
                 exit();
@@ -105,10 +105,10 @@ class pools extends Controller {
             }
             
             // Get all configured pools within cgminer.
-            $pools = $this->get_api($rig)->get_pools();
+            $pools = $this->get_rpc($rig)->get_pools();
 
             // Determine which pool group we are currently using.        
-            $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
+            $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
 
             // If we want to delete a pool from the group which is currently active, we need to check additional things, in order to not delete the current active pool, cgminer would not let us do this.
             if ($current_active_group === $group) {
@@ -117,7 +117,7 @@ class pools extends Controller {
                 $active_pools = array();
 
                 // Get all devices.
-                $devices = $this->get_api($rig)->get_devices();
+                $devices = $this->get_rpc($rig)->get_devices();
 
                 $pool_to_remove = null;
 
@@ -221,11 +221,11 @@ class pools extends Controller {
             // We only need to switch if we have an active pool which should be deleted.
             if ($data['pool_to_switch'] !== null) {
                 // Switch to the pool.
-                $this->get_api($rig)->switchpool($data['pool_to_switch']);
+                $this->get_rpc($rig)->switchpool($data['pool_to_switch']);
             }
             
             // Now we can remove the pool.
-            $this->get_api($rig)->removepool($data['active_pool']);
+            $this->get_rpc($rig)->removepool($data['active_pool']);
         }
         
         $this->pool_config->remove_pool_by_uuid($uuid, $group);
@@ -292,9 +292,9 @@ class pools extends Controller {
             if (!empty($rig_data['disabled'])) {
                 continue;
             }
-            if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group) {
+            if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group) {
                 $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
-                $this->get_api($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
+                $this->get_rpc($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
                 
                 $miner_config = $this->get_rpc($rig)->get_config();
                 $miner_config['pools'][] = array(
@@ -339,7 +339,7 @@ class pools extends Controller {
             if (!empty($rig_data['disabled'])) {
                 continue;
             }
-            if ($this->pool_config->get_current_active_pool_group($this->get_api($rig)) === $params->group)  {
+            if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group)  {
                 $rigs_in_use[] = ' - ' . $rig;
             }
         }

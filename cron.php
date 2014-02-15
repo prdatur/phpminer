@@ -106,7 +106,7 @@ if (!$notification_config->is_empty()) {
     $notifications = array();
     if (!empty($rig_notifications)) {
         foreach ($rig_notifications AS $rig => $notification_data) {
-
+    
             $rig_cfg = $config->get_rig($rig);
             $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key'], 10);
             if (!$rpc->ping()) {
@@ -149,7 +149,7 @@ if (!$notification_config->is_empty()) {
             if (!empty($notification_data['restart_dead']) && $is_cgminer_running) {
                 try {
                     $rig_cfg = $system_config['rigs'][$rig];
-                    $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
+                    $api = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key']);
                     $api->test_connection();
                     
                     $data = $api->get_devices();
@@ -236,7 +236,7 @@ if (!$notification_config->is_empty()) {
                             continue;
                         }
                         $rig_cfg = $system_config['rigs'][$rig];
-                        $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port']);
+                        $api = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key']);
                         $api->test_connection();
 
                         $active_pool = null;
@@ -536,7 +536,7 @@ if (!empty($rig_notifications)) {
 
                     // Try to connect to default connection values.
                     try {
-                        $rig_config['switch_back_group'] = $mining_pools->get_current_active_pool_group($main->get_api($rig));
+                        $rig_config['switch_back_group'] = $mining_pools->get_current_active_pool_group($main->get_rpc($rig));
                         if (empty($rig_config['switch_back_group'])) {
                             $rig_config['switch_back_group'] = 'default';
                         }

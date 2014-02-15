@@ -78,7 +78,7 @@ class PoolConfig extends Config {
      * Returns the current active pool group.
      * It will search within the configurated pool groups if the current configurated cgminer pools are match all pools in a group.
      * 
-     * @param CGMinerAPI $api
+     * @param PHPMinerRPC $api
      *   The cgminer api, it's needed to retrieve current configurated pools within cgminer.
      * 
      * @return null|array

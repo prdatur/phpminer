@@ -258,17 +258,9 @@ function add_rig_dialog(add, data) {
     dialog += '            <label for="name">Rig name:</label>';
     dialog += '            <input type="text" name="name" id="name" value="' + ((data.name !== undefined) ? data.name : 'localhost') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
-    dialog += '        <div class="form-element">';
-    dialog += '            <label for="ip">CGMiner/SGMiner API IP:</label>';
-    dialog += '            <input type="text" name="ip" id="ip" value="' + ((data.ip !== undefined) ? data.ip : '127.0.0.1') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
-    dialog += '        </div>';
-    dialog += '        <div class="form-element">';
-    dialog += '            <label for="port">CGMiner/SGMiner API Port:</label>';
-    dialog += '            <input type="text" name="port" id="port" value="' + ((data.port !== undefined) ? data.port : '4028') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
-    dialog += '        </div>';
     dialog += '        <div>';
-    dialog += '        Because PHPMiner can handle multiple mining rigs, it is required that at each mining rig the phpminer_rpcclient is running. It must run under the user where it can start CGMiner/SGMiner';
-    dialog += '        This is required in order to restart CGMiner/SGMiner (linux + windows) or reboot machine (linux only) from the main system. A instructions how to set it up is found within README.md';
+    dialog += '        Because PHPMiner can handle multiple mining rigs, it is required that at each mining rig the phpminer_rpcclient is running. It must run under the user where it can start CGMiner/SGMiner.';
+    dialog += '        Instructions how to set it up is found within README.md';
     dialog += '        </div>';
     dialog += '        <div class="form-element">';
     dialog += '            <label for="http_ip">PHPMiner RPC Host/IP:</label>';
@@ -300,8 +292,6 @@ function add_rig_dialog(add, data) {
                 click: function() {
                     var that = this;
                     ajax_request(murl('main', 'check_connection'), {
-                        port: $('#port').val(),
-                        ip: $('#ip').val(),
                         http_ip: $('#http_ip').val(),
                         http_port: $('#http_port').val(),
                         rpc_key: $('#rpc_key').val(),

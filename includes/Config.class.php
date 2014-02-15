@@ -638,7 +638,7 @@ class Config {
     /**
      * Set the config key for a cgminer.conf
      * 
-     * @param CGMinerAPI $api
+     * @param PHPMinerRPC $api
      *   The api to retrieve the count of devices.
      * @param string $name
      *   The config key to set.
@@ -674,7 +674,7 @@ class Config {
     /**
      * remove the config key for a cgminer.conf
      * 
-     * @param CGMinerAPI $api
+     * @param PHPMinerRPC $api
      *   The api to retrieve the count of devices.
      * @param string $name
      *   The config key to set.

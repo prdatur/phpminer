@@ -238,9 +238,9 @@ class main extends Controller {
                 continue;
             }
 
-            $old_group = $this->pool_config->get_current_active_pool_group($this->get_api($current_rig));
+            $old_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($current_rig));
 
-            $cg_pools = $this->get_api($current_rig)->get_pools();
+            $cg_pools = $this->get_rpc($current_rig)->get_pools();
             $pools_to_add = $this->pool_config->get_pools($params->group);
             foreach ($pools_to_add AS $k => $pool) {
                 unset($pools_to_add[$k]);
@@ -261,7 +261,7 @@ class main extends Controller {
                 if (!empty($pool['rig_based'])) {
                     $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $current_rig);
                 }
-                $this->get_api($current_rig)->addpool($pool['url'], $pool['user'] . $user, $pool['pass']);
+                $this->get_rpc($current_rig)->addpool($pool['url'], $pool['user'] . $user, $pool['pass']);
                 usleep(100000); // Wait 100 milliseconds to let the pool to be alived.
             }
 
@@ -276,11 +276,11 @@ class main extends Controller {
                 }
 
                 // save the current cg pools, we do this here because we can then reuse it after switching.
-                $cg_pools = $this->get_api($current_rig)->get_pools();
+                $cg_pools = $this->get_rpc($current_rig)->get_pools();
                 foreach ($cg_pools AS $pool) {
                     $check_uuid = $this->pool_config->get_pool_uuid($pool['URL'], $pool['User']);
                     if (isset($group_pools[$check_uuid]) && $pool['Status'] == 'Alive') {
-                        $this->get_api($current_rig)->switchpool($pool['POOL']);
+                        $this->get_rpc($current_rig)->switchpool($pool['POOL']);
                         $pool_switched = true;
                         break;
                     }
@@ -329,7 +329,7 @@ class main extends Controller {
                     // Check if this pool is the wanted one which needs to be removed.
                     if ($pool_to_remove_uuid == $rem_uuid) {
                         // Remove pool from cgminer.
-                        $this->get_api($current_rig)->removepool($pool['POOL']);
+                        $this->get_rpc($current_rig)->removepool($pool['POOL']);
 
                         // Mark pool as removed.
                         unset($pools_to_remove[$pool_to_remove_uuid]);
@@ -340,7 +340,7 @@ class main extends Controller {
                 // Let cgminer a bit time to reorder his pool no.
                 usleep(100000);
                 // Get fresh pools.
-                $cg_pools = $this->get_api($current_rig)->get_pools();
+                $cg_pools = $this->get_rpc($current_rig)->get_pools();
 
                 // Fallback
                 if ($c++ >= 50) {
@@ -352,8 +352,8 @@ class main extends Controller {
             if ($pool_switched) {
                 $this->get_rpc($current_rig)->set_config('pools', $cgminer_config_pools);
 
-                if ($this->get_api($current_rig)->has_advanced_api()) {
-                    $this->get_api($current_rig)->set_poolstrategy($this->pool_config->get_strategy($params->group), $this->pool_config->get_period($params->group));
+                if ($this->get_rpc($current_rig)->has_advanced_api()) {
+                    $this->get_rpc($current_rig)->set_poolstrategy($this->pool_config->get_strategy($params->group), $this->pool_config->get_period($params->group));
                     $this->get_rpc($current_rig)->set_config('rotate', "");
                     $this->get_rpc($current_rig)->set_config('balance', "");
                     $this->get_rpc($current_rig)->set_config('oad-balance', "");
@@ -576,11 +576,11 @@ class main extends Controller {
         $this->load_pool_config();
         $pool_uuid = $this->pool_config->get_pool_uuid($params->pool);
         $sorted_pools = array();
-        foreach ($this->get_api($params->rig)->get_pools() AS $pool) {
+        foreach ($this->get_rpc($params->rig)->get_pools() AS $pool) {
             $sorted_pools[$this->pool_config->get_pool_uuid($pool['URL'], $pool['User'])] = $pool;
         }
         try {
-            $this->get_api($params->rig)->switchpool($sorted_pools[$pool_uuid]['POOL']);
+            $this->get_rpc($params->rig)->switchpool($sorted_pools[$pool_uuid]['POOL']);
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $e) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $e->getMessage());
@@ -621,7 +621,7 @@ class main extends Controller {
         }
         
         foreach ($rigs AS $rig) {
-            $this->get_api($rig)->zero();
+            $this->get_rpc($rig)->zero();
         }
         
         AjaxModul::return_code(AjaxModul::SUCCESS, null, true, 'Rig stats resetted');
@@ -663,7 +663,7 @@ class main extends Controller {
     public function connection_reconnect() {
         #AjaxModul::return_code(AjaxModul::ERROR_DEFAULT);
         try {
-            $this->api = new CGMinerAPI($this->config->remote_port);
+            $this->api = new PHPMinerRPC($this->config->http_ip, $this->config->http_port);
             $this->api->test_connection();
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIException $ex) {
@@ -677,8 +677,6 @@ class main extends Controller {
     public function check_connection() {
         $params = new ParamStruct();
         $params->add_required_param('name', PDT_STRING);
-        $params->add_required_param('ip', PDT_STRING);
-        $params->add_required_param('port', PDT_INT);
         $params->add_required_param('http_ip', PDT_STRING);
         $params->add_required_param('http_port', PDT_INT);
         $params->add_required_param('rpc_key', PDT_STRING);
@@ -689,7 +687,7 @@ class main extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
 
-        $api = new CGMinerAPI($params->ip, $params->port);
+        $api = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key);
         try {
             $version = $api->test_connection();
             if (empty($version) || (!isset($version['CGMiner']) && !isset($version['SGMiner'])) || !isset($version['API'])) {
@@ -936,14 +934,14 @@ class main extends Controller {
          */
         $rigs = $this->config->rigs;
         try {
-            $pools = $this->get_api($rig)->get_pools();
+            $pools = $this->get_rpc($rig)->get_pools();
 
-            $devices = $this->get_api($rig)->get_devices_details();
+            $devices = $this->get_rpc($rig)->get_devices_details();
             foreach ($devices AS &$device) {
                 if ($device['Name'] !== 'GPU') {
                     continue;
                 }
-                $info = $this->get_api($rig)->get_gpu($device['ID']);
+                $info = $this->get_rpc($rig)->get_gpu($device['ID']);
                 $info = reset($info);
 
                 $device['gpu_info'] = $info;
@@ -967,7 +965,7 @@ class main extends Controller {
             }
             if ($from_init) {
                 // Determine which pool group we are currently using.        
-                $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
+                $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
 
                 if (empty($current_active_group)) {
                     $rig_conf = $this->get_rpc($rig)->get_config();
@@ -976,7 +974,7 @@ class main extends Controller {
                         foreach ($rig_conf['pools'] AS $rig_conf_pool) {
                             $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
                         }
-                        $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_api($rig));
+                        $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
                     }
                 }
 

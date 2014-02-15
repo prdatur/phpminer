@@ -53,7 +53,7 @@ class Controller {
     /**
      * Holds the api.
      * 
-     * @var CGMinerAPI
+     * @var PHPMinerRPC
      */
     protected $api = null;
 
@@ -121,47 +121,7 @@ class Controller {
             }
         }
     }
-    
-    /**
-     * Returns the cgminer api for the given rig.
-     * 
-     * @param string $rig
-     *   The rig name.
-     * @param boolean $force
-     *   Force a reconnect try.
-     * @return CGMinerAPI|null
-     *   The CGMiner api on success, else null.
-     * 
-     * @throws APIException
-     */
-    public function get_api($rig, $force = false) {
-        static $cache = array();
-        
-        if ($force || !isset($cache[$rig])) {
-            
-            if (empty($this->config->rigs)) {
-                $this->config->reload();
-                if (empty($this->config->rigs)) {
-                    throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
-                }
-            }
-            $rig_cfg = $this->config->rigs[$rig];
-            $cache[$rig] = null;
-            try {
-                $api = new CGMinerAPI($rig_cfg['ip'], $rig_cfg['port'], $this->config->socket_timout);
-                $api->test_connection();
-                $cache[$rig] = $api;
-            } catch (APIException $ex) {
-                // Not configured and also no config. Switch to setup.
-                throw new APIException('No connection to CGMiner/SGMiner at rig: ' . $rig, APIException::CODE_SOCKET_CONNECT_ERROR);
-            }
-
-            
-        }
-        
-        return $cache[$rig];
-    }
-    
+       
     /**
      * Returns the rpc handler for the given rig.
      * 

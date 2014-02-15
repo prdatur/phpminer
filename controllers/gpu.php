@@ -113,12 +113,11 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
         try {
-            // Just get the api to first check if all connections are fine.
-            $this->get_api($params->rig);
+            // Just get the api to first check if all connections are fine. 
             $this->get_rpc($params->rig);
             
-            $this->get_api($params->rig)->set_gpufan($params->gpu, $params->speed);
-            $this->get_rpc($params->rig)->set_config('gpu-fan', $params->speed, $params->gpu, $this->get_api($params->rig));
+            $this->get_rpc($params->rig)->set_gpufan($params->gpu, $params->speed);
+            $this->get_rpc($params->rig)->set_config('gpu-fan', $params->speed, $params->gpu, $this->get_rpc($params->rig));
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -142,11 +141,10 @@ class gpu extends Controller {
 
         try {
             // Just get the api to first check if all connections are fine.
-            $this->get_api($params->rig);
             $this->get_rpc($params->rig);
             
-            $this->get_api($params->rig)->set_gpuintensity($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('intensity', $params->value, $params->gpu, $this->get_api($params->rig));
+            $this->get_rpc($params->rig)->set_gpuintensity($params->gpu, $params->value);
+            $this->get_rpc($params->rig)->set_config('intensity', $params->value, $params->gpu, $this->get_rpc($params->rig));
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -170,11 +168,10 @@ class gpu extends Controller {
 
         try {
             // Just get the api to first check if all connections are fine.
-            $this->get_api($params->rig);
             $this->get_rpc($params->rig);
             
-            $this->get_api($params->rig)->set_gpuvddc($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('gpu-vddc', $params->value, $params->gpu, $this->get_api($params->rig));
+            $this->get_rpc($params->rig)->set_gpuvddc($params->gpu, $params->value);
+            $this->get_rpc($params->rig)->set_config('gpu-vddc', $params->value, $params->gpu, $this->get_rpc($params->rig));
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -197,9 +194,9 @@ class gpu extends Controller {
 
         try {
             if ($params->value === 1) {
-                $this->get_api($params->rig)->gpuenable($params->gpu);
+                $this->get_rpc($params->rig)->gpuenable($params->gpu);
             } else {
-                $this->get_api($params->rig)->gpudisable($params->gpu);
+                $this->get_rpc($params->rig)->gpudisable($params->gpu);
             }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
@@ -226,11 +223,10 @@ class gpu extends Controller {
 
         try {
             // Just get the api to first check if all connections are fine.
-            $this->get_api($params->rig);
             $this->get_rpc($params->rig);
             
-            $this->get_api($params->rig)->set_gpumem($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('gpu-memclock', $params->value, $params->gpu, $this->get_api($params->rig));
+            $this->get_rpc($params->rig)->set_gpumem($params->gpu, $params->value);
+            $this->get_rpc($params->rig)->set_config('gpu-memclock', $params->value, $params->gpu, $this->get_rpc($params->rig));
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -256,11 +252,10 @@ class gpu extends Controller {
 
         try {
             // Just get the api to first check if all connections are fine.
-            $this->get_api($params->rig);
             $this->get_rpc($params->rig);
             
-            $this->get_api($params->rig)->set_gpuengine($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('gpu-engine', $params->value, $params->gpu, $this->get_api($params->rig));
+            $this->get_rpc($params->rig)->set_gpuengine($params->gpu, $params->value);
+            $this->get_rpc($params->rig)->set_config('gpu-engine', $params->value, $params->gpu, $this->get_rpc($params->rig));
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());

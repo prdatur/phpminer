@@ -52,7 +52,6 @@ define("PDT_LANGUAGE_ENABLED", $i++, true);
 define("PDT_SERIALIZED", $i++, true);
 define("PDT_BLOB", $i++, true);
 
-require 'CGMinerAPI.class.php';
 require 'HttpClient.class.php';
 require 'PHPMinerRPC.class.php';
 require 'Controller.class.php';
