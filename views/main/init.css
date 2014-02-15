@@ -59,6 +59,13 @@ table:not(.layout_table).device_list td.disabled {
     margin-left: 10px;
 }
 
+.pool_switching_container {
+    display: block;
+}
+
+.pool_switching_container.hidden {
+    display: none;
+}
 .pool_switching_container label {
     margin-top: 3px;
 }
@@ -73,6 +80,7 @@ table:not(.layout_table).device_list td.disabled {
     box-shadow: 0px 0px 15px 0px #BEBEBE;
     border-radius: 5px;
     margin-bottom: 20px;
+    background: #EEE9E2;
 }
 
 .rig_btn {

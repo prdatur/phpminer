@@ -145,19 +145,19 @@ function add_rig(rig, rig_data) {
         html += '   <table class="device_list" data-rig="' + rig + '">';
         html += '       <thead>';
         html += '           <tr>';
-        html += '               <th style="width:70px;" class="center">Enabled</th>';
-        html += '               <th>Name</th>';
-        html += '               <th style="width: 70px;" class="right"><i class="icon-signal"></i>Load</th>';
-        html += '               <th style="width: 65px;" class="right"><i class="icon-thermometer"></i>Temp</th>';
-        html += '               <th style="width: 140px;" class="right"><i class="icon-chart-line"></i>Hashrate 5s (avg)</th>';
-        html += '               <th style="width: 145px; class="right"><i class="icon-link-ext"></i>Shares</th>';
-        html += '               <th style="width: 65px; class="right"><i class="icon-attention"></i>HW</th>';
-        html += '               <th style="width: 60px;" class="right"><i class="icon-air"></i>Fan</th>';
-        html += '               <th style="width: 75px;" class="right"><i class="icon-clock"></i>Engine</th>';
-        html += '               <th style="width: 83px;" class="right"><i class="icon-clock"></i>Memory</th>';
-        html += '               <th style="width: 80px;" class="right"><i class="icon-flash"></i>Voltage</th>';
-        html += '               <th style="width: 85px;" class="right"><i class="icon-fire"></i>Intensity</th>';
-        html += '               <th style="width: 310px; class="right"><i class="icon-group"></i>Current pool</th>';
+        html += '               <th style="width:70px;" class="center info_enabled">Enabled</th>';
+        html += '               <th class="info_name">Name</th>';
+        html += '               <th style="width: 70px;" class="right info_load"><i class="icon-signal"></i>Load</th>';
+        html += '               <th style="width: 65px;" class="right info_temp"><i class="icon-thermometer"></i>Temp</th>';
+        html += '               <th style="width: 140px;" class="right info_hashrate"><i class="icon-chart-line"></i>Hashrate<span class="info_hashrate_avg"> 5s (avg)</span></th>';
+        html += '               <th style="width: 145px; class="right info_shares"><i class="icon-link-ext"></i>Shares</th>';
+        html += '               <th style="width: 65px; class="right info_hw"><i class="icon-attention"></i>HW</th>';
+        html += '               <th style="width: 60px;" class="right info_fan"><i class="icon-air"></i>Fan</th>';
+        html += '               <th style="width: 75px;" class="right info_engine"><i class="icon-clock"></i>Engine</th>';
+        html += '               <th style="width: 83px;" class="right info_memory"><i class="icon-clock"></i>Memory</th>';
+        html += '               <th style="width: 80px;" class="right info_voltage"><i class="icon-flash"></i>Voltage</th>';
+        html += '               <th style="width: 85px;" class="right info_intensity"><i class="icon-fire"></i>Intensity</th>';
+        html += '               <th style="width: 310px; class="right info_cp"><i class="icon-group"></i>Current pool</th>';
         html += '           </tr>';
         html += '       </thead>';
         html += '       <tbody>';
@@ -297,12 +297,12 @@ function set_device_list(result, rig, disabled) {
     $('.device_list[data-rig="' + rig + '"] tbody').html("");
     $('.rig_btn.stop_rig[data-rig="' + rig + '"] i').html('Stop rig');
     if (disabled !== undefined && disabled === true) {
-        $('.pool_switching_container[data-rig="' + rig + '"]').hide();
+        $('.pool_switching_container[data-rig="' + rig + '"]').addClass('hidden');
         $('.device_list[data-rig="' + rig + '"] tbody').html('<tr><td colspan="13" class="center">Rig is disabled</td></tr>');
         $('.rig_btn.stop_rig[data-rig="' + rig + '"] i').html('Start rig');
     }
     else if (empty(Soopfw.obj_size(result))) {
-        $('.pool_switching_container[data-rig="' + rig + '"]').hide();
+        $('.pool_switching_container[data-rig="' + rig + '"]').addClass('hidden');
         $('.device_list[data-rig="' + rig + '"] tbody').html('<tr><td colspan="13" class="center">No devices found or rig is not alive</td></tr>');
     }
     else {
@@ -401,48 +401,48 @@ function set_device_list(result, rig, disabled) {
             }
             
             var tr = $('<tr></tr>')
-                    .append($('<td class="nowrap center clickable ' + ((device['gpu_info']['Enabled'] === 'Y') ? 'enabled' : 'disabled') + '"><i class="icon-' + ((device['gpu_info']['Enabled'] === 'Y') ? 'check' : 'attention') + '"></i></td>').off('click').on('click', function() {
+                    .append($('<td class="info_enabled nowrap center clickable ' + ((device['gpu_info']['Enabled'] === 'Y') ? 'enabled' : 'disabled') + '"><i class="icon-' + ((device['gpu_info']['Enabled'] === 'Y') ? 'check' : 'attention') + '"></i></td>').off('click').on('click', function() {
                         getEnableDialog(rig, device['ID'], device['Model'], device['gpu_info']['Enabled']);
                     }))
-                    .append($('<td class="nowrap">' + device['Model'].replace("Series", "").replace("AMD", "").replace("Radeon", "").trim() + '</td>'))
-                    .append($('<td class="nowrap center clickable ' + ((load_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((load_ok === true) ? 'check' : 'attention') + '"></i>' + device['gpu_info']['GPU Activity'] + ' %</td>').off('click').on('click', function() {
+                    .append($('<td class="info_name nowrap">' + device['Model'].replace("Series", "").replace("AMD", "").replace("Radeon", "").trim() + '</td>'))
+                    .append($('<td class="info_load nowrap center clickable ' + ((load_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((load_ok === true) ? 'check' : 'attention') + '"></i>' + device['gpu_info']['GPU Activity'] + ' %</td>').off('click').on('click', function() {
                         getLoadConfigDialog(rig, device['ID'], device['Model']);
                     }))
-                    .append($('<td class="nowrap right clickable' + ((temp_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((temp_ok === true) ? 'check' : 'attention') + '"></i>'  + device['gpu_info']['Temperature'] + ' c</td>').off('click').on('click', function() {
+                    .append($('<td class="info_temp nowrap right clickable' + ((temp_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((temp_ok === true) ? 'check' : 'attention') + '"></i>'  + device['gpu_info']['Temperature'] + ' c</td>').off('click').on('click', function() {
                         getTempConfigDialog(rig, device['ID'], device['Model']);
                     }))
-                    .append($('<td class="nowrap right clickable' + ((hashrate_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((hashrate_ok === true) ? 'check' : 'attention') + '"></i>'  + get_hashrate_string(device['gpu_info']['MHS 5s']) + ' (' + get_hashrate_string(device['gpu_info']['MHS av']) + ')</td>').off('click').on('click', function() {
+                    .append($('<td class="info_hashrate nowrap right clickable' + ((hashrate_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((hashrate_ok === true) ? 'check' : 'attention') + '"></i>'  + get_hashrate_string(device['gpu_info']['MHS 5s']) + '<span class="info_hashrate_avg">  (' + get_hashrate_string(device['gpu_info']['MHS av']) + ')</span></td>').off('click').on('click', function() {
                         getHashrateConfigDialog(rig, device['ID'], device['Model']);
                     }))
-                    .append($('<td class="nowrap right shares"><i class="icon-check"></i>' + device['gpu_info']['Accepted'] + ' <i class="icon-cancel"></i>' + device['gpu_info']['Rejected'] + ' (' + Math.round((100 / device['gpu_info']['Accepted']) * device['gpu_info']['Rejected'], 2) + '%)</td>'))
-                    .append($('<td class="nowrap right clickable' + ((hw_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((hw_ok === true) ? 'check' : 'attention') + '"></i>'  + device['gpu_info']['Hardware Errors'] + '</td>').off('click').on('click', function() {
+                    .append($('<td class="info_shares nowrap right shares"><i class="icon-check"></i>' + device['gpu_info']['Accepted'] + ' <i class="icon-cancel"></i>' + device['gpu_info']['Rejected'] + ' (' + Math.round((100 / device['gpu_info']['Accepted']) * device['gpu_info']['Rejected'], 2) + '%)</td>'))
+                    .append($('<td class="info_hw nowrap right clickable' + ((hw_ok !== true) ? ' disabled' : '') + '"><i class="icon-' + ((hw_ok === true) ? 'check' : 'attention') + '"></i>'  + device['gpu_info']['Hardware Errors'] + '</td>').off('click').on('click', function() {
                         getHWConfigDialog(rig, device['ID'], device['Model']);
                     }))
-                    .append($('<td class="nowrap right clickable">' + device['gpu_info']['Fan Percent'] + ' %</td>').off('click').on('click', function() {
+                    .append($('<td class="info_fan nowrap right clickable">' + device['gpu_info']['Fan Percent'] + ' %</td>').off('click').on('click', function() {
                         getFanChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['Fan Percent']);
                     }))
-                    .append($('<td class="nowrap right clickable">' + device['gpu_info']['GPU Clock'] + ' Mhz</td>').off('click').on('click', function() {
+                    .append($('<td class="info_engine nowrap right clickable">' + device['gpu_info']['GPU Clock'] + ' Mhz</td>').off('click').on('click', function() {
                         getChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['GPU Clock'], 'engine');
                     }))
-                    .append($('<td class="nowrap right clickable">' + device['gpu_info']['Memory Clock'] + ' Mhz</td>').off('click').on('click', function() {
+                    .append($('<td class="info_memory nowrap right clickable">' + device['gpu_info']['Memory Clock'] + ' Mhz</td>').off('click').on('click', function() {
                         getChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['Memory Clock'], 'memory');
                     }))
-                    .append($('<td class="nowrap right clickable">' + device['gpu_info']['GPU Voltage'] + ' V</td>').off('click').on('click', function() {
+                    .append($('<td class="info_voltage nowrap right clickable">' + device['gpu_info']['GPU Voltage'] + ' V</td>').off('click').on('click', function() {
                         getVoltageChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['GPU Voltage']);
                     }))
-                    .append($('<td class="nowrap right clickable">' + device['gpu_info']['Intensity'] + '</td>').off('click').on('click', function() {
+                    .append($('<td class="info_intensity nowrap right clickable">' + device['gpu_info']['Intensity'] + '</td>').off('click').on('click', function() {
                         getIntensityChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['Intensity']);
                     }));
                     
             
             if (device['donating'] !== undefined) {
-                tr.append($('<td class="nowrap right ' + ((device['pool']['Status'] === 'Alive') ? '' : 'disabled') + '"><i class="icon-' + ((device['pool']['Status'] === 'Alive') ? 'check' : 'attention') + '"></i>Donating (' + device['donating'] + ' minutes left)</td>'));
+                tr.append($('<td class="info_cp nowrap right ' + ((device['pool']['Status'] === 'Alive') ? '' : 'disabled') + '"><i class="icon-' + ((device['pool']['Status'] === 'Alive') ? 'check' : 'attention') + '"></i>Donating (' + device['donating'] + ' minutes left)</td>'));
             }
             else if (!empty(device['pool'])) {
-                tr.append($('<td class="nowrap right ' + ((device['pool']['Status'] === 'Alive') ? '' : 'disabled') + '"><i class="icon-' + ((device['pool']['Status'] === 'Alive') ? 'check' : 'attention') + '"></i>' + device['pool']['URL'] + '</td>'));
+                tr.append($('<td class="info_cp nowrap right ' + ((device['pool']['Status'] === 'Alive') ? '' : 'disabled') + '"><i class="icon-' + ((device['pool']['Status'] === 'Alive') ? 'check' : 'attention') + '"></i>' + device['pool']['URL'] + '</td>'));
             }
             else {
-                tr.append('<td class="nowrap right">Waiting for pool</td>');
+                tr.append('<td class="info_cp nowrap right">Waiting for pool</td>');
             }
             $('.device_list[data-rig="' + rig + '"] tbody').append(tr);
             
@@ -514,10 +514,10 @@ function set_device_list(result, rig, disabled) {
             $('.device_list[data-rig="' + rig + '"] tbody').append(tr);      
         }
         if (donating) {
-            $('.pool_switching_container[data-rig="' + rig + '"]').hide();
+            $('.pool_switching_container[data-rig="' + rig + '"]').addClass('hidden');
         }
         else {
-            $('.pool_switching_container[data-rig="' + rig + '"]').show();
+            $('.pool_switching_container[data-rig="' + rig + '"]').removeClass('hidden');
         }
         $('.rig_hashrate[data-rig="' + rig + '"]').html(get_hashrate_string(rig_hashrate));
         global_hashrate += rig_hashrate;

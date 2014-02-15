@@ -258,13 +258,13 @@ class pools extends Controller {
         
         $this->load_pool_config();
         if ($params->rig_based) {
-            foreach ($this->config->rigs AS $rig_name => $rig_data) {
+            foreach ($this->config->rigs AS $rig_data) {
                 
                 if (!empty($rig_data['disabled'])) {
                     continue;
                 }
                 
-                $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
+                $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_data['shortname']);
                 $result = $this->pool_config->check_pool($params->url, $params->user . '_rb_' . $user, $params->pass);
         
                 if ($result !== true) {
@@ -294,7 +294,8 @@ class pools extends Controller {
             }
             if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group) {
                 if ($params->rig_based) {
-                    $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig);
+                                        
+                    $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_data['shortname']);
                     $this->get_rpc($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
                     $miner_config = $this->get_rpc($rig)->get_config();
                     $miner_config['pools'][] = array(

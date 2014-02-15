@@ -111,13 +111,23 @@ class main extends Controller {
      * Ajax request to save new configuration settings.
      */
     public function start_stop_mining() {
+        
+        
         $params = new ParamStruct();
         $params->add_required_param('rig', PDT_STRING);
         $params->add_required_param('stop', PDT_BOOL);
 
+        // Validate that the rig exists.
+        require_once 'includes/validators/FunctionValidator.class.php';
+        $rigs = $this->config->rigs;
+        $params->add_validator('rig', new FunctionValidator('This rig does not exists', function($value) use ($rigs) {
+            return isset($rigs[$value]);
+        }));
+        
+        
         $params->fill();
-        if (!$params->is_valid()) {
-            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
+        if (!$params->is_valid(true)) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, implode($params->get_errors()));
         }
 
         if ($params->stop) {
@@ -138,7 +148,7 @@ class main extends Controller {
                     // Setup the pool for cgminer.
                     $user = "";
                     if (!empty($pool['rig_based'])) {
-                        $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $params->rig);
+                        $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$params->rig]['shortname']);
                     }
                     
                     // Ad this pool.
@@ -259,7 +269,7 @@ class main extends Controller {
                 // Add the pool.
                 $user = "";
                 if (!empty($pool['rig_based'])) {
-                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $current_rig);
+                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$current_rig]['shortname']);
                 }
                 $this->get_rpc($current_rig)->addpool($pool['url'], $pool['user'] . $user, $pool['pass']);
                 usleep(100000); // Wait 100 milliseconds to let the pool to be alived.
@@ -298,7 +308,7 @@ class main extends Controller {
                 // Add the pool.
                 $user = "";
                 if (!empty($pool['rig_based'])) {
-                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $current_rig);
+                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$current_rig]['shortname']);
                 }
                 $cgminer_config_pools[] = array(
                     'url' => $pool['url'],
@@ -675,16 +685,19 @@ class main extends Controller {
      * Ajax request to check a connection to cgminer.
      */
     public function check_connection() {
+        require_once 'includes/validators/RegexpValidator.class.php';
         $params = new ParamStruct();
         $params->add_required_param('name', PDT_STRING);
+        $params->add_required_param('shortname', PDT_STRING);
+        $params->add_validator('shortname', new RegexpValidator('You have invalid characters within "shortname", please provide only letters from a-z, A-Z and/or numbers from 0-9', '/^[a-zA-Z0-9]+$/'));
         $params->add_required_param('http_ip', PDT_STRING);
         $params->add_required_param('http_port', PDT_INT);
         $params->add_required_param('rpc_key', PDT_STRING);
         $params->add_param('edit', PDT_STRING, '');
 
         $params->fill();
-        if (!$params->is_valid()) {
-            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
+        if (!$params->is_valid(true)) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER, null, true, implode("\n", $params->get_errors()));
         }
 
         $api = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key);
@@ -762,8 +775,7 @@ class main extends Controller {
             
             $rig_to_use = array(
                 'name' => $params->name,
-                'ip' => $params->ip,
-                'port' => $params->port,
+                'shortname' => $params->shortname,
                 'http_ip' => $params->http_ip,
                 'http_port' => $params->http_port,
                 'rpc_key' => $params->rpc_key,

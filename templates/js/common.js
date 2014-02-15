@@ -676,7 +676,7 @@ function parse_ajax_result(result, return_function, additionalParams, error_func
             error_function(result);
         }
         if (silent !== true) {
-            alert(Soopfw.t("No permission") + "\n" + result.desc + " (" + result.code + ")");
+            alert(Soopfw.t("No permission") + "\n" + result.desc);
         }
         return false;
     }
@@ -697,7 +697,13 @@ function parse_ajax_result(result, return_function, additionalParams, error_func
             error_function(result);
         }
         if (silent !== true) {
-            alert(Soopfw.t("You did not filled out all required fields") + "\n" + result.desc + " (" + result.code + ")");
+            if (result.desc !== undefined && result.desc !== "") {
+                alert(result.desc);
+            }
+            else {
+                alert(Soopfw.t("You did not filled out all required fields") + "\n" + result.desc);
+            }
+            
         }
         return false;
     }

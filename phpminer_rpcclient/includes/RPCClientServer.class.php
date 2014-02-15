@@ -96,10 +96,12 @@ class RPCClientServer {
                     $client = $this->get_user_by_socket($socket);
                     
                     // Proccess client.
-                    $client->process_connection($this->config);
-                        
+                    if ($client) {
+                        $client->process_connection($this->config);
+                    }    
                     // Disconnection client.
                     $this->disconnect($socket);
+                    
                 }
             }
         }
@@ -114,7 +116,7 @@ class RPCClientServer {
      * @return RPCClientConnection|null
      *   The client or null if client does not exists.
      */
-    private function &get_user_by_socket($socket) {
+    private function get_user_by_socket($socket) {
         if (isset($this->clients[(int) $socket])) {
             return $this->clients[(int) $socket];
         }
@@ -128,7 +130,9 @@ class RPCClientServer {
      *   The client to close.
      */
     private function disconnect($socket) {
-        
+        if (!$socket) {
+            return;
+        }
         // Check the client socket exists within our clients.
         if (isset($this->clients[(int) $socket])) {
             

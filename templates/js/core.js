@@ -248,15 +248,17 @@ function add_rig_dialog(add, data) {
     else {
        title  = 'Add a new rig'; 
     }
-    
-    dialog += '    Please provide the connection settings to your CGMiner/SGMiner. <br />';
-    dialog += '    You can find it within cgminer.conf/sgminer.conf <br />';
-    dialog += '    Please make sure to enable api-listen and set "api-allow": "W:{YOUR_IP}" where <b>{YOUR_IP}</b> is the ip-address of the server which runs the main script of phpminer<br />';
-    dialog += '    The port is written at <b>api-port</b> (default: 4028)<br />';
+
     dialog += '    <div class="simpleform">';
     dialog += '        <div class="form-element">';
     dialog += '            <label for="name">Rig name:</label>';
     dialog += '            <input type="text" name="name" id="name" value="' + ((data.name !== undefined) ? data.name : 'localhost') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
+    dialog += '        </div>';
+    dialog += '        PHPMiner is able to add pools with "rig based" usernames. When using such pool, it uses not directly the username provided within the pool, instead it uses the username';
+    dialog += '        and append _rb_{shortname}. The setting below will allow you to have longer rig name and short rig-based usernames. Please provide only letters a-z, A-Z and numbers from 0-9.';
+    dialog += '        <div class="form-element">';
+    dialog += '            <label for="name">Shortname:</label>';
+    dialog += '            <input type="text" name="shortname" id="shortname" value="' + ((data.shortname !== undefined) ? data.shortname : 'local') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
     dialog += '        <div>';
     dialog += '        Because PHPMiner can handle multiple mining rigs, it is required that at each mining rig the phpminer_rpcclient is running. It must run under the user where it can start CGMiner/SGMiner.';
@@ -296,6 +298,7 @@ function add_rig_dialog(add, data) {
                         http_port: $('#http_port').val(),
                         rpc_key: $('#rpc_key').val(),
                         name: $('#name').val(),
+                        shortname: $('#shortname').val(),
                         edit: (data.name !== undefined) ? data.name : false
                     }, function() {
                         Soopfw.reload();
