@@ -293,15 +293,27 @@ class pools extends Controller {
                 continue;
             }
             if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group) {
-                $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_name);
-                $this->get_rpc($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
+                if ($params->rig_based) {
+                    $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig);
+                    $this->get_rpc($rig)->addpool($params->url, $params->user . '_rb_' . $user, $params->pass);
+                    $miner_config = $this->get_rpc($rig)->get_config();
+                    $miner_config['pools'][] = array(
+                        'url' => $params->url,
+                        'user' => $params->user . '_rb_' . $user,
+                        'pass' => $params->pass,
+                    );
+                }
+                else {
+                    $this->get_rpc($rig)->addpool($params->url, $params->user, $params->pass);
+                    $miner_config = $this->get_rpc($rig)->get_config();
+                    $miner_config['pools'][] = array(
+                        'url' => $params->url,
+                        'user' => $params->user,
+                        'pass' => $params->pass,
+                    );
+                }
                 
-                $miner_config = $this->get_rpc($rig)->get_config();
-                $miner_config['pools'][] = array(
-                    'url' => $params->url,
-                    'user' => $params->user . '_rb_' . $user,
-                    'pass' => $params->pass,
-                );
+                
                 $this->get_rpc($rig)->set_config('pools', $miner_config['pools']);
             }
         }

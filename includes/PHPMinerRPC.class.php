@@ -1,11 +1,13 @@
 <?php
-
+require_once 'APIException.class.php';
+require_once 'APIRequestException.class.php';
 class PHPMinerRPC extends HttpClient {
     
     private $ip = null;
     private $port = null;
     private $rpc_key = null;
     private $timeout = null;
+    private $has_advanced_api = false;
     public function __construct($ip, $port, $rpc_key, $timeout = 10) {
         $this->ip = $ip;
         $this->port = $port;
@@ -150,6 +152,10 @@ class PHPMinerRPC extends HttpClient {
         $this->has_advanced_api = $advanced_api[0]['Exists'] == 'Y';
         
         return $res;
+    }
+    
+    public function has_advanced_api() {
+        return $this->has_advanced_api;
     }
     
     /**
@@ -853,7 +859,12 @@ class PHPMinerRPC extends HttpClient {
      *   
      */
     private function send_api($command, $data = array()) {
-        return $this->send($command, $data, true);
+        $result = $this->send($command, $data, true);
+        if ($result['error']) {
+            throw new APIRequestException($result['msg']);
+        }
+        
+        return $result['msg'];
     }
     
     /**
@@ -899,19 +910,9 @@ class PHPMinerRPC extends HttpClient {
         $in = json_encode($args);
         @socket_write($socket, $in, strlen($in));
         $resp = $this->read_buffer($socket);
+        
         @socket_close($socket);
         $res = json_decode($resp, true);
-        
-        // When we calling a miner api command we directly need to return the result from ['msg'].
-        if ($from_api === true) {
-            if ($res === false || empty($res)) {
-                return false;
-            }
-            else {
-                return $res['msg'];
-            }
-        }
-        
         if ($res === false || empty($res)) {
             return array(
                 'error' => 1,
@@ -931,12 +932,12 @@ class PHPMinerRPC extends HttpClient {
      *  The read string or boolean false on error.
      */
     function read_buffer($socket) {
-        
         $buf = '';
-        if (false !== ($bytes = socket_recv($socket, $buf, 2048, MSG_WAITALL))) {
-            return $buf;
+        $read_buf = '';
+        while (0 !== ($bytes = socket_recv($socket, $buf, 2048, MSG_WAITALL))) {
+            $read_buf .= $buf;
         }
-        return false;
+        return $read_buf;
     }
     
 }
