@@ -794,21 +794,21 @@ class main extends Controller {
                 'http_port' => $params->http_port,
                 'rpc_key' => $params->rpc_key,
             );
-           
+            
             if (!empty($params->edit) && $params->edit !== "false") {
                 foreach ($rigs AS $rig_name => $rig_data) {
                     if ($rig_name === $params->edit) {
-                        $new_rigs[$params->name] = $rig_to_use;
+                        foreach ($rig_to_use AS $k => $v) {
+                            $rig_data[$k] = $v;
+                        }
                     }
-                    else {
-                        $new_rigs[$rig_name] = $rig_data;
-                    }
+                    $new_rigs[$rig_name] = $rig_data;
                 }
             } else {
                 $new_rigs = $rigs;
                 $new_rigs[$params->name] = $rig_to_use;
             }
-
+            
             $this->config->rigs = $new_rigs;
             AjaxModul::return_code(AjaxModul::SUCCESS, array(
                 'cgminer' => $orig_version,
