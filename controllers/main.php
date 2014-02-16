@@ -508,10 +508,19 @@ class main extends Controller {
                 $local_conf['rigs'][$rig]['cgminer_conf'] = array();
             }
             
+            if (!empty($local_conf['rigs'][$rig]['disabled'])) {
+                continue;
+            }
+            
             // Remove deleted config keys
             foreach ($local_conf['rigs'][$rig]['cgminer_conf'] as $key => $val) {
                 if (!isset($rig_data[$key])) {
-                    $res = $this->get_rpc($rig)->set_config($key, "");
+                    try {
+                        $res = $this->get_rpc($rig)->set_config($key, "");
+                    }
+                    catch (Exception $e) {
+                        $res = $e->getMessage();
+                    }
                     if ($res !== true) {
                         if (!isset($errors[$rig])) {
                             $errors[$rig] = array();
@@ -523,7 +532,12 @@ class main extends Controller {
             }
             // Add / Change config keys
             foreach ($rig_data as $key => $val) {
-                $res = $this->get_rpc($rig)->set_config($key, $val);
+                try {
+                    $res = $this->get_rpc($rig)->set_config($key, $val);
+                }
+                catch (Exception $e) {
+                    $res = $e->getMessage();
+                }
                 if ($res !== true) {
                     if (!isset($errors[$rig])) {
                         $errors[$rig] = array();
@@ -975,46 +989,39 @@ class main extends Controller {
                     $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
                 }
             }
-            if ($from_init) {
-                // Determine which pool group we are currently using.        
-                $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
+            
+            // Determine which pool group we are currently using.        
+            $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
 
-                if (empty($current_active_group)) {
-                    $rig_conf = $this->get_rpc($rig)->get_config();
-                    if (!empty($rig_conf)) {
-                        $this->pool_config->del_group('Auto created for rig: ' . $rig);
-                        foreach ($rig_conf['pools'] AS $rig_conf_pool) {
-                            $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
-                        }
-                        $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
+            if (empty($current_active_group)) {
+                $rig_conf = $this->get_rpc($rig)->get_config();
+                if (!empty($rig_conf)) {
+                    $this->pool_config->del_group('Auto created for rig: ' . $rig);
+                    foreach ($rig_conf['pools'] AS $rig_conf_pool) {
+                        $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
                     }
+                    $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
                 }
+            }
 
-                return array(
-                    'rig_name' => $orig,
-                    'device_list' => $devices,
-                    'active_pool_group' => $current_active_group,
-                    'pools' => $this->pool_config->get_pools($current_active_group),
-                    'donating' => !empty($rigs[$rig]['switch_back_group']),
-                    'collapsed' => !empty($rigs[$rig]['collapsed']),
-                    'disabled' => !empty($rigs[$rig]['disabled']),
-                );
-            }
-            else {
-                return array(
-                    'rig_name' => $orig,
-                    'device_list' => $devices,
-                    'donating' => !empty($rigs[$rig]['switch_back_group']),
-                    'collapsed' => !empty($rigs[$rig]['collapsed']),
-                    'disabled' => !empty($rigs[$rig]['disabled']),
-                );
-            }
+            return array(
+                'rig_name' => $orig,
+                'device_list' => $devices,
+                'active_pool_group' => $current_active_group,
+                'pools' => $this->pool_config->get_pools($current_active_group),
+                'donating' => !empty($rigs[$rig]['switch_back_group']),
+                'collapsed' => !empty($rigs[$rig]['collapsed']),
+                'disabled' => !empty($rigs[$rig]['disabled']),
+            );
+
 
 
         } catch (Exception $ex) {
             if (!empty($rigs[$rig]['disabled'])) {
                 return array(
                     'rig_name' => $orig,
+                    'pools' => array(),
+                    'active_pool_group' => null,
                     'device_list' => array(),
                     'donating' => !empty($rigs[$rig]['switch_back_group']),
                     'collapsed' => !empty($rigs[$rig]['collapsed']),

@@ -168,23 +168,27 @@ function add_rig(rig, rig_data) {
     $('#rigs').append(html);
 
     $('.current_pool_group[data-rig="' + rig + '"]').val(rig_data.active_pool_group).off('change').on('change', function(){
-        wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
-        ajax_request(murl('main', 'switch_pool_group'), {rig: rig, group: $(this).val()}, function(data) {
-            $.alerts._hide();
-            if(data.errors !== undefined) {
-                var err_str = 'There are some rig\'s which produced errors. Here is a list of all errors which occured:\n';
-                $.each(data.errors, function(k, v) {
-                    err_str += " - " + v + "\n";
-                });
-                alert(err_str);
-            }
-            if(data.success !== undefined) {
-                $.each(data.success, function(k, v) {
-                    update_pools(k, data.new_pools);
-                });
-            }
-        });
+        var value = $(this).val();
+        if (!empty(value)) {
+            wait_dialog('<img style="margin-top: 7px;margin-bottom: 7px;" src="/templates/ajax-loader.gif"/><br>Please wait until the new pool group is activated. This takes some time because PHPMiner needs to verify that the last active pool is one of the newly added one.');
+            ajax_request(murl('main', 'switch_pool_group'), {rig: rig, group: value}, function(data) {
+                $.alerts._hide();
+                if(data.errors !== undefined) {
+                    var err_str = 'There are some rig\'s which produced errors. Here is a list of all errors which occured:\n';
+                    $.each(data.errors, function(k, v) {
+                        err_str += " - " + v + "\n";
+                    });
+                    alert(err_str);
+                }
+                if(data.success !== undefined) {
+                    $.each(data.success, function(k, v) {
+                        update_pools(k, data.new_pools);
+                    });
+                }
+            });
+        }
     });
+    
     var rig_pools = $('.current_pool_pool[data-rig="' + rig + '"]');
     rig_pools.off('change').on('change', function(){
         ajax_request(murl('main', 'switch_pool'), {rig: rig, pool: $(this).val()}, function() {
@@ -223,7 +227,7 @@ function init_pager() {
 }
 function update_pools(rig, new_pools) {
     if (new_pools !== undefined && new_pools !== null) {
-        phpminer.settings.rig_data[rig].pools = new_pools;
+        phpminer.settings.rig_data[rig].pools = $.extend({}, new_pools);
     }
     var rig_pools = $('.current_pool_pool[data-rig="' + rig + '"]');
     rig_pools.html("");
@@ -245,14 +249,34 @@ function refresh_update_device_list() {
     });
     ajax_request(murl('main', 'get_device_list'), {rigs: rigs_to_update}, function(result) {
         global_hashrate = 0;
+        var active_pool_groups = {};
         $.each(result, function(rig, devices) {
             
             if (devices['device_list'] === undefined) {
                 devices['device_list'] = {};
             }
-            
-            set_device_list(devices.device_list, rig, devices.disabled);
+            phpminer.settings.rig_data[rig] = $.extend({}, devices);
+            set_device_list(devices.device_list, rig, devices.disabled);   
+            if (devices.active_pool_group !== undefined) {
+                active_pool_groups[rig] = {
+                    group: devices.active_pool_group,
+                    pools: devices.pools,
+                };
+            }
         })
+        
+        $('.current_pool_group').each(function() {
+            var that = $(this);
+            $.each(active_pool_groups, function(rig, data) {
+                if ($('option[value="' + data.group + '"]', that).length <= 0) {
+                    that.append('<option value="' + data.group + '">' + data.group + '</option>');
+                }
+                if (rig === that.data('rig')) {
+                    that.val(data.group);
+                    update_pools(rig, data.pools);
+                }
+            });
+        });
         $('#global_hashrate').html(get_hashrate_string(global_hashrate));
     });
 }
@@ -274,6 +298,7 @@ function refresh_device_list(page, mepp) {
             }
             
             set_device_list(devices.device_list, rig, devices.disabled);
+            $('.current_pool_group[data-rig="' + rig + '"]').val(devices.active_pool_group);
         })
         $('#global_hashrate').html(get_hashrate_string(global_hashrate));
         refresh_device_list_timeout = setInterval(refresh_update_device_list, get_config('ajax_refresh_intervall', 5000));
@@ -434,7 +459,6 @@ function set_device_list(result, rig, disabled) {
                         getIntensityChangeDialog(rig, device['ID'], device['Model'], device['gpu_info']['Intensity']);
                     }));
                     
-            
             if (device['donating'] !== undefined) {
                 tr.append($('<td class="info_cp nowrap right ' + ((device['pool']['Status'] === 'Alive') ? '' : 'disabled') + '"><i class="icon-' + ((device['pool']['Status'] === 'Alive') ? 'check' : 'attention') + '"></i>Donating (' + device['donating'] + ' minutes left)</td>'));
             }
