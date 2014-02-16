@@ -12,7 +12,7 @@ SERVICE_SCRIPT="$PHPMINER_PATH/phpminer_rpcclient"
 PHPMINER_PATH_CONFIG="$PHPMINER_PATH/config.php"
 
 # Get reuired user info
-echo "Please enter the user on which phpminer_rpcclient should run:"
+echo "Please enter the user on which cgminer should run. This user need access to start cgminer:"
 read USER
 
 USER_EXISTS=`grep "$USER:x:" /etc/passwd`
