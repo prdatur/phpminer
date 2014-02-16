@@ -65,7 +65,25 @@ else
     MINER_BINARY=""
     echo "Using miner binary: $MINER_BINARY"
 fi
-exit 0;
+
+echo "Miner API-IP (Default: 127.0.0.1):"
+read MINER_IP
+if [ -n "$MINER_IP" ]; then
+    echo "Using miner api ip: $MINER_IP"
+else
+    MINER_IP="127.0.0.1"
+    echo "Using miner api ip: $MINER_IP"
+fi
+
+echo "Miner API-Port (Default: 4028):"
+read MINER_PORT
+if [ -n "$MINER_PORT" ]; then
+    echo "Using miner api pöort: $MINER_PORT"
+else
+    MINER_PORT="4028"
+    echo "Using miner api ip: $MINER_PORT"
+fi
+
 echo "Please enter the the RPC-Key, this key is used to make sure that no other client than phpminer can operate with this service. THIS CAN NOT BE EMPTY"
 read RPCKEY
 if [ -n "$RPCKEY" ]; then
@@ -120,6 +138,12 @@ echo "
 
 // Miner, can be cgminer or sgminer
 \$config['miner'] = '$MINER';
+
+// The miner api ip
+\$config['miner_api_ip'] = '$MINER_IP';
+
+// The port of the miner api
+\$config['miner_api_port'] = $MINER_PORT;
 
 // Miner binary, this can be left empty if the binary is the same as the miner. For example miner = cgminer, miner_binary = cgminer or on windows cgminer.exe
 \$config['miner_binary'] = '$MINER_BINARY';
