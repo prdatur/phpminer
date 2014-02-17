@@ -41,8 +41,13 @@ Soopfw.behaviors.main_settings = function() {
                 values[$(this).attr('name')] = $(this).val();
             }
         });
-        ajax_request(murl('main', 'save_settings'), {settings: values}, function() {
-            success_alert('Configuration saved successfully.');
+        ajax_request(murl('main', 'save_settings'), {settings: values}, function(result) {
+            if (result.url !== undefined) {
+                Soopfw.location(result.url);
+            }
+            else {
+                success_alert('Configuration saved successfully.');
+            }
         });
     });
     

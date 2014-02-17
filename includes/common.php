@@ -58,7 +58,7 @@ require 'Controller.class.php';
 
 $system_conf['version'] = array(1, 2, 1);
 
-if (isset($_SERVER['REQUEST_URI']) && preg_match("/^(.+)?\/(main\/|gpu\/|notify\/|pools\/|$|index.php)/",$_SERVER['REQUEST_URI'], $matches)) {
+if (isset($_SERVER['REQUEST_URI']) && preg_match("/^(.+)?\/(main\/|gpu\/|access\/|notify\/|pools\/|$|index.php)/",$_SERVER['REQUEST_URI'], $matches)) {
     $system_conf['directory'] = $matches[1];
 }
 

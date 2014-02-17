@@ -7,6 +7,7 @@ require_once 'PHPMinerException.class.php';
 require_once 'Config.class.php';
 require_once 'PoolConfig.class.php';
 require_once 'ParamStruct.class.php';
+require_once 'AccessControl.class.php';
 
 class Controller {
 
@@ -84,6 +85,13 @@ class Controller {
      * @var boolean
      */
     protected $has_advanced_api = false;
+    
+    /**
+     * Holds the access control.
+     * 
+     * @var AccessControl
+     */
+    protected $access_control = null;
 
     /**
      * Load all needed things (configs, api).
@@ -97,6 +105,11 @@ class Controller {
         }
         // Get the own config.
         $this->config = new Config(SITEPATH . '/config/config.json');
+        
+        $this->access_control = AccessControl::getInstance();
+        if ($this->config->enable_access_control) {
+            $this->access_control->enable();
+        }
         
         if (isset($system_conf['directory']) && !empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
             $this->add_message('A new version is available, current version <b>' . implode('.', $system_conf['version']) . '</b> - latest version <b>' . implode('.', $this->config->latest_version) . '</b>. <a href="https://phpminer.com" target="_blank">Download</a>. After updating to a new version, do not forget to copy the new index.php from the phpminer_rpcclient and restart the service."', Controller::MESSAGE_TYPE_INFO);

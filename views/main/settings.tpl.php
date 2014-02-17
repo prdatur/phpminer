@@ -24,6 +24,10 @@
                         <td class="value"><div class="slider"><input type="checkbox" id="allow_offline_pools" name="allow_offline_pools" value="1" <?php echo (isset($conf['allow_offline_pools']) && $conf['allow_offline_pools'] == "1" ? 'checked="checked"' : '');?> /><label for="allow_offline_pools"></label></div></td>
                     </tr>
                     <tr>
+                        <td class="key">Enable access control:<i data-toggle="tooltip" title="Enable this option will allow you to create access groups with different permissions." class="icon-help-circled"></i></td>
+                        <td class="value"><div class="slider"><input type="checkbox" id="enable_access_control" name="enable_access_control" value="1" <?php echo (isset($conf['enable_access_control']) && $conf['enable_access_control'] == "1" ? 'checked="checked"' : '');?> /><label for="enable_access_control"></label></div></td>
+                    </tr>
+                    <tr>
                         <td class="key"><label for="socket_timout">Rig socket timeout:</label><i data-toggle="tooltip" title="People who know what this means may change it to the needs, other people just don't change this setting" class="icon-help-circled"></i></td>
                         <td class="value"><input type="text" id="socket_timout" name="socket_timout" value="<?php echo (!empty($conf['socket_timout']) ? $conf['socket_timout'] : 5);?>" /></td>
                     </tr>

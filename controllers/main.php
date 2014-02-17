@@ -101,11 +101,24 @@ class main extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
         }
-
+        $need_redirect = null;
         foreach ($params->settings AS $key => $val) {
+            if ($key === 'enable_access_control' && !empty($val)) {
+                
+                $access_controll = new Config(SITEPATH . '/config/users.json');
+                if ($access_controll->is_empty()) {
+                    $need_redirect = true;
+                }
+                
+            }
             $this->config->set_value($key, $val);
         }
-        AjaxModul::return_code(AjaxModul::SUCCESS);
+        if ($need_redirect) {
+            AjaxModul::return_code(AjaxModul::SUCCESS, array('url' => murl('access', 'user_add')));
+        }
+        else {
+            AjaxModul::return_code(AjaxModul::SUCCESS);
+        }
     }
     /**
      * Ajax request to save new configuration settings.

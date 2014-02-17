@@ -112,8 +112,7 @@ catch (Exception $e) {
                 break;
 
             // Bad bad, display errors.
-            case PHPMinerException::CODE_CONFIG_NOT_READABLE:
-            case PHPMinerException::CODE_CONFIG_NOT_WRITEABLE:
+            default:
                 $controller->add_message($e->getMessage(), Controller::MESSAGE_TYPE_ERROR);
                 break;
         }

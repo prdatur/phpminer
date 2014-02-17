@@ -69,7 +69,7 @@ class RPCClientServer {
             // Check for changed sockets.
             $changed_sockets = $this->sockets;
             $except = null;
-            @stream_select($changed_sockets, $write = null, $except, 0, 5000);
+            @stream_select($changed_sockets, $write = null, $except, 0, 100000);
             
             // Loop through each changed socket.
             foreach ($changed_sockets as $socket) {
