@@ -92,23 +92,42 @@ class Controller {
      * @var AccessControl
      */
     protected $access_control = null;
-
+    
+    /**
+     * Determines if the request had a fatal error.
+     * 
+     * @var boolean
+     */
+    private $fatal_error = false;
+    
     /**
      * Load all needed things (configs, api).
      * @throws PHPMinerException
      */
     public function setup_controller() {
         global $system_conf;
+        
+        // Process updates.
+        new Update();
+        
         if (isset($system_conf['directory'])) {
             $this->assign('docroot', $system_conf['directory']);
             $this->js_config('docroot', $system_conf['directory']);
         }
         // Get the own config.
-        $this->config = new Config(SITEPATH . '/config/config.json');
+        $this->config = Config::getInstance();
         
         $this->access_control = AccessControl::getInstance();
         if ($this->config->enable_access_control) {
             $this->access_control->enable();
+            if (!$this->access_control->get_config()->is_empty() && !$this->access_control->check_login()) {
+                $this->fatal_error('You are not logged in. Access denied!');
+            }
+            
+        }
+        if ($this->controller_name === 'access' && !$this->access_control->is_enabled()) {
+            $this->fatal_error('Access control is disabled, to view this page you have to enable it first under main settings. If you run this on your local machine and only you have access, this is not required.', Controller::MESSAGE_TYPE_ERROR);
+        
         }
         
         if (isset($system_conf['directory']) && !empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
@@ -128,10 +147,7 @@ class Controller {
         }
         
         if (empty($this->config->rigs)) {
-            $this->config->reload();
-            if (empty($this->config->rigs)) {
-                throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
-            }
+            throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
         }
     }
        
@@ -256,14 +272,17 @@ class Controller {
      */
     public function __destruct() {
         if ($this->request_type === 'html') {
-            // When the controller action has directly a js file, load it.
-            if (file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.js')) {
-                $this->add_js('/views/' . $this->controller_name . '/' . $this->action_name . '.js');
-            }
+            
+            if ($this->fatal_error !== true) {
+                // When the controller action has directly a js file, load it.
+                if (file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.js')) {
+                    $this->add_js('/views/' . $this->controller_name . '/' . $this->action_name . '.js');
+                }
 
-            // When the controller action has directly a css file, load it.
-            if (file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.css')) {
-                $this->add_css('/views/' . $this->controller_name . '/' . $this->action_name . '.css');
+                // When the controller action has directly a css file, load it.
+                if (file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.css')) {
+                    $this->add_css('/views/' . $this->controller_name . '/' . $this->action_name . '.css');
+                }
             }
 
             // Display page.
@@ -338,6 +357,13 @@ class Controller {
      */
     public function set_action_name($value) {
         $this->action_name = $value;
+    }
+    
+    public function fatal_error($msg, $no_exception = false) {
+        $this->fatal_error = true;
+        if (!$no_exception) {
+            throw new Exception($msg);
+        }
     }
 
     /**

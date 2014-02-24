@@ -41,9 +41,17 @@ class pools extends Controller {
         $old_pool = $this->pool_config->get_pool($uuid, $group);
         if (empty($old_pool)) {
             header("HTTP/1.0 400 Bad request");
-            echo 'No such pool';
+            echo 'No such pool.';
             exit();
         }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            header("HTTP/1.0 400 Bad request");
+            echo 'You do not have permission to change this pool.';
+            exit();
+        }
+        
+        
         $old_pool[$params->name] = $val;
         
         foreach ($this->config->rigs AS $rig => $rig_data) {
@@ -92,8 +100,11 @@ class pools extends Controller {
         list($uuid, $group) = explode("|", $params->uuid, 2);
         $this->load_pool_config();
         
-        $cfg_groups = $this->pool_config->get_config();
-        $cfg_pools = $cfg_groups[$group];
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
+        $cfg_pools = $this->pool_config->get_pools($group);
         if ($group === 'default' && count($cfg_pools) == 1) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not remove this pool, it is the only one within the default group. If you want to delete this pool, please add a pool to the default group first.');
         }
@@ -266,6 +277,11 @@ class pools extends Controller {
         }
         
         $this->load_pool_config();
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         if ($params->rig_based) {
             foreach ($this->config->rigs AS $rig_data) {
                 
@@ -310,7 +326,6 @@ class pools extends Controller {
                         $user = $params->user;
                     }
 
-
                     $this->get_rpc($rig)->addpool($params->url, $user, $params->pass);
                     $miner_config = $this->get_rpc($rig)->get_config();
                     $miner_config['pools'][] = array(
@@ -354,6 +369,10 @@ class pools extends Controller {
         }
 
         $this->load_pool_config();
+                
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
         
         $rigs_in_use = array();
         foreach ($this->config->rigs AS $rig => $rig_data) {
@@ -392,15 +411,20 @@ class pools extends Controller {
         }));
         $params->fill();
         
-        if ($params->group === 'donate') {
-            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'donate group is a special one, you can not add it.');
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
         }
         
         if (!$params->is_valid(true)) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER, null, true, implode("\n", $params->get_errors()));
         }
+        
+        if ($params->group === 'donate') {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'donate group is a special one, you can not add it.');
+        }
 
         $this->load_pool_config();
+        
         $result = $this->pool_config->add_group($params->group, $params->strategy, $params->rotate_period);
         if ($result !== true) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, $result);

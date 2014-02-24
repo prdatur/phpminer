@@ -1,3 +1,4 @@
 config/config.json
+config/phpminer.db
 config/pools.json
 config/notify.json

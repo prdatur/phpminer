@@ -104,13 +104,16 @@ try {
 }
 catch (Exception $e) {
     if ($set_request_type === 'html') {
+        
+        if ($e instanceof AccessException) {
+            $controller->fatal_error($e->getMessage(), true);
+        }
         switch ($e->getCode()) {
             // We also want to get back to the setup screen to choose ip and port when we couldn't connect to the api.
             // There the existing connection settings will be pre-filled.
             case APIException::CODE_SOCKET_CONNECT_ERROR:
                 $controller->setup();
                 break;
-
             // Bad bad, display errors.
             default:
                 $controller->add_message($e->getMessage(), Controller::MESSAGE_TYPE_ERROR);

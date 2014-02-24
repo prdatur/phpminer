@@ -10,6 +10,10 @@ if (!defined('SITEPATH')) {
         define('SITEPATH', dirname(__FILE__));
 }
 require 'includes/common.php';
+
+// Process updates.
+new Update();
+
 require_once 'includes/PHPMinerException.class.php';
 require_once 'includes/Config.class.php';
 require_once 'includes/PoolConfig.class.php';
@@ -34,20 +38,19 @@ if (!empty($data)) {
 }
 
 $system_config = $config->get_config();
+$notify_cfg_key = 'notify';
 
-// Get the notification config.
-$notification_config = new Config(SITEPATH . '/config/notify.json');
-$rig_notifications = $notification_config->rigs;
+$rig_notifications = $config->get_value('rigs', $notify_cfg_key);
 
 // Can't do notify if nothing is configurated.'
-if (!$notification_config->is_empty()) {
+if (!$config->is_empty($notify_cfg_key)) {
 
     // Check if rapidpush notification is enabled.
     $rapidpush_enabled = false;
     $rapidpush_api_key = '';
-    if ($notification_config->get_value('enable_rapidpush')) {
+    if ($config->get_value('enable_rapidpush', $notify_cfg_key)) {
         require 'includes/RapidPush.class.php';
-        $rapidpush_api_key = $notification_config->get_value('rapidpush_apikey');
+        $rapidpush_api_key = $config->get_value('rapidpush_apikey', $notify_cfg_key);
         if (!empty($rapidpush_api_key)) {
             $rapidpush_enabled = true;
         }
@@ -57,9 +60,9 @@ if (!$notification_config->is_empty()) {
     $pushco_enabled = false;
     $pushco_api_key = '';
     $pushco_api_secret = '';
-    if ($notification_config->get_value('pushco_enable')) {
-        $pushco_api_key = $notification_config->get_value('pushco_api_key');
-        $pushco_api_secret = $notification_config->get_value('pushco_api_secret');
+    if ($config->get_value('pushco_enable', $notify_cfg_key)) {
+        $pushco_api_key = $config->get_value('pushco_api_key', $notify_cfg_key);
+        $pushco_api_secret = $config->get_value('pushco_api_secret', $notify_cfg_key);
         if (!empty($pushco_api_key) && !empty($pushco_api_secret)) {
             $pushco_enabled = true;
         }
@@ -68,8 +71,8 @@ if (!$notification_config->is_empty()) {
     // Check if post url notification is enabled.
     $post_enabled = false;
     $post_url = '';
-    if ($notification_config->get_value('enable_post')) {
-        $post_url = $notification_config->get_value('notify_url');
+    if ($config->get_value('enable_post', $notify_cfg_key)) {
+        $post_url = $config->get_value('notify_url', $notify_cfg_key);
         if (!empty($post_url)) {
             $post_enabled = true;        
         }
@@ -78,17 +81,17 @@ if (!$notification_config->is_empty()) {
     // Check if email notification is enabled.
     $email_enabled = false;
     $smtp = array();
-    if ($notification_config->get_value('enable_email')) {
+    if ($config->get_value('enable_email', $notify_cfg_key)) {
         require 'includes/PHPMailer.class.php';
         require 'includes/SMTP.class.php';
-        $reciever_mail = $notification_config->get_value('notify_email');
-        $reciever_mail_name = $notification_config->get_value('notify_email_name');
+        $reciever_mail = $config->get_value('notify_email', $notify_cfg_key);
+        $reciever_mail_name = $config->get_value('notify_email_name', $notify_cfg_key);
 
-        $smtp['server'] = $notification_config->get_value('notify_email_smtp_server');
-        $smtp['port'] = $notification_config->get_value('notify_email_smtp_port');
-        $smtp['security'] = $notification_config->get_value('notify_email_smtp_security');
-        $smtp['user'] = $notification_config->get_value('notify_email_smtp_user');
-        $smtp['pass'] = $notification_config->get_value('notify_email_smtp_pass');
+        $smtp['server'] = $config->get_value('notify_email_smtp_server', $notify_cfg_key);
+        $smtp['port'] = $config->get_value('notify_email_smtp_port', $notify_cfg_key);
+        $smtp['security'] = $config->get_value('notify_email_smtp_security', $notify_cfg_key);
+        $smtp['user'] = $config->get_value('notify_email_smtp_user', $notify_cfg_key);
+        $smtp['pass'] = $config->get_value('notify_email_smtp_pass', $notify_cfg_key);
         foreach ($smtp AS $v) {
             if (empty($v)) {
                 break;
@@ -96,8 +99,8 @@ if (!$notification_config->is_empty()) {
         }
 
         if (!empty($reciever_mail)) {
-            $smtp['from'] = $notification_config->get_value('notify_email_smtp_from');
-            $smtp['from_name'] = $notification_config->get_value('notify_email_smtp_from_name');
+            $smtp['from'] = $config->get_value('notify_email_smtp_from', $notify_cfg_key);
+            $smtp['from_name'] = $config->get_value('notify_email_smtp_from_name', $notify_cfg_key);
             $email_enabled = true;
         }
     }
@@ -210,7 +213,7 @@ if (!$notification_config->is_empty()) {
                     $notification_delay = 1;
                     $notification_data['notification_delay'] = $notification_delay;
                     $rig_notifications[$rig] = $notification_data;
-                    $notification_config->set_value('rigs', $rig_notifications);
+                    $config->set_value('rigs', $rig_notifications, $notify_cfg_key);
                 }
 
                 $notification_delay = $notification_data['notification_delay'];
@@ -221,7 +224,7 @@ if (!$notification_config->is_empty()) {
                     $notification_resend_delay = 15;
                     $notification_data['notification_resend_delay'] = $notification_resend_delay;
                     $rig_notifications[$rig] = $notification_data;
-                    $notification_config->set_value('rigs', $rig_notifications);
+                    $config->set_value('rigs', $rig_notifications, $notify_cfg_key);
                 }
                 $notification_resend_delay = $notification_data['notification_resend_delay'];
 
@@ -604,23 +607,23 @@ if (!empty($rig_notifications)) {
  *   True if notifications for this type can be send, else false.
  */
 function can_send_notification($type, $reset = false, $last_send = false) {
-    global $notification_config, $notification_delay, $notification_resend_delay;
+    global $config, $notify_cfg_key, $notification_delay, $notification_resend_delay;
 
     if ($reset === true) {
-        $notification_config->set_value($type . '_estart', 0);
+        $config->set_value($type . '_estart', 0, $notify_cfg_key);
         return;
     }
     
     if ($last_send === true) {
-        $notification_config->set_value($type . '_last_send', TIME_NOW);
+        $config->set_value($type . '_last_send', TIME_NOW, $notify_cfg_key);
         return;
     }
-    $notify_estart = $notification_config->get_value($type . '_estart');
-    $notify_last_send = $notification_config->get_value($type . '_last_send');
+    $notify_estart = $config->get_value($type . '_estart', $notify_cfg_key);
+    $notify_last_send = $config->get_value($type . '_last_send', $notify_cfg_key);
     
     if (empty($notify_estart)) {
         $notify_estart = TIME_NOW;
-        $notification_config->set_value($type . '_estart', $notify_estart);
+        $config->set_value($type . '_estart', $notify_estart, $notify_cfg_key);
     }
     
     if ((TIME_NOW - $notify_estart) > $notification_delay * 60 && (empty($notify_last_send) || (TIME_NOW - $notify_last_send) > $notification_resend_delay * 60)) {

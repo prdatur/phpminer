@@ -7,50 +7,46 @@
  */
 class main extends Controller {
 
-    public function pools() {
-        $this->load_pool_config();
-        if ($this->pool_config->is_empty()) {
-            $this->assign('unconfigured_pools', $this->api->get_pools());
-        }
-    }
-
-    /**
-     * Ajax request to save the cgminer.conf with the current settings.
-     */
-    public function save_config() {
-
-        $cgminer_config = new Config($this->config->cgminer_config_path);
-        if (!$cgminer_config->is_writeable()) {
-            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'The CGMiner/SGMiner config file <b>' . $this->config->cgminer_config_path . '</b> is not writeable.');
-        }
-
-        foreach ($this->config->cgminer_conf as $key => $val) {
-            $cgminer_config->set_value($key, $val);
-        }
-        AjaxModul::return_code(AjaxModul::SUCCESS);
-    }
-
     /**
      * Action: settings
      * Will display the page to configurate the system settings.
      */
     public function settings() {
-        $conf = $this->config->get_config();
-        // Get cgminer config from cgminer when this rig is not within config yet.
-        foreach ($conf['rigs'] AS $rig => $rig_data) {
-            if (!isset($rig_data['cgminer_conf'])) {
-                $cgminer_config = $this->get_rpc($rig)->get_config();
-                if (isset($cgminer_config['pools'])) {
-                    unset($cgminer_config['pools']);
-                }
-                
-                $conf['rigs'][$rig]['cgminer_conf'] = $cgminer_config;
-            }
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_MINER_SETTINGS) && !$this->access_control->has_permission(AccessControl::PERM_CHANGE_MAIN_SETTINGS)) {
+            throw new AccessException('You don\'t have access to this action');
         }
-        $this->config->rigs = $conf['rigs'];
-        $this->assign('config', $conf);
-        $this->js_config('config', $conf);
-        $this->js_config('possible_configs', Config::$possible_configs);
+        
+        $conf = $this->config->get_config();
+        
+        if ($this->access_control->has_permission(AccessControl::PERM_CHANGE_MAIN_SETTINGS)) {
+            $this->assign('config', $conf);
+            $this->js_config('config', $conf);
+        }
+        if ($this->access_control->has_permission(AccessControl::PERM_CHANGE_MINER_SETTINGS)) {
+            $rigs = $this->config->rigs;
+            // Get cgminer config from cgminer when this rig is not within config yet.
+            foreach ($rigs AS $rig => $rig_data) {
+                if (!isset($rig_data['cgminer_conf'])) {
+                    $cgminer_config = $this->get_rpc($rig)->get_config();
+                    if (isset($cgminer_config['pools'])) {
+                        unset($cgminer_config['pools']);
+                    }
+
+                    $rigs[$rig]['cgminer_conf'] = $cgminer_config;
+                }
+            }
+
+            $this->config->rigs = $rigs;
+            
+            $rigs_conf = $conf['rigs'];
+            unset($conf['rigs']);
+            $this->assign('rigs', $rigs_conf);
+            
+            $this->js_config('rigs', $rigs);
+            $this->js_config('possible_configs', Config::$possible_configs);
+        }
+        
+        
     }
 
     /**
@@ -101,11 +97,17 @@ class main extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
         }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_MAIN_SETTINGS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         $need_redirect = null;
+        Db::getInstance()->exec("BEGIN");
         foreach ($params->settings AS $key => $val) {
             if ($key === 'enable_access_control' && !empty($val)) {
                 
-                $access_controll = new Config(SITEPATH . '/config/users.json');
+                $access_controll = new AccessConfig();
                 if ($access_controll->is_empty()) {
                     $need_redirect = true;
                 }
@@ -113,8 +115,9 @@ class main extends Controller {
             }
             $this->config->set_value($key, $val);
         }
+        Db::getInstance()->exec("COMMIT");
         if ($need_redirect) {
-            AjaxModul::return_code(AjaxModul::SUCCESS, array('url' => murl('access', 'user_add')));
+            AjaxModul::return_code(AjaxModul::SUCCESS, array('url' => murl('access', 'index')));
         }
         else {
             AjaxModul::return_code(AjaxModul::SUCCESS);
@@ -141,6 +144,9 @@ class main extends Controller {
         $params->fill();
         if (!$params->is_valid(true)) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, implode($params->get_errors()));
+        }
+        if (!$this->check_write_access(AccessControl::PERM_STOP_RIGS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
         }
 
         if ($params->stop) {
@@ -180,43 +186,7 @@ class main extends Controller {
         $rig_cfg['disabled'] = $params->stop;
         $this->config->set_rig($params->rig, $rig_cfg);
         AjaxModul::return_code(AjaxModul::SUCCESS);
-    }
-
-    /**
-     * Ajax request to add a new pool.
-     */
-    public function add_pool() {
-        $params = new ParamStruct();
-        $params->add_required_param('url', PDT_STRING);
-        $params->add_required_param('user', PDT_STRING);
-        $params->add_required_param('pass', PDT_STRING);
-        $params->add_param('group', PDT_STRING, 'default');
-
-        $params->fill();
-        if (!$params->is_valid()) {
-            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER, array(
-                'url' => $params->url,
-                'user' => $params->user,
-            ));
-        }
-
-        $this->load_pool_config();
-        $result = $this->pool_config->check_pool($params->url, $params->user, $params->pass);
-        if ($result !== true) {
-            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
-                'url' => $params->url,
-                'user' => $params->user,
-                    ), true, $result);
-        }
-        $this->load_pool_config();
-        $this->pool_config->add_pool($params->url, $params->user, $params->pass, $params->group);
-        AjaxModul::return_code(AjaxModul::SUCCESS, array(
-            'url' => $params->url,
-            'user' => $params->user,
-        ));
-    }
-    
-    
+    }    
 
     /**
      * Action: Switch to the given pool group
@@ -246,16 +216,31 @@ class main extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, 'You provided an invalid group');
         }
 
+        $from_cron = !empty($rig);
+        $rig_config = $this->config->rigs;
         $rig = $params->rig;
         if (!empty($rig)) {
             $rigs = array($rig);
         } else {
-            $rigs = array_keys($this->config->rigs);
+            $rigs = array_keys($rig_config);
         }
         
+        if (!$from_cron) {
+            if (!$this->access_control->has_permission(AccessControl::PERM_SWITCH_POOL_GROUP)) {
+                AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+            }
+        }
         $errors = array();
         $success = array();
         foreach ($rigs AS $current_rig) {
+            
+            if (!$from_cron) {
+                if (!$this->access_control->has_permission(AccessControl::PERM_SWITCH_POOL_GROUP)) {
+                    $errors[] = 'No permission to switch pool group on rig <b>' . $current_rig . '</b>.';
+                    continue;
+                }
+            }
+            
             if (!$this->get_rpc($current_rig)->check_cgminer_config_path()) {
                 $errors[] = 'The CGMiner/SGMiner config file for rig <b>' . $current_rig . '</b> is not writeable.';
                 continue;
@@ -460,7 +445,7 @@ class main extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
-
+                
         $rigs = $this->config->rigs;
         if (!isset($rigs[$params->rig])) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'No such rig');
@@ -480,7 +465,11 @@ class main extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
-
+        
+        if (!$this->check_write_access()) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         $rigs = $this->config->rigs;
         if (!isset($rigs[$params->rig])) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'No such rig');
@@ -489,19 +478,8 @@ class main extends Controller {
         $this->config->rigs = $rigs;
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
-
-    /**
-     * Ajax request to retrieve all current configurated pools within cgminer.
-     */
-    public function get_cgminer_pools() {
-        try {
-            AjaxModul::return_code(AjaxModul::SUCCESS, $this->api->get_pools());
-        } catch (APIRequestException $ex) {
-            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
-        }
-    }
     
-     /**
+    /**
      * Ajax request to save new cgminer configuration settings.
      */
     public function save_cgminer_settings() {
@@ -514,19 +492,27 @@ class main extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
         }
         
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_MINER_SETTINGS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         $errors = array();
-        $local_conf = $this->config->get_config();
+        $local_rigs = $this->config->rigs;
         foreach ($params->settings AS $rig => $rig_data) {
-            if (!isset($local_conf['rigs'][$rig]['cgminer_conf'])) {
-                $local_conf['rigs'][$rig]['cgminer_conf'] = array();
+            if (!isset($local_rigs[$rig]['cgminer_conf'])) {
+                $local_rigs[$rig]['cgminer_conf'] = array();
             }
             
-            if (!empty($local_conf['rigs'][$rig]['disabled'])) {
+            if (!empty($local_rigs[$rig]['disabled'])) {
+                continue;
+            }
+            
+            if (!$this->check_write_access(AccessControl::PERM_CHANGE_MINER_SETTINGS)) {
                 continue;
             }
             
             // Remove deleted config keys
-            foreach ($local_conf['rigs'][$rig]['cgminer_conf'] as $key => $val) {
+            foreach ($local_rigs[$rig]['cgminer_conf'] as $key => $val) {
                 if (!isset($rig_data[$key])) {
                     try {
                         $res = $this->get_rpc($rig)->set_config($key, "");
@@ -560,7 +546,7 @@ class main extends Controller {
                 }
             }
             if (!isset($errors[$rig])) {
-                $local_conf['rigs'][$rig]['cgminer_conf'] = $rig_data;
+                $local_rigs[$rig]['cgminer_conf'] = $rig_data;
             }
         }
         if (!empty($errors)) {
@@ -570,31 +556,10 @@ class main extends Controller {
             }
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $err_str);
         }
-        $this->config->rigs = $local_conf['rigs'];
+        $this->config->rigs = $local_rigs;
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
-
-
-    /**
-     * Ajax request to remove a pool from cgminer.
-     */
-    public function remove_pool_from_cgminer() {
-        $params = new ParamStruct();
-        $params->add_required_param('pool', PDT_INT);
-
-        $params->fill();
-        if (!$params->is_valid()) {
-            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
-        }
-
-        try {
-            $this->api->removepool($params->pool);
-            AjaxModul::return_code(AjaxModul::SUCCESS);
-        } catch (APIRequestException $e) {
-            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $e->getMessage());
-        }
-    }
-
+    
     /**
      * Switch all devices to the given pool.
      * 
@@ -610,6 +575,11 @@ class main extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_SWITCH_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         $this->load_pool_config();
         $pool_uuid = $this->pool_config->get_pool_uuid($params->pool);
         $sorted_pools = array();
@@ -625,17 +595,6 @@ class main extends Controller {
     }
 
     /**
-     * Returns all configurated pools within the given group.
-     * 
-     * @param string $group
-     *   The pool group to retrieve.
-     */
-    public function get_pools($group) {
-        $this->load_pool_config();
-        AjaxModul::return_code(AjaxModul::SUCCESS, $this->pool_config->get_pools($group));
-    }
-
-    /**
      * Ajax request to retrieve current configurated devices within cgminer.
      */
     public function reset_stats() {
@@ -646,6 +605,10 @@ class main extends Controller {
         $params->fill();
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
+        }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_RESET_STATS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
         }
         
         $rig = $params->rig;
@@ -726,7 +689,12 @@ class main extends Controller {
         if (!$params->is_valid(true)) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER, null, true, implode("\n", $params->get_errors()));
         }
-
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_RIGS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
+                
         $api = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key);
         try {
             $version = $api->test_connection();
@@ -785,9 +753,6 @@ class main extends Controller {
                 AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $message);
             }
 
-            if (empty($this->config->rigs )) {
-                $this->config->rigs = array();
-            }
             $rpc_check = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key, 10);
             $rpc_response = $rpc_check->ping();
             if ($rpc_response !== true) {
@@ -814,8 +779,11 @@ class main extends Controller {
                         foreach ($rig_to_use AS $k => $v) {
                             $rig_data[$k] = $v;
                         }
+                        $new_rigs[$params->name] = $rig_data;
                     }
-                    $new_rigs[$rig_name] = $rig_data;
+                    else {
+                        $new_rigs[$rig_name] = $rig_data;
+                    }
                 }
             } else {
                 $new_rigs = $rigs;
@@ -1001,6 +969,9 @@ class main extends Controller {
                 if (!empty($rigs[$rig]['switch_back_group'])) {
                     $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
                 }
+                if (empty($device['disabled'])) {
+                    $device['is_running']= $this->get_rpc($rig)->is_cgminer_running();
+                }
             }
             
             // Determine which pool group we are currently using.        
@@ -1118,5 +1089,14 @@ class main extends Controller {
             $cache[$rig['rig_name']] = $errors;
         }
         return $cache[$rig['rig_name']];
+    }
+
+    private function check_write_access($additional_check = null) {
+        
+        if (!empty($additional_check) && !$this->access_control->has_permission($additional_check)) {
+            return false;
+        }
+        
+        return $this->access_control->has_permission(AccessControl::PERM_CHANGE_RIGS);
     }
 }

@@ -7,13 +7,28 @@
 /**
  * Represents the config of php cgminer.
  */
-class PoolConfig extends Config {
-
+class PoolConfig {
+        
     /**
-     * Creates a new instance of the pool config.
+     * Returns wether the config file is empty or not.
+     * 
+     * @return boolean
+     *   True if config is empty, else false.
      */
-    public function __construct() {
-        parent::__construct(SITEPATH . '/config/pools.json');
+    public function is_pools_empty() {
+        $tmp =  Db::getInstance()->querySingle("SELECT 1 FROM [pools] LIMIT 1");
+        return empty($tmp);
+    }
+    
+    /**
+     * Returns wether the config file is empty or not.
+     * 
+     * @return boolean
+     *   True if config is empty, else false.
+     */
+    public function is_empty() {
+        $tmp =  Db::getInstance()->querySingle("SELECT 1 FROM [pool_groups] LIMIT 1");
+        return empty($tmp);
     }
     
     /**
@@ -34,21 +49,11 @@ class PoolConfig extends Config {
      */
     public function add_pool($url, $user, $pass, $group = 'default', $quota = 1, $rig_based = false) {
         // Create the group if it doesn't exist yet.
-        if (!isset($this->config[$group])) {
-            $this->config[$group] = array();
+        if (!$this->group_exists($group)) {
+            $this->add_group($group);
         }
-        // Add the pool to the group.
-        $this->config[$group][$this->get_pool_uuid($url, $user)] = array(
-            'url' => $url,
-            'user' => $user,
-            'pass' => $pass,
-            'group' => $group,
-            'quota' => $quota,
-            'rig_based' => $rig_based,
-        );
         
-        // Save the new config instantly.
-        $this->save();
+        Db::getInstance()->exec("INSERT INTO [pools] ([uuid],[url],[user],[pass],[group],[quota],[rig_based]) VALUES ('" . $this->get_pool_uuid($url, $user) . "','" . SQLite3::escapeString($url) . "','" . SQLite3::escapeString($user) . "','" . SQLite3::escapeString($pass) . "','" . SQLite3::escapeString($group) . "','" . intval($quota) . "'," . intval($rig_based) . ")");
     }
     
     /**
@@ -99,8 +104,30 @@ class PoolConfig extends Config {
      *   the active pool group as an array or null if no active group could be found.
      */
     private function get_current_active_pool_group_from_pools($pools) {
-        $cfg_groups = $this->get_config();
-                
+       
+        $where_array = array();
+        // Loop through each pool wich are active within cgminer.
+        foreach ($pools AS $k => $pool) {
+            $pools[$k]['uuid'] = $this->get_pool_uuid($pool['URL'], $pool['User']);
+            $where_array[] = "[uuid] = '" . SQLite3::escapeString($pools[$k]['uuid']) . "'";
+        }
+        
+        $result = array();
+        $sql = Db::getInstance()->query("SELECT * FROM [pools] WHERE " . implode(" OR ", $where_array));
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+               $result[$row['group']] = $row['group'];
+            }
+        }
+        
+        $cfg_groups = array();
+        foreach ($result AS $possible_group) {
+            if (!$this->group_exists($possible_group)) {
+                continue;
+            }
+            $cfg_groups[$possible_group] = $this->get_pools($possible_group);
+        } 
+        
         // Determine which pool group we are currently using.        
         $current_active_group = null;
         foreach ($cfg_groups AS $check_group => $cfg_groups_pools) {
@@ -177,22 +204,18 @@ class PoolConfig extends Config {
      *   The worker username.
      * @param string $pass
      *   The worker password.
+     * 
      * @return boolean|string
      *   True if all ok, else the error as a human readable string.
      */
-    public function check_pool($url, $user, $pass) {
-        static $config = null;
-        if ($config === null) {
-            $config = new Config(SITEPATH . '/config/config.json');
-        }
-        
+    public function check_pool($url, $user, $pass) {        
         // Get the url parts.
         $url_parts = parse_url($url);
         $connection_check = new HttpClient();
         if (!isset($url_parts['host'])) {
             return 'Invalid pool url.';
         }
-        if ($config->allow_offline_pools) {
+        if (Config::getInstance()->allow_offline_pools) {
             return true;
         }
         return $connection_check->check_pool($url_parts['host'], $url_parts['port'], (isset($url_parts['scheme']) && $url_parts['scheme'] === 'stratum+tcp') ? 'stratum' : 'http', $user, $pass);
@@ -224,20 +247,7 @@ class PoolConfig extends Config {
      *   True if pool was found and removed, else false.
      */
     public function remove_pool_by_uuid($uuid, $group = 'default') {
-        
-        // Only remove if group exists.
-        if (isset($this->config[$group])) {
-            
-            // Remove the pool from the given group if exists.
-            if (isset($this->config[$group][$uuid])) {
-                unset($this->config[$group][$uuid]);
-                
-                // Save the new values.
-                $this->save();
-                return true;
-            }
-        }
-        return false;
+        Db::getInstance()->exec("DELETE FROM [pools]  WHERE [uuid] = '" . SQLite3::escapeString($uuid) . "' AND  [group] = '" . SQLite3::escapeString($group) . "'");
     }
     
     /**
@@ -255,22 +265,26 @@ class PoolConfig extends Config {
      *   The quota (Optional, default = 1).
      * @param boolean $rig_based
      *   If this pool is rigbased or not. (Optional, default = false)
+     * 
      */
     public function update_pool($old_pool_id, $url, $user, $pass, $quota = 1, $rig_based = false) {
-        
-        // Loop through each pool.
-        foreach ($this->config AS $pool_group => $pool_data) {
-            
-            // Check if pool is within the current group.
-            if (isset($pool_data[$old_pool_id])) {
-                // Remove the old pool.
-                unset($this->config[$pool_group][$old_pool_id]);
-                
-                // Add the pool with the new data.
-                $this->add_pool($url, $user, $pass, $pool_group, $quota, $rig_based);
-            }
-            
-        }
+        Db::getInstance()->exec("UPDATE [pools] SET [uuid] = '" . $this->get_pool_uuid($url, $user) . "',  [url] = '" . SQLite3::escapeString($url) . "', [user] = '" . SQLite3::escapeString($user) . "' , [pass] = '" . SQLite3::escapeString($pass) . "' , [quota] = '" . intval($quota) . "' , [rig_based] = " . intval($rig_based) . " WHERE [uuid] = '" . SQLite3::escapeString($old_pool_id) . "'");
+    }
+    
+    /**
+     * Returns the group data..
+     * 
+     * @param string $group
+     *   The group name
+     * 
+     * @return array
+     *   The pool group data.
+     */
+    public function get_group($group) {
+        $row = Db::getInstance()->querySingle("SELECT * FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'", true);
+        $row['strategy'] = intval($row['strategy']);
+        $row['period'] = intval($row['period']);
+        return $row;
     }
     
     /**
@@ -280,7 +294,14 @@ class PoolConfig extends Config {
      *   The pool group names.
      */
     public function get_groups() {
-        return array_keys($this->config);
+        $sql = Db::getInstance()->query("SELECT * FROM [pool_groups]");
+        $result = array();
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+                $result[] = $row['name'];
+            }
+        }
+        return $result;
     }
 
     /**
@@ -293,36 +314,18 @@ class PoolConfig extends Config {
      *   The pools within this group.
      */
     public function get_pools($group = 'default') {
-        // No group with this name exist, return an empty array.
-        if (!isset($this->config[$group])) {
-            return array();
-        }
-        // Return pools.
-        $pools = $this->config[$group];
-        unset($pools['settings']);
-        return $pools;
-    }
-    
-    /**
-     * We need to override this method to remove the settings key for each pool by default.
-     * We can get the real complete config when we set the parameter $with_settings to true.
-     * 
-     * @params boolean $with_settings
-     *   If set to true the setting key will be not removed.
-     * 
-     * @return array
-     *   The config.
-     */
-    public function get_config($with_settings = false) {
-        $conf = parent::get_config();
-        if (!$with_settings) {
-            foreach ($conf AS &$group) {
-                unset($group['settings']);
+        $sql = Db::getInstance()->query("SELECT * FROM [pools] WHERE [group] = '" . SQLite3::escapeString($group) . "'");
+        $result = array();
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+                $row['rig_based'] = !empty($row['rig_based']);
+                $row['quota'] = intval($row['quota']);
+               $result[$row['uuid']] = $row;
             }
         }
-        return $conf;
+        return $result;
     }
-
+    
     /**
      * Returns the pool group strategy.
      * 
@@ -333,11 +336,8 @@ class PoolConfig extends Config {
      *   The pool strategy.
      */
     public function get_strategy($group = 'default') {
-        if (isset($this->config[$group]) && isset($this->config[$group]['strategy'])) {
-            return $this->config[$group]['strategy'];
-        }
-        // Return failover if no pool or no strategy found.
-        return 0;
+        $tmp = Db::getInstance()->querySingle("SELECT [strategy] FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'");
+        return (!empty($tmp)) ? $tmp : 0;
     }
     
     /**
@@ -350,17 +350,14 @@ class PoolConfig extends Config {
      *   The pool period.
      */
     public function get_period($group = 'default') {
-        if (isset($this->config[$group]) && isset($this->config[$group]['period'])) {
-            return $this->config[$group]['period'];
-        }
-        // Return failover if no pool or no strategy found.
-        return 0;
+        $tmp = Db::getInstance()->querySingle("SELECT [period] FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'");
+        return (!empty($tmp)) ? $tmp : 0;
     }
     
     /**
      * Returns the given pool from given group.
      * 
-     * @param string $uid
+     * @param string $uuid
      *   The pool uuid.
      * @param string $group
      *   The group name. (optional, default="default")
@@ -368,12 +365,11 @@ class PoolConfig extends Config {
      * @return array
      *   The pool data.
      */
-    public function get_pool($uid, $group = 'default') {
-        // If the group and/or the pool in the group does not exist, return empty array.
-        if (!isset($this->config[$group]) || !isset($this->config[$group][$uid])) {
-            return array();
-        }
-        return $this->config[$group][$uid];
+    public function get_pool($uuid, $group = 'default') {
+        $data = Db::getInstance()->querySingle("SELECT * FROM [pools]  WHERE [uuid] = '" . SQLite3::escapeString($uuid) . "' AND  [group] = '" . SQLite3::escapeString($group) . "'", true);
+        $data['rig_based'] = !empty($data['rig_based']);
+        $data['quota'] = intval($data['quota']);
+        return $data;
     }
     
     /**
@@ -386,9 +382,9 @@ class PoolConfig extends Config {
      *   Boolean true if group could be deleted, else the error as a string.
      */
     public function del_group($group) {
-        if (isset($this->config[$group])) {
-            unset($this->config[$group]);
-            $this->save();
+        if ($this->group_exists($group)) {
+            Db::getInstance()->exec("DELETE FROM [pool_groups]  WHERE [name] = '" . SQLite3::escapeString($group) . "'");
+            Db::getInstance()->exec("DELETE FROM [pools]  WHERE [group] = '" . SQLite3::escapeString($group) . "'");
             return true;
         }
         else {
@@ -410,17 +406,11 @@ class PoolConfig extends Config {
      *   Boolean true if group could be added, else the error as a string.
      */
     public function add_group($group, $strategy = 0, $period = 0) {
-        if (!isset($this->config[$group])) {
-            $this->config[$group] = array(
-                'settings' => array(
-                    'strategy' => $strategy,
-                    'period' => $period,
-                ),
-            );
-            $this->save();
+        try {
+            Db::getInstance()->exec("INSERT INTO [pool_groups] ([name], [strategy], [period]) VALUES ('" . SQLite3::escapeString($group) . "', " . intval($strategy) . ", " . intval($period) . ")");
             return true;
         }
-        else {
+        catch(Exception $e) {
             return "Group already exists.";
         }
     }
@@ -435,7 +425,8 @@ class PoolConfig extends Config {
      *   true if exists, else false.
      */
     public function group_exists($group) {
-        return isset($this->config[$group]);
+        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "' LIMIT 1");
+        return !empty($tmp);
     }
 
 }

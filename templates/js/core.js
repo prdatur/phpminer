@@ -195,16 +195,7 @@ function murl($controller, $action, $data, $is_html) {
 }
 
 Soopfw.system_footer_behaviour = function() {
-        $('#save_cg_miner_config').off('click').on('click', function() {
-            confirm("You are going to save the current changed values to CGMiner/SGMiner config.\nAfter saving, when CGMiner/SGMiner starts it will use the new settings.\n<b>Please make sure that your system runs stable with all overclocked settings.<b>", 'Warning', function() {
-               ajax_request(murl('main', 'save_config'), null, function() {
-                   success_alert('Config saved', function() {
-                       $('#save_cg_miner_config_container').fadeOut('slow');
-                   });
-               }); 
-            });
-        });
-        
+                
         $('*[data-toggle="tooltip"]').tooltip();
         
         $('.slider_toggle').each(function(){

@@ -9,8 +9,8 @@ class notify extends Controller {
     
    
     public function settings() {
-       $config = new Config(SITEPATH . '/config/notify.json');
-       $this->assign('config', $config->get_config());
+       AccessControl::check_permission(AccessControl::PERM_CHANGE_NOTIFICATION_SETTINGS);
+       $this->assign('config', $this->config->get_config('notify'));
        $this->assign('rigs', array_keys($this->config->rigs));
     }
     
@@ -18,6 +18,7 @@ class notify extends Controller {
      * Ajax request to save new configuration settings.
      */
     public function save_settings() {
+        AccessControl::check_permission(AccessControl::PERM_CHANGE_NOTIFICATION_SETTINGS);
         $params = new ParamStruct();
         $params->add_required_param('settings', PDT_ARR);
 
@@ -25,11 +26,11 @@ class notify extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
         }
-        $config = new Config(SITEPATH . '/config/notify.json');
+        db::getInstance()->begin();
         foreach ($params->settings AS $key => $val) {
-            $config->set_value($key,  $val);
+            $this->config->set_value($key,  $val, 'notify');
         }
-        
+        db::getInstance()->commit();
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
     

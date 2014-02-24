@@ -1,6 +1,8 @@
-<?php $conf = $this->get_variable('config'); ?>
+
 <table class="layout_table">
     <tr>
+        <?php if (AccessControl::getInstance()->has_permission(AccessControl::PERM_CHANGE_MAIN_SETTINGS)): ?>
+        <?php $conf = $this->get_variable('config'); ?>
         <td style="width:50%">
             <h2>System settings</h2>
             <table class="config_table" id="system_settings">
@@ -53,14 +55,16 @@
                 </tfoot>
             </table>
         </td>
+        <?php endif; ?>
+        <?php if (AccessControl::getInstance()->has_permission(AccessControl::PERM_CHANGE_MINER_SETTINGS)): ?>
+        <?php $rigs = $this->get_variable('rigs'); ?>
         <td style="width:50%">
             <h2>CGMiner/SGMiner config per rig</h2>
             <div class="tabs">
-            <?php if (empty($conf['rigs'])): ?>
+            <?php if (empty($rigs)): ?>
                 No rigs are configurated, please configurate at least one rig.
             <?php else: ?>
-                <?php foreach(array_keys($conf['rigs']) AS $rig): ?>
-                    <?php $rig_conf = array(); if (isset($conf[$rig])) { $rig_conf = $conf[$rig]; } ?>
+                <?php foreach(array_keys($rigs) AS $rig): ?>
                     <?php $rig_id = md5($rig); ?>
                     <div class="rig_data" data-tab="<?php echo $rig_id; ?>" data-tab_title="<?php echo $rig; ?>">
                         <table class="config_table cgminer_settings" data-rig="<?php echo $rig; ?>">
@@ -88,5 +92,6 @@
             <?php endif;?>
             </div>
         </td>
+        <?php endif; ?>
     </tr>
 </table>

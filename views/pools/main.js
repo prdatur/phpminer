@@ -128,7 +128,7 @@ Soopfw.behaviors.pools_main = function() {
         if (phpminer.settings.has_advanced_api) {
             dialog += '        <div class="form-element">';
             dialog += '            <label for="strategy">Strategy:</label>';
-            dialog += '            <select id="strategy" style="position: absolute;margin-left: 126px;width: 300px;">';
+            dialog += '            <select id="strategy" style="position: absolute;margin-left: 135px;width: 300px;">';
             dialog += '                 <option value="0">Failover</option>';
             dialog += '                 <option value="1">Round Robin</option>';
             dialog += '                 <option value="2">Rotate</option>';
@@ -138,10 +138,10 @@ Soopfw.behaviors.pools_main = function() {
             dialog += '        </div>';
             dialog += '        <div class="form-element" id="rotate_period" style="display: none">';
             dialog += '            <label for="period">Rotate period (minutes):</label>';
-            dialog += '            <input type="text" id="period" style="position: absolute;margin-left: 180px;width: 300px;"></input>';
+            dialog += '            <input type="text" id="period" style="position: absolute;margin-left: 135px;width: 300px;"></input>';
             dialog += '        </div>';
             dialog += '    </div>';
-        }
+        }        
         make_modal_dialog('Add a pool group', dialog, [
             {
                 title: 'Add group',
@@ -177,7 +177,7 @@ Soopfw.behaviors.pools_main = function() {
                                 '        <a class="btn btn-danger" data-del-pool-group="' + group + '" style="margin-bottom: 10px;padding-left: 5px;float: right;"><i class="icon-minus"></i>Delete group</a>' + 
                                 '        <table>' + 
                                 '            <thead>' + 
-                                '                <tr>' + 
+                                '                <tr class="pool_table">' + 
                                 '                    <th>Url</th>' + 
                                 '                    <th style="width:200px;">Username</th>' + 
                                 '                    <th style="width:200px;">Password</th>' + 

@@ -1,6 +1,7 @@
 
 .icon-star-empty:before { content: '\e800'; } /* '' */
 .icon-github-text:before { content: '\e831'; } /* '' */
+.icon-users:before { content: '\e801'; } /* '' */
 .icon-th-list:before { content: '\e802'; } /* '' */
 .icon-plus-1:before { content: '\e83d'; } /* '' */
 .icon-minus-1:before { content: '\e83e'; } /* '' */
@@ -31,7 +32,7 @@
 .icon-check-checked:before { content: '\e817'; } /* '' */
 .icon-check-empty:before { content: '\e818'; } /* '' */
 .icon-fire:before { content: '\e815'; } /* '' */
-.icon-users:before { content: '\e801'; } /* '' */
+.icon-user:before { content: '\e840'; } /* '' */
 .icon-tasks:before { content: '\e81b'; } /* '' */
 .icon-filter:before { content: '\e81c'; } /* '' */
 .icon-beaker:before { content: '\e81d'; } /* '' */
@@ -60,6 +61,7 @@
 .icon-air:before { content: '\e83a'; } /* '' */
 .icon-thermometer:before { content: '\e82d'; } /* '' */
 .icon-gauge:before { content: '\e82e'; } /* '' */
+.icon-lock-alt:before { content: '\e841'; } /* '' */
 .icon-group:before { content: '\e830'; } /* '' */
 .icon-cogs:before { content: '\e82f'; } /* '' */
 .icon-chart-bar:before { content: '\e816'; } /* '' */

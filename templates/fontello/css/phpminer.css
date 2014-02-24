@@ -1,10 +1,10 @@
 @font-face {
   font-family: 'phpminer';
-  src: url('../font/phpminer.eot?29620637');
-  src: url('../font/phpminer.eot?29620637#iefix') format('embedded-opentype'),
-       url('../font/phpminer.woff?29620637') format('woff'),
-       url('../font/phpminer.ttf?29620637') format('truetype'),
-       url('../font/phpminer.svg?29620637#phpminer') format('svg');
+  src: url('../font/phpminer.eot?96208257');
+  src: url('../font/phpminer.eot?96208257#iefix') format('embedded-opentype'),
+       url('../font/phpminer.woff?96208257') format('woff'),
+       url('../font/phpminer.ttf?96208257') format('truetype'),
+       url('../font/phpminer.svg?96208257#phpminer') format('svg');
   font-weight: normal;
   font-style: normal;
 }
@@ -14,7 +14,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: 'phpminer';
-    src: url('../font/phpminer.svg?29620637#phpminer') format('svg');
+    src: url('../font/phpminer.svg?96208257#phpminer') format('svg');
   }
 }
 */
@@ -52,6 +52,7 @@
  
 .icon-star-empty:before { content: '\e800'; } /* '' */
 .icon-github-text:before { content: '\e831'; } /* '' */
+.icon-users:before { content: '\e801'; } /* '' */
 .icon-th-list:before { content: '\e802'; } /* '' */
 .icon-plus-1:before { content: '\e83d'; } /* '' */
 .icon-minus-1:before { content: '\e83e'; } /* '' */
@@ -82,7 +83,7 @@
 .icon-check-checked:before { content: '\e817'; } /* '' */
 .icon-check-empty:before { content: '\e818'; } /* '' */
 .icon-fire:before { content: '\e815'; } /* '' */
-.icon-users:before { content: '\e801'; } /* '' */
+.icon-user:before { content: '\e840'; } /* '' */
 .icon-tasks:before { content: '\e81b'; } /* '' */
 .icon-filter:before { content: '\e81c'; } /* '' */
 .icon-beaker:before { content: '\e81d'; } /* '' */
@@ -111,6 +112,7 @@
 .icon-air:before { content: '\e83a'; } /* '' */
 .icon-thermometer:before { content: '\e82d'; } /* '' */
 .icon-gauge:before { content: '\e82e'; } /* '' */
+.icon-lock-alt:before { content: '\e841'; } /* '' */
 .icon-group:before { content: '\e830'; } /* '' */
 .icon-cogs:before { content: '\e82f'; } /* '' */
 .icon-chart-bar:before { content: '\e816'; } /* '' */

@@ -11,18 +11,26 @@
 class Config {
 
     /**
-     * Holds the config values.
+     * The singleton instance.
      * 
-     * @var array 
+     * @var Config
      */
-    protected $config = array();
+    private static $instance = null;
 
     /**
-     * The path to the config file.
+     * Singleton.
      * 
-     * @var string
+     * @return Config
+     *   The instance object.
      */
-    private $config_path = "";
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new Config();
+        }
+
+        return self::$instance;
+    }
+
     public static $possible_configs = array(
         'api-allow' => array(
             'description' => "Allow API access only to the given list of [G:]IP[/Prefix] addresses[/subnets]",
@@ -195,8 +203,8 @@ class Config {
         ),
         'intensity' => array(
             'description' => "Intensity of GPU scanning: d or sha(-10 - 14), scrypt(8 - 20), default: d to maintain desktop interactivity)",
-            'values' => PDT_INT,   
-            'multivalue' => true,         
+            'values' => PDT_INT,
+            'multivalue' => true,
         ),
         'hotplug' => array(
             'description' => "Seconds between hotplug checks (0 means never check)",
@@ -474,60 +482,7 @@ class Config {
             'values' => PDT_BOOL,
         ),
     );
-
-    /**
-     * Creates a new config instance and load the config.
-     * 
-     * @param string $config_path
-     *   The path to the config file.
-     */
-    public function __construct($config_path) {
-        $this->config_path = $config_path;
-        $this->reload();
-    }
-
-    /**
-     * Reloads/Loads the config.
-     * 
-     * @throws PHPMinerException
-     */
-    public function reload() {
-        // Check if config file exists, if not try to create it.
-        if (!file_exists($this->config_path)) {
-            // Config directory is not writeable.
-            if (!is_writable(dirname($this->config_path))) {
-                throw new PHPMinerException('Config file directoy is not writeable: ' . dirname($this->config_path), PHPMinerException::CODE_CONFIG_NOT_WRITEABLE);
-            }
-            touch($this->config_path);
-        }
-
-        // Config file not readable....
-        if (!is_readable($this->config_path)) {
-            throw new PHPMinerException('Config file not found: ' . $this->config_path, PHPMinerException::CODE_CONFIG_NOT_READABLE);
-        }
-
-        // Config file not writeable...
-        if (!is_writable($this->config_path)) {
-            throw new PHPMinerException('Config not writeable: ' . $this->config_path, PHPMinerException::CODE_CONFIG_NOT_WRITEABLE);
-        }
-
-        // Get the data of the config file.
-        $config_data = file_get_contents($this->config_path);
-
-        // If the config file is empty, nothing is bad, just not configured yet.
-        if (empty($config_data)) {
-            $this->config = array();
-            return;
-        }
-
-        // Try to decode the existing data from json.
-        $this->config = json_decode($config_data, true);
-
-        // Check for invalid json.
-        if ($this->config === null) {
-            throw new PHPMinerException('Config file can not be parsed, no valid json found.', PHPMinerException::CODE_CONFIG_INVALID_JSON);
-        }
-    }
+    protected $type = 'config';
 
     /**
      * Returns wether the config file is empty or not.
@@ -535,8 +490,12 @@ class Config {
      * @return boolean
      *   True if config is empty, else false.
      */
-    public function is_empty() {
-        return empty($this->config);
+    public function is_empty($type = null) {
+        if ($type === null) {
+            $type = $this->type;
+        }
+        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [config] WHERE [type] = '" . SQLite3::escapeString($type) . "' LIMIT 1");
+        return empty($tmp);
     }
 
     /**
@@ -557,17 +516,37 @@ class Config {
      * 
      * @param string $name
      *   The config key.
+     * @param string $type
+     *   The type, if not provided own type will be used (Optional, default = null)
      * 
      * @return null|mixed
      *   Null if config key does not exist, else the value.
      */
-    public function get_value($name) {
-        if (!isset($this->config[$name])) {
+    public function get_value($name, $type = null) {
+
+        if ($type === null) {
+            $type = $this->type;
+        }
+
+        if ($name === 'rigs' && $type === 'config') {
+            $result = array();
+            $sql = Db::getInstance()->query("SELECT * FROM [config] WHERE [type] = 'rigs'");
+            if ($sql instanceof SQLite3Result) {
+                while ($row = $sql->fetchArray()) {
+                    $result[$row['key']] = json_decode($row['value'], true);
+                }
+            }
+            return $result;
+        }
+
+
+        $tmp = Db::getInstance()->querySingle("SELECT [value] FROM [config] WHERE [key] = '" . SQLite3::escapeString($name) . "' AND [type] = '" . SQLite3::escapeString($type) . "'", true);
+        if (!isset($tmp['value'])) {
             return null;
         }
-        return $this->config[$name];
+        return json_decode($tmp['value'], true);
     }
-    
+
     /**
      * Retrieves the rig config.
      * 
@@ -578,12 +557,13 @@ class Config {
      *   The rig config array or null on error.
      */
     public function get_rig($rig) {
-        if (!isset($this->config['rigs']) || !isset($this->config['rigs'][$rig])) {
+        $rig = $this->get_value($rig, 'rigs');
+        if (empty($rig)) {
             return null;
         }
-        return $this->config['rigs'][$rig];
+        return $rig;
     }
-    
+
     /**
      * Set the rig config.
      * 
@@ -593,21 +573,33 @@ class Config {
      *   The config.
      */
     public function set_rig($rig, $config) {
-        if (!isset($this->config['rigs']) || !isset($this->config['rigs'][$rig])) {
-            return null;
-        }
-        $this->config['rigs'][$rig] = $config;
-        $this->save();
+        $this->set_value($rig, $config, 'rigs');
     }
 
     /**
      * Returns the hole config.
      * 
+     * @param string $type
+     *   The type, if not provided own type will be used (Optional, default = null)
+     * 
      * @return array
-     *   The config array.-
+     *   The config array.
      */
-    public function get_config() {
-        return $this->config;
+    public function get_config($type = null) {
+        if ($type === null) {
+            $type = $this->type;
+        }
+        $config = array();
+        $sql = Db::getInstance()->query("SELECT * FROM [config] WHERE [type] = '" . SQLite3::escapeString($type) . "'");
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+                $config[$row['key']] = json_decode($row['value'], true);
+            }
+        }
+        if ($type === 'config') {
+            $config['rigs'] = $this->rigs;
+        }
+        return $config;
     }
 
     /**
@@ -629,64 +621,34 @@ class Config {
      *   The config key to set.
      * @param mixed $value
      *   The value.
+     * @param string $type
+     *   The type, if not provided own type will be used (Optional, default = null)
      */
-    public function set_value($name, $value) {
-        $this->config[$name] = $value;
-        $this->save();
-    }
-
-    /**
-     * Set the config key for a cgminer.conf
-     * 
-     * @param PHPMinerRPC $api
-     *   The api to retrieve the count of devices.
-     * @param string $name
-     *   The config key to set.
-     * @param mixed $value
-     *   The value.
-     * @param int $device
-     *   The device number, if not provided just the key value will be stored.
-     *   Else it will be splitted by , and the given gpu entry will be set.
-     */
-    public function set_cgminer_value($api, $name, $value, $device = null) {
-        if (empty($this->config['cgminer_conf'])) {
-            $this->config['cgminer_conf'] = array();
+    public function set_value($name, $value, $type = null) {
+        if ($type === null) {
+            $type = $this->type;
         }
-        if ($device === null) {
-            $this->config['cgminer_conf'][$name] = $value;
-        } else {
-            if (!isset($this->config['cgminer_conf'][$name])) {
-                $this->config['cgminer_conf'][$name] = '';
-            }
-            $device_values = explode(",", $this->config['cgminer_conf'][$name]);
-            $device_count = count($api->get_devices());
-            for ($i = 0; $i < $device_count; $i++) {
-                if (!isset($device_values[$i])) {
-                    $device_values[$i] = 0;
+
+        if ($name === 'rigs' && $type === 'config') {
+            if (is_array($value)) {
+                Db::getInstance()->exec("DELETE FROM [config] WHERE [type] = 'rigs'");
+                foreach ($value AS $rig => $rig_data) {
+                    if (empty($rig) || empty($rig_data)) {
+                        continue;
+                    }
+                    $this->set_value($rig, $rig_data, 'rigs');
                 }
             }
-            $device_values[$device] = $value;
-            $this->config['cgminer_conf'][$name] = implode(",", $device_values);
-        }
-        $this->save();
-    }
 
-    /**
-     * remove the config key for a cgminer.conf
-     * 
-     * @param PHPMinerRPC $api
-     *   The api to retrieve the count of devices.
-     * @param string $name
-     *   The config key to set.
-     */
-    public function del_cgminer_value($api, $name) {
-        if (empty($this->config['cgminer_conf'])) {
-            $this->config['cgminer_conf'] = array();
+            return;
         }
-        if (isset($this->config['cgminer_conf'][$name])) {
-            unset($this->config['cgminer_conf'][$name]);
+
+        if (isset($value['rigs']) && $type === 'config') {
+            $this->rigs = $value['rigs'];
+            unset($value['rigs']);
         }
-        $this->save();
+
+        Db::getInstance()->exec("INSERT OR REPLACE INTO [config] ([value], [key], [type]) VALUES ('" . SQLite3::escapeString(json_encode($value)) . "', '" . SQLite3::escapeString($name) . "', '" . SQLite3::escapeString($type) . "')");
     }
 
     /**
@@ -699,89 +661,12 @@ class Config {
      *   True if config key is set, else false.
      */
     public function __isset($name) {
-        return isset($this->config[$name]);
-    }
-
-    /**
-     * Returns wether the config file is writeable or not.
-     * 
-     * @return boolean
-     *   True if path is writeable, else false.
-     */
-    public function is_writeable() {
-        return is_writable($this->config_path);
-    }
-
-    /**
-     * Write the config to the file.
-     * 
-     * @return boolean|int
-     *   Returns false if the file could not be writte, else the bytes which were written.
-     */
-    protected function save() {
-        return file_put_contents($this->config_path, str_replace('\\/', '/', $this->prettyPrint(json_encode($this->config))));
-    }
-
-    /**
-     * Format a json string into pretty looking.
-     * 
-     * @param string $json
-     *  The json which needs to be formated.
-     * 
-     * @return string
-     *   The pretty printed json.
-     */
-    private function prettyPrint($json) {
-        $result = '';
-        $level = 0;
-        $prev_char = '';
-        $in_quotes = false;
-        $ends_line_level = NULL;
-        $json_length = strlen($json);
-
-        for ($i = 0; $i < $json_length; $i++) {
-            $char = $json[$i];
-            $new_line_level = NULL;
-            $post = "";
-            if ($ends_line_level !== NULL) {
-                $new_line_level = $ends_line_level;
-                $ends_line_level = NULL;
-            }
-            if ($char === '"' && $prev_char != '\\') {
-                $in_quotes = !$in_quotes;
-            } else if (!$in_quotes) {
-                switch ($char) {
-                    case '}': case ']':
-                        $level--;
-                        $ends_line_level = NULL;
-                        $new_line_level = $level;
-                        break;
-
-                    case '{': case '[':
-                        $level++;
-                    case ',':
-                        $ends_line_level = $level;
-                        break;
-
-                    case ':':
-                        $post = " ";
-                        break;
-
-                    case " ": case "\t": case "\n": case "\r":
-                        $char = "";
-                        $ends_line_level = $new_line_level;
-                        $new_line_level = NULL;
-                        break;
-                }
-            }
-            if ($new_line_level !== NULL) {
-                $result .= "\n" . str_repeat("\t", $new_line_level);
-            }
-            $result .= $char . $post;
-            $prev_char = $char;
+        if ($name === 'rigs') {
+            $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [config] WHERE [type] = 'rigs'");
+        } else {
+            $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [config] WHERE [key] = '" . SQLite3::escapeString($name) . "' AND [type] = '" . $this->type . "'");
         }
-
-        return $result;
+        return !empty($tmp);
     }
 
 }

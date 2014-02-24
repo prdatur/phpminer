@@ -249,7 +249,7 @@ table.layout_table td {
     padding-left: 10px;
 }
 
-.modal .simpleform .form-element input {
+.modal .simpleform .form-element input, .modal .simpleform .form-element select {
     position: initial;
     margin-left: 20px;
 }

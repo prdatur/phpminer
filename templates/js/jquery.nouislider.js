@@ -157,12 +157,11 @@
 
 	// Format output value to specified standards.
 		function format ( value, options ) {
-                    console.log(options);
-console.log(value);
+
 			// Round the value to the resolution that was set
 			// with the serialization options.
 			value = value.toFixed( options['decimals'] );
-                        console.log(value);
+
 			// Rounding away decimals might cause a value of -0
 			// when using very small ranges. Remove those cases.
 			if ( parseFloat(value) === 0 ) {

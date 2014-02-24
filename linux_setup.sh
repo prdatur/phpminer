@@ -8,6 +8,7 @@ fi
 echo "Install required software."
 apt-get install -y apache2 libapache2-mod-php5 php5-cli php5-mcrypt php5-mhash curl php5-curl
 apt-get install -y php5-json
+apt-get install -y php5-sqlite
 
 # Setup required variables.
 echo "Setup required variables."

@@ -73,7 +73,8 @@ Soopfw.behaviors.main_init = function() {
     $('.stop_rig').off('click').on('click', function() {
         var datarig = $(this).data('rig');
         var disabled = get_config([datarig, 'disabled'], false);
-        confirm('Do you really want to ' + ((disabled) ? 'start' : 'stop') + ' mining at rig "' + datarig + '"?', 'Stop mining / Disable rig', function() {
+        var cgminer_is_running = get_config([datarig, 'is_running'], true);
+        confirm('Do you really want to ' + ((disabled || !cgminer_is_running) ? 'start' : 'stop') + ' mining at rig "' + datarig + '"?', 'Stop mining / Disable rig', function() {
             ajax_request(murl('main', 'start_stop_mining'), {rig: datarig, stop: !disabled}, function() {
                 phpminer.settings.config.rigs[datarig]['disabled'] = !disabled;
                 set_device_list(current_device_list[datarig].list, datarig, current_device_list[datarig].disabled);
@@ -676,7 +677,7 @@ function getHWConfigDialog(rig, gpu_id, gpuname) {
         {
             title: 'Save',
             type: 'primary',
-            id: 'main_init_set_hw_eeror',
+            id: 'main_init_set_hw_error',
             data: {
                 "loading-text": 'Saving...'
             },
@@ -686,9 +687,9 @@ function getHWConfigDialog(rig, gpu_id, gpuname) {
                 $.alerts._hide();
                 phpminer.settings.config['rigs'][rig]['gpu_' + gpu_id]['hw']['max'] = $('#max_hw').val();
                 $('.modal').modal('hide');
-                $('#main_init_set_value').button('reset');
+                $('#main_init_set_hw_error').button('reset');
             }, function() {
-                $('#main_init_set_value').button('reset');
+                $('#main_init_set_hw_error').button('reset');
             });
         }
         }

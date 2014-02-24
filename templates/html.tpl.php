@@ -48,6 +48,7 @@
                     <li><a href="<?php echo murl('pools', 'main'); ?>"><i class="icon-group"></i>Pools</a></li>
                     <li><a href="<?php echo murl('notify', 'settings'); ?>"><i class="icon-beaker"></i>Notifications / Auto tasks</a></li>
                     <li><a href="<?php echo murl('main', 'settings'); ?>"><i class="icon-cogs"></i>Settings</a></li>
+                    <li><a href="<?php echo murl('access', 'index'); ?>"><i class="icon-lock-alt"></i>Access management</a></li>
                 </ul>
                 <div class="donate">
                     <span style='display: inline-block;margin-right: 20px;text-align: right;'>
@@ -61,9 +62,6 @@
                 </div>
             </section>
             <div id="header_border"></div>
-            <?php if ($this->geT_variable('unsaved_changes')): ?>
-            <div id="save_cg_miner_config_container"><a class="btn btn-primary" id="save_cg_miner_config">You have unsaved changes, save to config</a></div>
-            <?php endif; ?>
             <div id="wrapper">
                 <section id="status_messages">
                     <?php if ($this->has_variable('messages')): ?>
@@ -73,7 +71,7 @@
                     <?php endif; ?>
                 </section>
                 <section id="content">
-                    <?php if (file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.tpl.php')): ?>
+                    <?php if (empty($this->fatal_error) && file_exists(SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.tpl.php')): ?>
                         <?php include SITEPATH . '/views/' . $this->controller_name . '/' . $this->action_name . '.tpl.php'; ?>
                     <?php endif; ?>
                 </section>

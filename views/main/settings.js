@@ -1,36 +1,36 @@
 Soopfw.behaviors.main_settings = function() {
-    
-    $.each(phpminer.settings.config.rigs, function(rig, rig_data) {
-        var configs_to_add = $.extend({}, phpminer.settings.possible_configs);
-        
-        if (rig_data.cgminer_conf === undefined) {
-            rig_data.cgminer_conf = {};
-        }
-        
-        $.each(rig_data.cgminer_conf, function(k, v) {
-            if (k === 'pools' || phpminer.settings.possible_configs[k] === undefined) {
-                return;
-            }
-            delete configs_to_add[k];
-            add_config(rig, k, v);
-        });
+    if (phpminer.settings.rigs !== undefined) {
+        $.each(phpminer.settings.rigs, function(rig, rig_data) {
+            var configs_to_add = $.extend({}, phpminer.settings.possible_configs);
 
-        $.each(configs_to_add, function(k, v) {
-           $('.add_config_key[data-rig="' + rig + '"]').append('<option value="' + k + '">' + k + ' - ' + v.description + '</option>'); 
-        });
-
-        $('.add_config_key[data-rig="' + rig + '"]').change(function() {
-            var key = $(this).val();
-            $(this).val("");
-            if(phpminer.settings.possible_configs[key] !== undefined) {
-                add_config(rig, key);
-                $('option[value="' + key + '"]', this).remove();
-                $('*[data-toggle="tooltip"]').tooltip();
+            if (rig_data.cgminer_conf === undefined) {
+                rig_data.cgminer_conf = {};
             }
 
+            $.each(rig_data.cgminer_conf, function(k, v) {
+                if (k === 'pools' || phpminer.settings.possible_configs[k] === undefined) {
+                    return;
+                }
+                delete configs_to_add[k];
+                add_config(rig, k, v);
+            });
+
+            $.each(configs_to_add, function(k, v) {
+               $('.add_config_key[data-rig="' + rig + '"]').append('<option value="' + k + '">' + k + ' - ' + v.description + '</option>'); 
+            });
+
+            $('.add_config_key[data-rig="' + rig + '"]').change(function() {
+                var key = $(this).val();
+                $(this).val("");
+                if(phpminer.settings.possible_configs[key] !== undefined) {
+                    add_config(rig, key);
+                    $('option[value="' + key + '"]', this).remove();
+                    $('*[data-toggle="tooltip"]').tooltip();
+                }
+
+            });
         });
-    });
-    
+    }
     $('#save_config').off('click').on('click', function() {
         var values = {};
         $('input, select', $('#system_settings')).each(function() {
@@ -42,7 +42,7 @@ Soopfw.behaviors.main_settings = function() {
             }
         });
         ajax_request(murl('main', 'save_settings'), {settings: values}, function(result) {
-            if (result.url !== undefined) {
+            if (result !== undefined && result !== null && result['url'] !== undefined) {
                 Soopfw.location(result.url);
             }
             else {

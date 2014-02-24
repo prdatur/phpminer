@@ -1,0 +1,27 @@
+.add_user_form label {
+    width: 120px;
+}
+.add_user_form input {
+    width: 300px;
+}
+.add_group_form label {
+    width: 200px;
+}
+
+.permission_checkbox {
+    max-height: 350px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.add_group_form.simpleform .form-element {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+.add_group_form.simpleform .form-element:nth-child(even) {
+    background-color: #F0F0F0;
+}
+
+.add_group_form.simpleform .form-element label {
+    margin: 0px;
+}

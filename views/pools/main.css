@@ -1,3 +1,7 @@
 #rig_based_help ul {
     list-style-type: none;
 }
+
+.pool_table {
+    white-space: nowrap;
+}

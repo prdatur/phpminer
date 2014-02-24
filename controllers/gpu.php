@@ -10,6 +10,9 @@ require_once 'includes/validators/FunctionValidator.class.php';
 class gpu extends Controller {
 
     private function set_cfg($rig, $gpu, $key, $value) {
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
         $rigs = $this->config->rigs;
 
         if (empty($rigs[$rig]['gpu_' . $gpu])) {
@@ -42,7 +45,7 @@ class gpu extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
-
+        
         $this->set_cfg($params->rig, $params->gpu, array('load', 'min'), $params->min);
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
@@ -112,6 +115,11 @@ class gpu extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         try {
             // Just get the api to first check if all connections are fine. 
             $this->get_rpc($params->rig);
@@ -139,6 +147,10 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
 
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         try {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
@@ -166,6 +178,10 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
 
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         try {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
@@ -191,7 +207,11 @@ class gpu extends Controller {
         if (!$params->is_valid(true)) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER . null, true, implode("\n", $params->get_errors()));
         }
-
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         try {
             if ($params->value === 1) {
                 $this->get_rpc($params->rig)->gpuenable($params->gpu);
@@ -221,6 +241,10 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER . null, true, implode("\n", $params->get_errors()));
         }
 
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         try {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
@@ -250,6 +274,10 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
 
+        if (!$this->access_control->has_permission(AccessControl::PERM_DEVICE_OVERCLOCK)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
         try {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);

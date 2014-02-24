@@ -1,4 +1,6 @@
 <?php
+class AccessException extends Exception {}
+
 /**
  * @copyright Christian Ackermann (c) 2013 - End of life
  * @author Christian Ackermann <prdatur@gmail.com>
@@ -52,9 +54,12 @@ define("PDT_LANGUAGE_ENABLED", $i++, true);
 define("PDT_SERIALIZED", $i++, true);
 define("PDT_BLOB", $i++, true);
 
+require 'Db.class.php';
+require 'Updates.class.php';
 require 'HttpClient.class.php';
 require 'PHPMinerRPC.class.php';
 require 'Controller.class.php';
+
 
 $system_conf['version'] = array(1, 2, 1);
 

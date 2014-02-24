@@ -7,16 +7,18 @@
 /**
  * Represents the config of php cgminer.
  */
-class AccessConfig extends Config {
-
-    const TYPE_USER = 'users';
-    const TYPE_GROUP = 'groups';
-        
+class AccessConfig {
+       
+    
     /**
-     * Creates a new instance of the pool config.
+     * Returns wether the config file is empty or not.
+     * 
+     * @return boolean
+     *   True if config is empty, else false.
      */
-    public function __construct() {
-        parent::__construct(SITEPATH . '/config/access.json');
+    public function is_empty() {
+        $tmp =  Db::getInstance()->querySingle("SELECT 1 FROM [users] LIMIT 1");
+        return empty($tmp);
     }
     
     /**
@@ -33,19 +35,8 @@ class AccessConfig extends Config {
      *   True on success, else false.
      */
     public function user_add($user, $pass, $group = 'default') {
-        
-        // Create the group if it doesn't exist yet.
-        if (!isset($this->config[self::TYPE_USER])) {
-            $this->config[self::TYPE_USER] = array();
-        }
-
-        // Add the pool to the group.
-        $this->config[self::TYPE_USER][$user] = array(
-            'pass' => $pass,
-            'group' => $group
-        );
-        
-        return $this->save();
+        $pw_hash = new PasswordHash();
+        return Db::getInstance()->exec("INSERT INTO [users] ([username],[password],[group]) VALUES ('" . SQLite3::escapeString($user) . "', '" . SQLite3::escapeString($pw_hash->hash_password($pass)) . "', '" . SQLite3::escapeString($group) . "')");
     }
     
     /**
@@ -58,11 +49,7 @@ class AccessConfig extends Config {
      *   True on success, else false.
      */
     public function user_del($user) {
-        if (isset($this->config[self::TYPE_USER]) && isset($this->config[self::TYPE_USER][$user])) {
-            unset($this->config[self::TYPE_USER][$user]);
-            return $this->save();
-        }
-        return false;        
+        return Db::getInstance()->exec("DELETE FROM [users] WHERE [username] = '" . SQLite3::escapeString($user) . "'");
     }
         
     /**
@@ -83,33 +70,37 @@ class AccessConfig extends Config {
      */
     public function user_update($old_user, $user, $pass = null, $group = null) {
         
-        if (isset($this->config[self::TYPE_USER]) && isset($this->config[self::TYPE_USER][$old_user])) {
-            $old = $this->config[self::TYPE_USER][$user];
-            unset($this->config[self::TYPE_USER][$user]);
-            
-            if ($pass !== null) {
-                $old['pass'] = $pass;
-            }
-            if ($group !== null) {
-                $old['group'] = $group;
-            }
-            $this->config[self::TYPE_USER][$user] = $old;
-            return $this->save();
+        $pw = '';
+        if ($pass !== null) {
+            $pw_hash = new PasswordHash();
+            $pw = ", [password] = '" . SQLite3::escapeString($pw_hash->hash_password($pass)) . "'";
         }
-        return false;
+        
+        $sql = "UPDATE [users] SET [username] = '" . SQLite3::escapeString($user) . "'" . $pw . ",[group] = '" . SQLite3::escapeString($group) . "' WHERE [username] = '" . SQLite3::escapeString($old_user) . "'";
+        return Db::getInstance()->exec($sql);
     }
     
     /**
-     * Returns all configurated users.
+     * Returns all configurated usernames or if $username is given the user entry if exists.
      * 
-     * @return array
-     *   The user names.
+     * @param string $username
+     *   The username, if provided it will return the user entry instead of all usernames. (Optional, default = null)
+     * @return array|boolean
+     *   The user names if $username is ommited, else the user entry or false if it doesn't exists.
      */
-    public function user_get() {
-        if (!is_array($this->config[self::TYPE_USER])) {
-            return array();
+    public function user_get($username = null) {
+        
+        if ($username !== null) {
+            return Db::getInstance()->querySingle("SELECT * FROM [users] WHERE [username] = '" . SQLite3::escapeString($username) . "' LIMIT 1", true);
         }
-        return array_keys($this->config[self::TYPE_USER]);
+        $sql = Db::getInstance()->query("SELECT [username] FROM [users]");
+        $result = array();
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+               $result[] = $row['username'];
+            }
+        }
+        return $result;
     }
     
     /**
@@ -122,7 +113,8 @@ class AccessConfig extends Config {
      *   true if exists, else false.
      */
     public function user_exists($user) {
-        return isset($this->config[self::TYPE_USER]) && isset($this->config[self::TYPE_USER][$user]);
+        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [users] WHERE [username] = '" . SQLite3::escapeString($user) . "' LIMIT 1");
+        return !empty($tmp);
     }
 
     /**
@@ -135,17 +127,23 @@ class AccessConfig extends Config {
      *   True if success, else false.
      */
     public function group_add($group) {
-        if (!isset($this->config[self::TYPE_GROUP])) {
-            $this->config[self::TYPE_GROUP] = array();
-        }
-        
-        if (!isset($this->config[self::TYPE_GROUP][$group])) {
-            $this->config[self::TYPE_GROUP][$group] = array(
-                'name' => $group,
-                'permissions' => array(),
-            );
-        }
-        return $this->save();
+        return Db::getInstance()->exec("INSERT INTO [groups] ([name]) VALUES ('" . SQLite3::escapeString($group) . "')");
+    }
+    
+    /**
+     * Change a group.
+     * 
+     * @param string $old
+     *   The old group.
+     * @param string $group
+     *   The group.
+     * 
+     * @return boolean
+     *   True if success, else false.
+     */
+    public function group_change($old, $group) {
+        Db::getInstance()->exec("UPDATE [users] SET [group] = '" . SQLite3::escapeString($group) . "' WHERE  [group] = '" . SQLite3::escapeString($old) . "'");
+        return Db::getInstance()->exec("UPDATE [groups] SET [name] = '" . SQLite3::escapeString($group) . "' WHERE  [name] = '" . SQLite3::escapeString($old) . "'");
     }
     
     /**
@@ -160,16 +158,11 @@ class AccessConfig extends Config {
      *   True if success, else false.
      */
     public function group_grant_permission($group, $permission) {
-        if (!isset($this->config[self::TYPE_GROUP]) || !isset($this->config[self::TYPE_GROUP][$group])) {
-            return false;
-        }
-        
-        $this->config[self::TYPE_GROUP][$group]['permissions'][$permission] = true;
-        return $this->save();
+        return Db::getInstance()->exec("INSERT OR REPLACE INTO [group2perm] ([group_name],[permission]) VALUES ('" . SQLite3::escapeString($group) . "', '" . SQLite3::escapeString($permission) . "')");
     }
     
     /**
-     * Revokes the given permission to the given group.
+     * Revokes the given permission for the given group.
      * 
      * @param string $group
      *   The group.
@@ -180,33 +173,40 @@ class AccessConfig extends Config {
      *   True if success, else false.
      */
     public function group_revoke_permission($group, $permission) {
-        if (!isset($this->config[self::TYPE_GROUP]) || !isset($this->config[self::TYPE_GROUP][$group])) {
-            return true;
-        }
-        
-        // Remove permission if exists.
-        if (isset($this->config[self::TYPE_GROUP][$group]['permissions'][$permission])) {
-            unset($this->config[self::TYPE_GROUP][$group]['permissions'][$permission]);
-        }
-        return $this->save();
+        return Db::getInstance()->exec("DELETE FROM [group2perm] WHERE [group_name] = '" . SQLite3::escapeString($group) . "' AND [permission] = '" . SQLite3::escapeString($permission) . "'");
     }
     
     /**
-     * Update a group.
+     * Revokes all permissions for the given group.
      * 
      * @param string $group
      *   The group.
      * 
      * @return boolean
-     *   True on success, else false.
+     *   True if success, else false.
      */
-    public function group_update($group) {
-        if (!isset($this->config[self::TYPE_GROUP]) || !isset($this->config[self::TYPE_GROUP][$group])) {
-            return false;
+    public function group_revoke_all_permission($group) {
+        return Db::getInstance()->exec("DELETE FROM [group2perm] WHERE [group_name] = '" . SQLite3::escapeString($group) . "'");
+    }
+    
+    /**
+     * Get all permissions for the given group.
+     * 
+     * @param string $group
+     *   The group.
+     * 
+     * @return boolean
+     *   True if success, else false.
+     */
+    public function group_get_permission($group) {
+        $sql = Db::getInstance()->query("SELECT * FROM [group2perm] WHERE [group_name] = '" . SQLite3::escapeString($group) . "'");
+        $result = array();
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+               $result[$row['permission']] = true;
+            }
         }
-        
-        $this->config[self::TYPE_GROUP][$group] = array();
-        return $this->save();
+        return $result;
     }
     
     /**
@@ -219,12 +219,7 @@ class AccessConfig extends Config {
      *   True on success, else false.
      */
     public function group_delete($group) {
-        // No group with this name exist, return an empty array.
-        if (!isset($this->config[self::TYPE_GROUP]) || !isset($this->config[self::TYPE_GROUP][$group])) {
-            return false;
-        }
-        unset($this->config[self::TYPE_GROUP][$group]);
-        return $this->save();
+        return Db::getInstance()->exec("DELETE FROM [groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'");
     }
     
     /**
@@ -238,20 +233,17 @@ class AccessConfig extends Config {
      *   If $group is provided but doesn't exists it returns false.
      */
     public function group_get($group = null) {
-        // No group with this name exist, return an empty array.
-        if (!isset($this->config[self::TYPE_GROUP]) || !is_array($this->config[self::TYPE_GROUP])) {
-            if ($group !== null) {
-                return false;
-            }
-            return array();
-        }
         if ($group !== null) {
-            if (!isset($this->config[self::TYPE_GROUP][$group])) {
-                return false;
-            }
-            return $this->config[self::TYPE_GROUP][$group];
+            return Db::getInstance()->querySingle("SELECT * FROM [groups] WHERE [name] = '" . SQLite3::escapeString($group) . "' LIMIT 1", true);
         }
-        return array_keys($this->config[self::TYPE_GROUP]);
+        $sql = Db::getInstance()->query("SELECT [name] FROM [groups]");
+        $result = array();
+        if ($sql instanceof SQLite3Result) {
+            while ($row = $sql->fetchArray()) {
+               $result[] = $row['name'];
+            }
+        }
+        return $result;
     }
     
     /**
@@ -264,21 +256,8 @@ class AccessConfig extends Config {
      *   True if group empty, else false.
      */
     public function group_is_empty($group) {
-        // No group with this name exist, return an empty array.
-        if (!isset($this->config[self::TYPE_GROUP]) || !isset($this->config[self::TYPE_GROUP][$group]) || !isset($this->config[self::TYPE_USER]) || !is_array($this->config[self::TYPE_USER])) {
-            return true;
-        }
-        
-        //Loop through each user and check if a user has this group.
-         
-        foreach ($this->config[self::TYPE_USER] AS $user) {
-            if ($user['group'] === $group) {
-                return false;
-            }
-        }
-        
-        // No match, group is empty.
-        return true;
+        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [users] WHERE [group] = '" . SQLite3::escapeString($group) . "' LIMIT 1");
+        return empty($tmp);
         
     }
     
@@ -292,7 +271,8 @@ class AccessConfig extends Config {
      *   true if exists, else false.
      */
     public function group_exists($group) {
-        return isset($this->config[self::TYPE_GROUP]) && isset($this->config[self::TYPE_GROUP][$group]);
+        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [groups] WHERE [name] = '" . SQLite3::escapeString($group) . "' LIMIT 1");
+        return !empty($tmp);
     }
 
 }

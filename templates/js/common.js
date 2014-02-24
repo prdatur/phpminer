@@ -627,7 +627,6 @@ function try_reconnect(from_timeout) {
         reconnect_in_progress = false;
         Soopfw.reload();
     }, function() {
-        console.log('fu');
         setTimeout(function() {
             try_reconnect(true);
         }, 5000);
@@ -1076,7 +1075,9 @@ function empty(mixed_var) {
     }
     if (typeof mixed_var === 'object') {
         for (key in mixed_var) {
-            return false;
+            if (mixed_var.hasOwnProperty(key)) {
+                return false;
+            }
         }
         return true;
     }

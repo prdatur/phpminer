@@ -235,7 +235,6 @@ Editableform is linked with one of input types, e.g. 'text', 'select' etc.
 
             //convert value for submitting to server
             var submitValue = this.input.value2submit(newValue);
-            console.log(submitValue, 'submitValue');
             this.isSaving = true;
             
             //sending data to server
@@ -3290,7 +3289,6 @@ $(function(){
         },
        html2value: function (html) {return html;},
        value2str: function(value) {
-           console.log(value, 'value');
            return value;
        },  
        
