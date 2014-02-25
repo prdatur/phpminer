@@ -9,6 +9,39 @@ if (isset($_SERVER['REQUEST_URI'])) {
 if (!defined('SITEPATH')) {
         define('SITEPATH', dirname(__FILE__));
 }
+
+
+
+// If on linux, we can create a little helper to prevent double starts.
+// We also register the handler on pressing ctrl+c / ctrl+d to make sure the lock file will be removed.
+if ((strtoupper(substr(PHP_OS, 0, 3)) != 'WIN')) {
+    $check_file = '/tmp/phpminer_cron.pid';
+    if (file_exists($check_file)) {
+        $pid = file_get_contents($check_file);
+        $exists = shell_exec(' ps -p ' . intval($pid) . ' | grep  "php"');
+        $exists = trim($exists);
+        if (!empty($exists)) {
+            echo "exit";
+            exit;
+        }
+        
+    }
+
+    file_put_contents($check_file, getmypid());
+    
+    function unlock() {
+        global $check_file;
+        @unlink($check_file);
+    }
+    
+    register_shutdown_function('unlock');
+}
+else {
+    function unlock() {
+        
+    }
+}
+
 require 'includes/common.php';
 
 // Process updates.
@@ -105,6 +138,8 @@ if (!$config->is_empty($notify_cfg_key)) {
         }
     }
 
+    $rigs_to_reboot = array();
+    
     // Holds all notifications which will be send.
     $notifications = array();
     if (!empty($rig_notifications)) {
@@ -125,13 +160,13 @@ if (!$config->is_empty($notify_cfg_key)) {
             $has_defunc = $rpc->is_cgminer_defunc();
             $notify_cgminer_restart = $notification_data['notify_cgminer_restart'];
             $notify_reboot = $notification_data['notify_reboot'];
-            $need_reboot = '';
+
             // If PHPMiner should check for defunc.
             if (!empty($notification_data['reboot_defunc'])) {
 
                 // Check if there is a defunced cgminer process.
-                $need_reboot = $has_defunc;
-                if (!empty($need_reboot) && $notify_reboot) {
+                $rigs_to_reboot[$rig] = $has_defunc;
+                if (!empty($rigs_to_reboot[$rig]) && $notify_reboot) {
                     $notifications['reboot'][$rig] = array('Needed to reboot rig ' . $rig . '.');
                 }
             }
@@ -168,7 +203,7 @@ if (!$config->is_empty($notify_cfg_key)) {
                     // Restart CGMiner if dead/sick gpu is found.
                     if ($dead_sick_gpu) {
                         if ($notification_data['restart_dead'] === 'reboot') {
-                            $need_reboot = true;
+                            $rigs_to_reboot[$rig] = true;
                             if ($notify_reboot) {
                                 $notifications['reboot'][$rig] = array('Needed to reboot CGMiner/SGMiner on rig ' . $rig . ' because of Dead/Sick GPU.');
                             }
@@ -199,7 +234,7 @@ if (!$config->is_empty($notify_cfg_key)) {
             }
 
             // Only need to notify if at least one notification method is enabled and configurated. But only when we are not need to reboot, with a reboot we just ignore all errors for this rig.
-            if (($email_enabled || $rapidpush_enabled || $pushco_enabled || $post_enabled) && empty($need_reboot)) {
+            if (($email_enabled || $rapidpush_enabled || $pushco_enabled || $post_enabled) && (!isset($rigs_to_reboot[$rig]) || empty($rigs_to_reboot[$rig]))) {
 
                 // Check which notification should be send.
                 $notify_gpu_min = $notification_data['notify_gpu_min'];
@@ -445,8 +480,14 @@ if (!$config->is_empty($notify_cfg_key)) {
         }
     }
 
-    // Check if we need to reboot.
-    if (!empty($need_reboot)) {
+    
+    // Loop through each rig which needs to be rebooted.
+    foreach ($rigs_to_reboot AS $rig => $need_reboot) {
+        if (empty($need_reboot)) {
+            continue;
+        }
+        $rig_cfg = $config->get_rig($rig);
+        $rpc = new PHPMinerRPC($rig_cfg['http_ip'], $rig_cfg['http_port'], $rig_cfg['rpc_key'], 10);
         $rpc->reboot();
     }
 }
@@ -631,3 +672,5 @@ function can_send_notification($type, $reset = false, $last_send = false) {
     }
     return false;
 }
+
+unlock();

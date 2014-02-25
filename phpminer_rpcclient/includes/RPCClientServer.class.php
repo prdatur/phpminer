@@ -69,7 +69,7 @@ class RPCClientServer {
             // Check for changed sockets.
             $changed_sockets = $this->sockets;
             $except = null;
-            @stream_select($changed_sockets, $write = null, $except, 0, 100000);
+            @stream_select($changed_sockets, $write = null, $except, 10);
             
             // Loop through each changed socket.
             foreach ($changed_sockets as $socket) {
@@ -133,19 +133,21 @@ class RPCClientServer {
         if (!$socket) {
             return;
         }
+        $client_ident = (int) $socket;
         // Check the client socket exists within our clients.
-        if (isset($this->clients[(int) $socket])) {
+        if (isset($this->clients[$client_ident])) {
             
             // Get the client.
-            $client = $this->clients[(int) $socket];
+            $client = $this->clients[$client_ident];
+            $client_id = $client->getId();
             /* @var $client RPCClientConnection */
             
             // Disconnection client.
             $client->disconnect();
                         
             // Remove from client list.
-            unset($this->sockets[$client->getId()]);
-            unset($this->clients[(int) $socket]);
+            unset($this->sockets[$client_id]);
+            unset($this->clients[$client_ident]);
         }
     }
 }
