@@ -159,6 +159,9 @@ class HttpClient {
          */
         public function check_pool($host, $port, $type, $user, $password) {
             if ($type === 'stratum') {
+                $data = "";
+                $data .= json_encode(array('id' => 1, 'method' => 'mining.authorize', 'params' => array($user, $password))) . "\n";
+
                 // Check ip and port.
                 $socket = @fsockopen($host, $port, $errno, $errstr, 2);
                 if ($socket === false) {
@@ -168,8 +171,7 @@ class HttpClient {
                 @socket_set_timeout($socket, 1);
                 
                 // Check stratum + user / password.
-                $data = "";
-                $data .= json_encode(array('id' => 1, 'method' => 'mining.authorize', 'params' => array($user, $password))) . "\n";
+                
                 if (!@fwrite($socket, $data)) {
                     return "Can not send data to stratum server.";
                 }
