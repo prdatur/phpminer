@@ -21,7 +21,6 @@ if ((strtoupper(substr(PHP_OS, 0, 3)) != 'WIN')) {
         $exists = shell_exec(' ps -p ' . intval($pid) . ' | grep  "php"');
         $exists = trim($exists);
         if (!empty($exists)) {
-            echo "exit";
             exit;
         }
         

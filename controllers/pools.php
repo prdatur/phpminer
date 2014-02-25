@@ -13,7 +13,16 @@ class pools extends Controller {
         if ($this->pool_config->is_empty()) {
             $this->pool_config->add_group('default', 0, 0);
         }
-        $this->js_config('rig_names', array_keys($this->config->rigs));
+        $rig_names = array();
+        foreach ($this->config->rigs AS $rig => $rig_data) {
+            if (!empty($rig_data['shortname'])) {
+                $rig_names[] = $rig_data['shortname'];
+            }
+            else {
+                $rig_names[] = $rig;
+            }
+        }
+        $this->js_config('rig_names', $rig_names);
     }
 
     public function change_pool() {
@@ -295,8 +304,8 @@ class pools extends Controller {
                 if ($result !== true) {
                     AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
                         'url' => $params->url,
-                        'user' => $params->user . '_' . $user,
-                    ), true, $result);
+                        'user' => $params->user . '_rb_' . $user,
+                    ), true, $params->user . '_rb_' . $user . ' => ' . $result);
                 }
             }
         }
@@ -307,7 +316,7 @@ class pools extends Controller {
                 AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
                     'url' => $params->url,
                     'user' => $params->user,
-                ), true, $result);
+                ), true, $params->user . ' => ' . $result);
             }
         }
         $this->load_pool_config();
