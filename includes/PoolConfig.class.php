@@ -16,7 +16,7 @@ class PoolConfig {
      *   True if config is empty, else false.
      */
     public function is_pools_empty() {
-        $tmp =  Db::getInstance()->querySingle("SELECT 1 FROM [pools] LIMIT 1");
+        $tmp =  Db::getInstance()->querySingle('SELECT 1 FROM "pools" LIMIT 1');
         return empty($tmp);
     }
     
@@ -27,7 +27,7 @@ class PoolConfig {
      *   True if config is empty, else false.
      */
     public function is_empty() {
-        $tmp =  Db::getInstance()->querySingle("SELECT 1 FROM [pool_groups] LIMIT 1");
+        $tmp =  Db::getInstance()->querySingle('SELECT 1 FROM "pool_groups" LIMIT 1');
         return empty($tmp);
     }
     
@@ -53,7 +53,15 @@ class PoolConfig {
             $this->add_group($group);
         }
         
-        Db::getInstance()->exec("INSERT INTO [pools] ([uuid],[url],[user],[pass],[group],[quota],[rig_based]) VALUES ('" . $this->get_pool_uuid($url, $user) . "','" . SQLite3::escapeString($url) . "','" . SQLite3::escapeString($user) . "','" . SQLite3::escapeString($pass) . "','" . SQLite3::escapeString($group) . "','" . intval($quota) . "'," . intval($rig_based) . ")");
+        Db::getInstance()->exec('INSERT INTO "pools" ("uuid", "url", "user", "pass", "group", "quota", "rig_based") VALUES (:uuid, :url, :user, :pass, :group, :quota, :rig_based)', array(
+            ':uuid' => $this->get_pool_uuid($url, $user),
+            ':url' => $url,
+            ':user' => $user,
+            ':pass' => $pass,
+            ':group' => $group,
+            ':quota' => $quota,
+            ':rig_Based' => $rig_based
+        ));
     }
     
     /**
@@ -106,16 +114,20 @@ class PoolConfig {
     private function get_current_active_pool_group_from_pools($pools) {
        
         $where_array = array();
+        $values = array();
+        $i = 0;
         // Loop through each pool wich are active within cgminer.
         foreach ($pools AS $k => $pool) {
             $pools[$k]['uuid'] = $this->get_pool_uuid($pool['URL'], $pool['User']);
-            $where_array[] = "[uuid] = '" . SQLite3::escapeString($pools[$k]['uuid']) . "'";
+            $where_array[] = '"uuid" = :uuid_' . $i; 
+            $values[':uuid_' . $i] = $pools[$k]['uuid'];
+            $i++;
         }
         
         $result = array();
-        $sql = Db::getInstance()->query("SELECT * FROM [pools] WHERE " . implode(" OR ", $where_array));
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        $sql = Db::getInstance()->query('SELECT * FROM "pools" WHERE ' . implode(" OR ", $where_array), $values);
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                $result[$row['group']] = $row['group'];
             }
         }
@@ -247,7 +259,10 @@ class PoolConfig {
      *   True if pool was found and removed, else false.
      */
     public function remove_pool_by_uuid($uuid, $group = 'default') {
-        Db::getInstance()->exec("DELETE FROM [pools]  WHERE [uuid] = '" . SQLite3::escapeString($uuid) . "' AND  [group] = '" . SQLite3::escapeString($group) . "'");
+        Db::getInstance()->exec('DELETE FROM "pools"  WHERE "uuid" = :uuid AND "group" = :group', array(
+            ':uuid' => $uuid,
+            ':group' => $group,
+        ));
     }
     
     /**
@@ -268,7 +283,16 @@ class PoolConfig {
      * 
      */
     public function update_pool($old_pool_id, $url, $user, $pass, $quota = 1, $rig_based = false) {
-        Db::getInstance()->exec("UPDATE [pools] SET [uuid] = '" . $this->get_pool_uuid($url, $user) . "',  [url] = '" . SQLite3::escapeString($url) . "', [user] = '" . SQLite3::escapeString($user) . "' , [pass] = '" . SQLite3::escapeString($pass) . "' , [quota] = '" . intval($quota) . "' , [rig_based] = " . intval($rig_based) . " WHERE [uuid] = '" . SQLite3::escapeString($old_pool_id) . "'");
+        Db::getInstance()->exec('UPDATE "pools" SET "uuid" = :uuid,  "url" = :url, "user" = :user, "pass" = :pass, "quota" = :quota, "rig_based" = :rig_based WHERE "uuid" = :old_pool_id', array(
+            ':uuid' => $this->get_pool_uuid($url, $user),
+            ':url' => $url,
+            ':user' => $user,
+            ':user' => $user,
+            ':pass' => $pass,
+            ':quota' => $quota,
+            ':rig_based' => $rig_based,
+            ':old_pool_id' => $old_pool_id,
+        ));
     }
     
     /**
@@ -281,7 +305,9 @@ class PoolConfig {
      *   The pool group data.
      */
     public function get_group($group) {
-        $row = Db::getInstance()->querySingle("SELECT * FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'", true);
+        $row = Db::getInstance()->querySingle('SELECT * FROM "pool_groups" WHERE "name" = :group', true, array(
+            ':group' => $group,
+        ));
         $row['strategy'] = intval($row['strategy']);
         $row['period'] = intval($row['period']);
         return $row;
@@ -294,10 +320,10 @@ class PoolConfig {
      *   The pool group names.
      */
     public function get_groups() {
-        $sql = Db::getInstance()->query("SELECT * FROM [pool_groups]");
+        $sql = Db::getInstance()->query('SELECT * FROM "pool_groups"');
         $result = array();
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                 $result[] = $row['name'];
             }
         }
@@ -314,10 +340,12 @@ class PoolConfig {
      *   The pools within this group.
      */
     public function get_pools($group = 'default') {
-        $sql = Db::getInstance()->query("SELECT * FROM [pools] WHERE [group] = '" . SQLite3::escapeString($group) . "'");
+        $sql = Db::getInstance()->query('SELECT * FROM "pools" WHERE "group" = :group', array(
+            ':group' => $group,
+        ));
         $result = array();
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                 $row['rig_based'] = !empty($row['rig_based']);
                 $row['quota'] = intval($row['quota']);
                $result[$row['uuid']] = $row;
@@ -336,7 +364,9 @@ class PoolConfig {
      *   The pool strategy.
      */
     public function get_strategy($group = 'default') {
-        $tmp = Db::getInstance()->querySingle("SELECT [strategy] FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'");
+        $tmp = Db::getInstance()->querySingle('SELECT "strategy" FROM "pool_groups" WHERE "name" = :group', false, array(
+            ':group' => $group,
+        ));
         return (!empty($tmp)) ? $tmp : 0;
     }
     
@@ -350,7 +380,9 @@ class PoolConfig {
      *   The pool period.
      */
     public function get_period($group = 'default') {
-        $tmp = Db::getInstance()->querySingle("SELECT [period] FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'");
+        $tmp = Db::getInstance()->querySingle('SELECT "period" FROM "pool_groups" WHERE "name" = :group', false, array(
+            ':group' => $group,
+        ));
         return (!empty($tmp)) ? $tmp : 0;
     }
     
@@ -366,7 +398,10 @@ class PoolConfig {
      *   The pool data.
      */
     public function get_pool($uuid, $group = 'default') {
-        $data = Db::getInstance()->querySingle("SELECT * FROM [pools]  WHERE [uuid] = '" . SQLite3::escapeString($uuid) . "' AND  [group] = '" . SQLite3::escapeString($group) . "'", true);
+        $data = Db::getInstance()->querySingle('SELECT * FROM "pools"  WHERE "uuid" = :uuid AND "group" = :group', true, array(
+            ':uuid' => $uuid,
+            ':group' => $group,
+        ));
         $data['rig_based'] = !empty($data['rig_based']);
         $data['quota'] = intval($data['quota']);
         return $data;
@@ -383,8 +418,12 @@ class PoolConfig {
      */
     public function del_group($group) {
         if ($this->group_exists($group)) {
-            Db::getInstance()->exec("DELETE FROM [pool_groups]  WHERE [name] = '" . SQLite3::escapeString($group) . "'");
-            Db::getInstance()->exec("DELETE FROM [pools]  WHERE [group] = '" . SQLite3::escapeString($group) . "'");
+            Db::getInstance()->exec('DELETE FROM "pool_groups"  WHERE "name" = :group', array(
+                ':group' => $group,
+            ));
+            Db::getInstance()->exec('DELETE FROM "pools" WHERE "group" = :group', array(
+                ':group' => $group,
+            ));
             return true;
         }
         else {
@@ -409,8 +448,16 @@ class PoolConfig {
      */
     public function update_group($old_group, $group, $strategy = 0, $period = 0) {
         if ($this->group_exists($old_group)) {
-            Db::getInstance()->exec("UPDATE [pool_groups] SET [name] = '" . SQLite3::escapeString($group) . "', [strategy] = '" . intval($strategy) . "', [period] = '" . intval($period) . "' WHERE [name] = '" . SQLite3::escapeString($old_group) . "'");
-            Db::getInstance()->exec("UPDATE [pools] SET [group] = '" . SQLite3::escapeString($group) . "' WHERE [group] = '" . SQLite3::escapeString($old_group) . "'");
+            Db::getInstance()->exec('UPDATE "pool_groups" SET "name" = :group, "strategy" = :strategy, "period" = :period WHERE "name" = :old', array(
+                ':group' => $group,
+                ':strategy' => $strategy,
+                ':period' => $period,
+                ':old' => $old_group,
+            ));
+            Db::getInstance()->exec('UPDATE "pools" SET "group" = :group WHERE "group" = :old', array(
+                ':group' => $group,
+                ':old' => $old_group,
+            ));
             return true;
         }
         else {
@@ -433,7 +480,11 @@ class PoolConfig {
      */
     public function add_group($group, $strategy = 0, $period = 0) {
         try {
-            Db::getInstance()->exec("INSERT INTO [pool_groups] ([name], [strategy], [period]) VALUES ('" . SQLite3::escapeString($group) . "', " . intval($strategy) . ", " . intval($period) . ")");
+            Db::getInstance()->exec('INSERT INTO "pool_groups" ("name", "strategy", "period") VALUES (:group, :strategy, :period)', array(
+                ':group' => $group,
+                ':strategy' => $strategy,
+                ':period' => $period,
+            ));
             return true;
         }
         catch(Exception $e) {
@@ -451,7 +502,9 @@ class PoolConfig {
      *   true if exists, else false.
      */
     public function group_exists($group) {
-        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [pool_groups] WHERE [name] = '" . SQLite3::escapeString($group) . "' LIMIT 1");
+        $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "pool_groups" WHERE "name" = :group LIMIT 1', false, array(
+            ':group' => $group
+        ));
         return !empty($tmp);
     }
 

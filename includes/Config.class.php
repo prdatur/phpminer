@@ -494,7 +494,9 @@ class Config {
         if ($type === null) {
             $type = $this->type;
         }
-        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [config] WHERE [type] = '" . SQLite3::escapeString($type) . "' LIMIT 1");
+        $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "config" WHERE "type" = :type LIMIT 1', false, array(
+            ':type' => $type,
+        ));
         return empty($tmp);
     }
 
@@ -530,9 +532,11 @@ class Config {
 
         if ($name === 'rigs' && $type === 'config') {
             $result = array();
-            $sql = Db::getInstance()->query("SELECT * FROM [config] WHERE [type] = 'rigs'");
-            if ($sql instanceof SQLite3Result) {
-                while ($row = $sql->fetchArray()) {
+            $sql = Db::getInstance()->query('SELECT * FROM "config" WHERE "type" = :type', array(
+                ':type' => 'rigs',
+            ));
+            if ($sql instanceof PDOStatement) {
+                while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                     $result[$row['key']] = json_decode($row['value'], true);
                 }
             }
@@ -540,7 +544,10 @@ class Config {
         }
 
 
-        $tmp = Db::getInstance()->querySingle("SELECT [value] FROM [config] WHERE [key] = '" . SQLite3::escapeString($name) . "' AND [type] = '" . SQLite3::escapeString($type) . "'", true);
+        $tmp = Db::getInstance()->querySingle('SELECT "value" FROM "config" WHERE "key" = :name AND "type" = :type', true, array(
+            ':name' => $name,
+            ':type' => $type,
+        ));
         if (!isset($tmp['value'])) {
             return null;
         }
@@ -590,9 +597,11 @@ class Config {
             $type = $this->type;
         }
         $config = array();
-        $sql = Db::getInstance()->query("SELECT * FROM [config] WHERE [type] = '" . SQLite3::escapeString($type) . "'");
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        $sql = Db::getInstance()->query('SELECT * FROM "config" WHERE "type" = :type', array(
+            ':type' => $type,
+        ));
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                 $config[$row['key']] = json_decode($row['value'], true);
             }
         }
@@ -631,7 +640,9 @@ class Config {
 
         if ($name === 'rigs' && $type === 'config') {
             if (is_array($value)) {
-                Db::getInstance()->exec("DELETE FROM [config] WHERE [type] = 'rigs'");
+                Db::getInstance()->exec('DELETE FROM "config" WHERE "type" = :type', array(
+                    ':type' => 'rigs',
+                ));
                 foreach ($value AS $rig => $rig_data) {
                     if (empty($rig) || empty($rig_data)) {
                         continue;
@@ -647,8 +658,25 @@ class Config {
             $this->rigs = $value['rigs'];
             unset($value['rigs']);
         }
-
-        Db::getInstance()->exec("INSERT OR REPLACE INTO [config] ([value], [key], [type]) VALUES ('" . SQLite3::escapeString(json_encode($value)) . "', '" . SQLite3::escapeString($name) . "', '" . SQLite3::escapeString($type) . "')");
+        
+        $exists = Db::getInstance()->querySingle('SELECT 1 FROM "config" WHERE "key" = :key AND "type" = :type' , false, array(
+            ':key' => $name,
+            ':type' => $type,            
+        ));
+        if (empty($exists)) {
+            Db::getInstance()->exec('INSERT INTO "config" ("value", "key", "type") VALUES (:value, :key, :type)', array(
+                ':value' => json_encode($value),
+                ':key' => $name,
+                ':type' => $type,
+            ));
+        }
+        else {
+            Db::getInstance()->exec('UPDATE "config" SET "value" = :value WHERE "key" = :key AND "type" = :type', array(
+                ':value' => json_encode($value),
+                ':key' => $name,
+                ':type' => $type,
+            ));
+        }
     }
 
     /**
@@ -662,9 +690,14 @@ class Config {
      */
     public function __isset($name) {
         if ($name === 'rigs') {
-            $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [config] WHERE [type] = 'rigs'");
+            $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "config" WHERE "type" = :type', false, array(
+                ':type' => 'rigs',
+            ));
         } else {
-            $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [config] WHERE [key] = '" . SQLite3::escapeString($name) . "' AND [type] = '" . $this->type . "'");
+            $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "config" WHERE "key" = :name AND "type" = :type', false, array(
+                ':name' => $name,
+                ':type' => $this->type,
+            ));
         }
         return !empty($tmp);
     }

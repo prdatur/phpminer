@@ -39,7 +39,7 @@ function fatal_handler() {
     
     ErrorHandler::cc_error_handler($errno, $errstr, $errfile, $errline, "", true, $stack);
     $error = $phpminer_error_handler_messages;
-    
+
     if (empty($error)) {
         return;
     }
@@ -51,7 +51,7 @@ function fatal_handler() {
         echo json_encode($return);
         die();
     }
-    echo $error;
+    echo implode("<br>", $error);
     die();
 }
 register_shutdown_function("fatal_handler");

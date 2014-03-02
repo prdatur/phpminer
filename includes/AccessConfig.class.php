@@ -17,7 +17,7 @@ class AccessConfig {
      *   True if config is empty, else false.
      */
     public function is_empty() {
-        $tmp =  Db::getInstance()->querySingle("SELECT 1 FROM [users] LIMIT 1");
+        $tmp =  Db::getInstance()->querySingle('SELECT 1 FROM "users" LIMIT 1');
         return empty($tmp);
     }
     
@@ -36,7 +36,11 @@ class AccessConfig {
      */
     public function user_add($user, $pass, $group = 'default') {
         $pw_hash = new PasswordHash();
-        return Db::getInstance()->exec("INSERT INTO [users] ([username],[password],[group]) VALUES ('" . SQLite3::escapeString($user) . "', '" . SQLite3::escapeString($pw_hash->hash_password($pass)) . "', '" . SQLite3::escapeString($group) . "')");
+        return Db::getInstance()->exec('INSERT INTO "users" ("username", "password", "group") VALUES (:user, :pass, :group)', array(
+            ':user' => $user,
+            ':pass' => $pw_hash->hash_password($pass),
+            ':group' => $group,
+        ));
     }
     
     /**
@@ -49,7 +53,9 @@ class AccessConfig {
      *   True on success, else false.
      */
     public function user_del($user) {
-        return Db::getInstance()->exec("DELETE FROM [users] WHERE [username] = '" . SQLite3::escapeString($user) . "'");
+        return Db::getInstance()->exec('DELETE FROM "users" WHERE "username" = :user', array(
+            ':user' => $user,
+        ));
     }
         
     /**
@@ -69,15 +75,20 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function user_update($old_user, $user, $pass = null, $group = null) {
-        
+
+        $values = array(
+            ':user' => $user,
+            ':old_user' => $old_user,
+            ':group' => $group,
+        );
         $pw = '';
         if ($pass !== null) {
             $pw_hash = new PasswordHash();
-            $pw = ", [password] = '" . SQLite3::escapeString($pw_hash->hash_password($pass)) . "'";
+            $pw = ', "password" = :password';
+            
+            $values[':password'] = $pw_hash->hash_password($pass);
         }
-        
-        $sql = "UPDATE [users] SET [username] = '" . SQLite3::escapeString($user) . "'" . $pw . ",[group] = '" . SQLite3::escapeString($group) . "' WHERE [username] = '" . SQLite3::escapeString($old_user) . "'";
-        return Db::getInstance()->exec($sql);
+        return Db::getInstance()->exec('UPDATE "users" SET "username" = :user' . $pw . ', "group" = :group WHERE "username" = :old_user', $values);
     }
     
     /**
@@ -91,12 +102,14 @@ class AccessConfig {
     public function user_get($username = null) {
         
         if ($username !== null) {
-            return Db::getInstance()->querySingle("SELECT * FROM [users] WHERE [username] = '" . SQLite3::escapeString($username) . "' LIMIT 1", true);
+            return Db::getInstance()->querySingle('SELECT * FROM "users" WHERE "username" = :user LIMIT 1', true, array(
+                ':user' => $username,
+            ), true);
         }
-        $sql = Db::getInstance()->query("SELECT [username] FROM [users]");
+        $sql = Db::getInstance()->query('SELECT "username" FROM "users"');
         $result = array();
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                $result[] = $row['username'];
             }
         }
@@ -113,7 +126,9 @@ class AccessConfig {
      *   true if exists, else false.
      */
     public function user_exists($user) {
-        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [users] WHERE [username] = '" . SQLite3::escapeString($user) . "' LIMIT 1");
+        $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "users" WHERE "username" = :user LIMIT 1', false, array(
+            ':user' => $user,
+        ));
         return !empty($tmp);
     }
 
@@ -127,7 +142,9 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function group_add($group) {
-        return Db::getInstance()->exec("INSERT INTO [groups] ([name]) VALUES ('" . SQLite3::escapeString($group) . "')");
+        return Db::getInstance()->exec('INSERT INTO "groups" ("name") VALUES (:group)', array(
+            ':group' => $group,
+        ));
     }
     
     /**
@@ -142,8 +159,12 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function group_change($old, $group) {
-        Db::getInstance()->exec("UPDATE [users] SET [group] = '" . SQLite3::escapeString($group) . "' WHERE  [group] = '" . SQLite3::escapeString($old) . "'");
-        return Db::getInstance()->exec("UPDATE [groups] SET [name] = '" . SQLite3::escapeString($group) . "' WHERE  [name] = '" . SQLite3::escapeString($old) . "'");
+        $values = array(
+            ':group' => $group,
+            ':old' => $old,
+        );
+        Db::getInstance()->exec('UPDATE "users" SET "group" = :group WHERE "group" = :old', $values);
+        return Db::getInstance()->exec('UPDATE "groups" SET "name" = :group WHERE "name" = :old', $values);
     }
     
     /**
@@ -158,7 +179,11 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function group_grant_permission($group, $permission) {
-        return Db::getInstance()->exec("INSERT OR REPLACE INTO [group2perm] ([group_name],[permission]) VALUES ('" . SQLite3::escapeString($group) . "', '" . SQLite3::escapeString($permission) . "')");
+        Db::getInstance()->exec('INSERT INTO "group2perm" ("group_name","permission") VALUES (:group, :perm)', array(
+            ':group' => $group,
+            ':perm' => $permission,
+        ));
+        return true;
     }
     
     /**
@@ -173,7 +198,10 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function group_revoke_permission($group, $permission) {
-        return Db::getInstance()->exec("DELETE FROM [group2perm] WHERE [group_name] = '" . SQLite3::escapeString($group) . "' AND [permission] = '" . SQLite3::escapeString($permission) . "'");
+        return Db::getInstance()->exec('DELETE FROM "group2perm" WHERE "group_name" = :group AND "permission" = :perm', array(
+            ':group' => $group,
+            ':perm' => $permission,
+        ));
     }
     
     /**
@@ -186,7 +214,9 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function group_revoke_all_permission($group) {
-        return Db::getInstance()->exec("DELETE FROM [group2perm] WHERE [group_name] = '" . SQLite3::escapeString($group) . "'");
+        return Db::getInstance()->exec('DELETE FROM "group2perm" WHERE "group_name" = :group', array(
+            ':group' => $group,
+        ));
     }
     
     /**
@@ -199,10 +229,12 @@ class AccessConfig {
      *   True if success, else false.
      */
     public function group_get_permission($group) {
-        $sql = Db::getInstance()->query("SELECT * FROM [group2perm] WHERE [group_name] = '" . SQLite3::escapeString($group) . "'");
+        $sql = Db::getInstance()->query('SELECT * FROM "group2perm" WHERE "group_name" = :group', array(
+            ':group' => $group,
+        ));
         $result = array();
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                $result[$row['permission']] = true;
             }
         }
@@ -219,7 +251,12 @@ class AccessConfig {
      *   True on success, else false.
      */
     public function group_delete($group) {
-        return Db::getInstance()->exec("DELETE FROM [groups] WHERE [name] = '" . SQLite3::escapeString($group) . "'");
+        Db::getInstance()->exec('DELETE FROM "group2perm" WHERE "group_name" = :group', array(
+            ':group' => $group,
+        ));
+        return Db::getInstance()->exec('DELETE FROM "groups" WHERE "name" = :group', array(
+            ':group' => $group,
+        ));
     }
     
     /**
@@ -234,12 +271,14 @@ class AccessConfig {
      */
     public function group_get($group = null) {
         if ($group !== null) {
-            return Db::getInstance()->querySingle("SELECT * FROM [groups] WHERE [name] = '" . SQLite3::escapeString($group) . "' LIMIT 1", true);
+            return Db::getInstance()->querySingle('SELECT * FROM "groups" WHERE "name" = :group LIMIT 1', true, array(
+                ':group' => $group,
+            ));
         }
-        $sql = Db::getInstance()->query("SELECT [name] FROM [groups]");
+        $sql = Db::getInstance()->query('SELECT "name" FROM "groups"');
         $result = array();
-        if ($sql instanceof SQLite3Result) {
-            while ($row = $sql->fetchArray()) {
+        if ($sql instanceof PDOStatement) {
+            while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                $result[] = $row['name'];
             }
         }
@@ -256,7 +295,9 @@ class AccessConfig {
      *   True if group empty, else false.
      */
     public function group_is_empty($group) {
-        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [users] WHERE [group] = '" . SQLite3::escapeString($group) . "' LIMIT 1");
+        $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "users" WHERE "group" = :group LIMIT 1', false, array(
+            ':group' => $group,
+        ));
         return empty($tmp);
         
     }
@@ -271,7 +312,9 @@ class AccessConfig {
      *   true if exists, else false.
      */
     public function group_exists($group) {
-        $tmp = Db::getInstance()->querySingle("SELECT 1 FROM [groups] WHERE [name] = '" . SQLite3::escapeString($group) . "' LIMIT 1");
+        $tmp = Db::getInstance()->querySingle('SELECT 1 FROM "groups" WHERE "name" = :group LIMIT 1', false, array(
+            ':group' => $group
+        ));
         return !empty($tmp);
     }
 

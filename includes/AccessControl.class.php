@@ -145,9 +145,11 @@ class AccessControl {
                 }
                 
                 if (!isset($perms[$user['username']])) {
-                    $res = db::getInstance()->query("SELECT [permission] FROM [group2perm] WHERE [group_name] = '" . $user['group'] . "'");
+                    $res = db::getInstance()->query('SELECT "permission" FROM "group2perm" WHERE "group_name" = :group', array(
+                        ':group' => $user['group'],
+                    ));
                     $perms[$user['username']] = array();
-                    while ($row = $res->fetchArray()) {
+                    while ($row = $res->fetch(PDO::FETCH_ASSOC)) {
                         $perms[$user['username']][$row['permission']] = $row['permission'];
                     }
                 }

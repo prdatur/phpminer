@@ -1,0 +1,8 @@
+<?php
+$db = array(
+    'type' => 'mysql',
+    'server' => 'localhost',
+    'database' => 'phpminer',
+    'username' => 'phpminer',
+    'password' => '',
+);

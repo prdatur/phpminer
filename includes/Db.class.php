@@ -1,5 +1,5 @@
 <?php
-class Db extends SQLite3 {
+class Db {
     
     /**
      * Holds the singleton instance.
@@ -8,10 +8,28 @@ class Db extends SQLite3 {
      */
     public static $instance = null;
     
-    public function __construct() {
-        parent::__construct(SITEPATH . '/config/phpminer.db');
-    }
+    /**
+     * db object.
+     * 
+     * @var PDO
+     */
+    private $db = null;
     
+    public function __construct() {
+        include SITEPATH . '/config/config.php';
+        $this->db = new PDO($db['type'] . ':host=' . $db['server'] . ';dbname=' . $db['database'] . ';charset=utf8', $db['username'], $db['password']);
+        try {
+            if ($db['type'] === 'mysql') {
+                $this->db->exec("SET SESSION SQL_MODE=ANSI_QUOTES;");
+            }
+            if ($db['type'] === 'mssql') {
+                $this->db->exec("SET QUOTED_IDENTIFIER ON;");
+            }
+        } catch (Exception $ex) {
+
+        }
+    }
+      
     /**
      * Singleton.
      * 
@@ -26,61 +44,68 @@ class Db extends SQLite3 {
         return self::$instance;
     }
     
-    public function exec($query) {
-        $result = @parent::exec($query);
-        $check_counter = 0;
-        while(parent::lastErrorCode() === 5) {
-            if ($check_counter++ >= 5) {
-                throw new Exception('Could not connect to database, database is still locked');
-            }
-            sleep(1);
-            $result = @parent::exec($query); 
-        }
-        if (parent::lastErrorCode() !== 0) {
-            throw new Exception('Database error: ' . parent::lastErrorMsg());
-        }
-        return $result;
+    /**
+     * Alias of exec.
+     * 
+     * @param string $query
+     *   The query.
+     * @param array $args
+     *   The args. (Optional, default = array())
+     * 
+     * @return PDOStatement
+     */
+    public function exec($query, $args = array()) {
+        $statement = $this->db->prepare($query);
+        $statement->execute($args);
+        return $statement;
     }
     
-    public function query($query) {
-        $result = @parent::query($query);   
-        $check_counter = 0;
-        while(parent::lastErrorCode() === 5) {   
-            if ($check_counter++ >= 5) {
-                throw new Exception('Could not connect to database, database is still locked');
-            }
-            sleep(1);
-            $result = @parent::query($query);
-        }
-        if (parent::lastErrorCode() !== 0) {
-            throw new Exception('Database error: ' . parent::lastErrorMsg());
-        }
-        return $result;
+    /**
+     * Alias of exec.
+     * 
+     * @param string $query
+     *   The query.
+     * @param array $args
+     *   The args. (Optional, default = array())
+     * 
+     * @return PDOStatement
+     */
+    public function query($query, $args = array()) {
+        return $this->exec($query, $args);
     }
     
-    public function querySingle($query, $entire_row = false) {
-        $result = @parent::querySingle($query, $entire_row);
-        $check_counter = 0;
-        while(parent::lastErrorCode() === 5) {
-            if ($check_counter++ >= 5) {
-                throw new Exception('Could not connect to database, database is still locked');
+    /**
+     * 
+     * @param string $query
+     *   The query.
+     * @param boolean $entire_row
+     *   Set to true if all columns should be returned, else the value of the first found column is returned. (Optional, default = false)
+     * @param array $args
+     *   The args. (Optional, default = array())
+     * 
+     * @return mixed
+     *   The value of the first column if entire row is set to false, else all columns.
+     */
+    public function querySingle($query, $entire_row = false, $args = array()) {
+        $result = $this->exec($query, $args);
+        
+        $row = $result->fetch(PDO::FETCH_ASSOC);
+        if (!$entire_row) {
+            if (!is_array($row)) {
+                return $row;
             }
-            sleep(1);
-            $result = @parent::querySingle($query, $entire_row);
+            $row = reset($row);
         }
-        if (parent::lastErrorCode() !== 0) {
-            throw new Exception('Database error: ' . parent::lastErrorMsg());
-        }
-        return $result;
+        return $row;
     }
     
     public function begin() {
-        $this->exec("BEGIN");
+        $this->db->exec("BEGIN");
     }
     public function commit() {
-        $this->exec("COMMIT");
+        $this->db->exec("COMMIT");
     }
     public function rollback() {
-        $this->exec("ROLLBACK");
+        $this->db->exec("ROLLBACK");
     }
 }

@@ -126,7 +126,6 @@ class main extends Controller {
         }
         
         $need_redirect = null;
-        Db::getInstance()->exec("BEGIN");
         foreach ($params->settings AS $key => $val) {
             if ($key === 'enable_access_control' && !empty($val)) {
                 
@@ -138,7 +137,6 @@ class main extends Controller {
             }
             $this->config->set_value($key, $val);
         }
-        Db::getInstance()->exec("COMMIT");
         if ($need_redirect) {
             AjaxModul::return_code(AjaxModul::SUCCESS, array('url' => murl('access', 'index')));
         }

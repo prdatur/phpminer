@@ -117,9 +117,13 @@ class ErrorHandler
 				
 				$errMsgPlain .= $row['class'] . $row['type'] . $row['function'];
 			}
-			else {
+			elseif (isset($row['function'])) {
 				$errMsgPlain .= $row['function'];
 			}
+                        else {
+                            $errMsgPlain .= 'Unknown function or method';
+                        }
+                        
 			if (empty($row['args'])) {
 				$errMsgPlain .= ' (no args)';
 			}
