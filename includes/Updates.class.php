@@ -64,14 +64,16 @@ class Update {
             $json_config = json_decode(file_get_contents($config_file), true);
             if ($json_config !== false) {
 
-                $rigs = $json_config['rigs'];
-                unset($json_config['rigs']);
-                foreach ($json_config AS $k=> $v) {
-                    Db::getInstance()->exec("INSERT OR REPLACE INTO [config] ([value], [key], [type]) VALUES ('" . SQLite3::escapeString(json_encode($v)). "', '" . SQLite3::escapeString($k) . "', 'config')");
-                }
-                
-                foreach ($rigs AS $rig => $rig_data) {
-                    Db::getInstance()->exec("INSERT OR REPLACE INTO [config] ([value], [key], [type]) VALUES ('" . SQLite3::escapeString(json_encode($rig_data)). "', '" . SQLite3::escapeString($rig) . "', 'rigs')");
+                if (isset($json_config['rigs']) && is_array($json_config['rigs'])) {
+                    $rigs = $json_config['rigs'];
+                    unset($json_config['rigs']);
+                    foreach ($json_config AS $k=> $v) {
+                        Db::getInstance()->exec("INSERT OR REPLACE INTO [config] ([value], [key], [type]) VALUES ('" . SQLite3::escapeString(json_encode($v)). "', '" . SQLite3::escapeString($k) . "', 'config')");
+                    }
+
+                    foreach ($rigs AS $rig => $rig_data) {
+                        Db::getInstance()->exec("INSERT OR REPLACE INTO [config] ([value], [key], [type]) VALUES ('" . SQLite3::escapeString(json_encode($rig_data)). "', '" . SQLite3::escapeString($rig) . "', 'rigs')");
+                    }
                 }
             }
         }

@@ -46,7 +46,23 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
         
-        $this->set_cfg($params->rig, $params->gpu, array('load', 'min'), $params->min);
+        $gpus = array();
+        // Check for avg change
+        if ($params->gpu === -1) {
+            foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                if (!isset($gpu['GPU'])) {
+                    continue;
+                }
+                $gpus[] = $gpu['GPU'];
+            }
+        }
+        else {
+            $gpus[] = $params->gpu;
+        }
+
+        foreach ($gpus AS $gpu_id) {
+            $this->set_cfg($params->rig, $gpu_id, array('load', 'min'), $params->min);
+        }
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
     
@@ -60,7 +76,24 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
 
-        $this->set_cfg($params->rig, $params->gpu, array('hw', 'max'), $params->max);
+        $gpus = array();
+        // Check for avg change
+        if ($params->gpu === -1) {
+            foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                if (!isset($gpu['GPU'])) {
+                    continue;
+                }
+                $gpus[] = $gpu['GPU'];
+            }
+        }
+        else {
+            $gpus[] = $params->gpu;
+        }
+
+        foreach ($gpus AS $gpu_id) {
+            $this->set_cfg($params->rig, $gpu_id, array('hw', 'max'), $params->max);
+        }
+        
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
 
@@ -76,8 +109,24 @@ class gpu extends Controller {
         if (!$params->is_valid()) {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
+        
+        $gpus = array();
+        // Check for avg change
+        if ($params->gpu === -1) {
+            foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                if (!isset($gpu['GPU'])) {
+                    continue;
+                }
+                $gpus[] = $gpu['GPU'];
+            }
+        }
+        else {
+            $gpus[] = $params->gpu;
+        }
 
-        $this->set_cfg($params->rig, $params->gpu, array('hashrate', 'min'), $params->min);
+        foreach ($gpus AS $gpu_id) {
+            $this->set_cfg($params->rig, $gpu_id, array('hashrate', 'min'), $params->min);
+        }
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
 
@@ -98,8 +147,24 @@ class gpu extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
         }
         
-        $this->set_cfg($params->rig, $params->gpu, array('temperature', 'min'), $params->min);
-        $this->set_cfg($params->rig, $params->gpu, array('temperature', 'max'), $params->max);
+        $gpus = array();
+        // Check for avg change
+        if ($params->gpu === -1) {
+            foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                if (!isset($gpu['GPU'])) {
+                    continue;
+                }
+                $gpus[] = $gpu['GPU'];
+            }
+        }
+        else {
+            $gpus[] = $params->gpu;
+        }
+
+        foreach ($gpus AS $gpu_id) {
+            $this->set_cfg($params->rig, $gpu_id, array('temperature', 'min'), $params->min);
+            $this->set_cfg($params->rig, $gpu_id, array('temperature', 'max'), $params->max);
+        }
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
 
@@ -121,11 +186,28 @@ class gpu extends Controller {
         }
         
         try {
+            
             // Just get the api to first check if all connections are fine. 
             $this->get_rpc($params->rig);
             
-            $this->get_rpc($params->rig)->set_gpufan($params->gpu, $params->speed);
-            $this->get_rpc($params->rig)->set_config('gpu-fan', $params->speed, $params->gpu, $this->get_rpc($params->rig));
+            $gpus = array();
+            // Check for avg change
+            if ($params->gpu === -1) {
+                foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                    if (!isset($gpu['GPU'])) {
+                        continue;
+                    }
+                    $gpus[] = $gpu['GPU'];
+                }
+            }
+            else {
+                $gpus[] = $params->gpu;
+            }
+            
+            foreach ($gpus AS $gpu_id) {
+                $this->get_rpc($params->rig)->set_gpufan($gpu_id, $params->speed);
+                $this->get_rpc($params->rig)->set_config('gpu-fan', $params->speed, $gpu_id);
+            }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -155,8 +237,24 @@ class gpu extends Controller {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
             
-            $this->get_rpc($params->rig)->set_gpuintensity($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('intensity', $params->value, $params->gpu, $this->get_rpc($params->rig));
+            $gpus = array();
+            // Check for avg change
+            if ($params->gpu === -1) {
+                foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                    if (!isset($gpu['GPU'])) {
+                        continue;
+                    }
+                    $gpus[] = $gpu['GPU'];
+                }
+            }
+            else {
+                $gpus[] = $params->gpu;
+            }
+            
+            foreach ($gpus AS $gpu_id) {
+                $this->get_rpc($params->rig)->set_gpuintensity($gpu_id, $params->value);
+                $this->get_rpc($params->rig)->set_config('intensity', $params->value, $gpu_id);
+            }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -186,8 +284,24 @@ class gpu extends Controller {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
             
-            $this->get_rpc($params->rig)->set_gpuvddc($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('gpu-vddc', $params->value, $params->gpu, $this->get_rpc($params->rig));
+            $gpus = array();
+            // Check for avg change
+            if ($params->gpu === -1) {
+                foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                    if (!isset($gpu['GPU'])) {
+                        continue;
+                    }
+                    $gpus[] = $gpu['GPU'];
+                }
+            }
+            else {
+                $gpus[] = $params->gpu;
+            }
+            
+            foreach ($gpus AS $gpu_id) {
+                $this->get_rpc($params->rig)->set_gpuvddc($gpu_id, $params->value);
+                $this->get_rpc($params->rig)->set_config('gpu-vddc', $params->value, $gpu_id);
+            }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -201,7 +315,6 @@ class gpu extends Controller {
         $params->add_required_param('rig', PDT_STRING);
         $params->add_required_param('gpu', PDT_INT);
         $params->add_required_param('value', PDT_INT);
-
         $params->fill();
 
         if (!$params->is_valid(true)) {
@@ -213,10 +326,27 @@ class gpu extends Controller {
         }
         
         try {
-            if ($params->value === 1) {
-                $this->get_rpc($params->rig)->gpuenable($params->gpu);
-            } else {
-                $this->get_rpc($params->rig)->gpudisable($params->gpu);
+            
+            $gpus = array();
+            // Check for avg change
+            if ($params->gpu === -1) {
+                foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                    if (!isset($gpu['GPU'])) {
+                        continue;
+                    }
+                    $gpus[] = $gpu['GPU'];
+                }
+            }
+            else {
+                $gpus[] = $params->gpu;
+            }
+            
+            foreach ($gpus AS $gpu_id) {
+                if ($params->value === 1) {
+                    $this->get_rpc($params->rig)->gpuenable($gpu_id);
+                } else {
+                    $this->get_rpc($params->rig)->gpudisable($gpu_id);
+                }
             }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
@@ -249,8 +379,24 @@ class gpu extends Controller {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
             
-            $this->get_rpc($params->rig)->set_gpumem($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('gpu-memclock', $params->value, $params->gpu, $this->get_rpc($params->rig));
+            $gpus = array();
+            // Check for avg change
+            if ($params->gpu === -1) {
+                foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                    if (!isset($gpu['GPU'])) {
+                        continue;
+                    }
+                    $gpus[] = $gpu['GPU'];
+                }
+            }
+            else {
+                $gpus[] = $params->gpu;
+            }
+            
+            foreach ($gpus AS $gpu_id) {
+                $this->get_rpc($params->rig)->set_gpumem($gpu_id, $params->value);
+                $this->get_rpc($params->rig)->set_config('gpu-memclock', $params->value, $gpu_id);
+            }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
@@ -282,8 +428,24 @@ class gpu extends Controller {
             // Just get the api to first check if all connections are fine.
             $this->get_rpc($params->rig);
             
-            $this->get_rpc($params->rig)->set_gpuengine($params->gpu, $params->value);
-            $this->get_rpc($params->rig)->set_config('gpu-engine', $params->value, $params->gpu, $this->get_rpc($params->rig));
+            $gpus = array();
+            // Check for avg change
+            if ($params->gpu === -1) {
+                foreach ($this->get_rpc($params->rig)->get_devices() AS $gpu) {
+                    if (!isset($gpu['GPU'])) {
+                        continue;
+                    }
+                    $gpus[] = $gpu['GPU'];
+                }
+            }
+            else {
+                $gpus[] = $params->gpu;
+            }
+            
+            foreach ($gpus AS $gpu_id) {
+                $this->get_rpc($params->rig)->set_gpuengine($gpu_id, $params->value);
+                $this->get_rpc($params->rig)->set_config('gpu-engine', $params->value, $gpu_id);
+            }
             AjaxModul::return_code(AjaxModul::SUCCESS);
         } catch (APIRequestException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());

@@ -1,7 +1,58 @@
 <?php
+
 if (!defined('SITEPATH')) {
-        define('SITEPATH', dirname(__FILE__));
+    define('SITEPATH', dirname(__FILE__));
 }
+$phpminer_request_is_ajax = false;
+require 'includes/ErrorHandler.class.php';
+set_error_handler(array('ErrorHandler', 'cc_error_handler'), E_ALL);
+register_shutdown_function("fatal_handler");
+
+function fatal_handler() {
+    $errfile = "unknown file";
+    $errstr = "shutdown";
+    $errno = E_CORE_ERROR;
+    $errline = 0;
+
+
+    $error = error_get_last();
+    $stack = array();
+    if (function_exists('xdebug_get_function_stack')) {
+        foreach (array_slice(xdebug_get_function_stack(), 1, -1) as $row) {
+            if (isset($row['class'])) {
+                $row['type'] = isset($row['type']) && $row['type'] === 'dynamic' ? '->' : '::';
+            }
+            if (isset($row['params'])) {
+                $row['args'] = $row['params'];
+            }
+            $stack[] = $row;
+        }
+    }
+    
+    if ($error !== NULL) {
+        $errno = $error["type"];
+        $errfile = $error["file"];
+        $errline = $error["line"];
+        $errstr = $error["message"];
+    }
+    global $phpminer_request_is_ajax;
+    $error = ErrorHandler::cc_error_handler($errno, $errstr, $errfile, $errline, "", true, $stack);
+    
+    if ($error === true) {
+        return;
+    }
+    if ($phpminer_request_is_ajax) {
+        $code = 560;
+        $data = sys_get_temp_dir() . '/phpminer_' . uniqid() . '.bugreport';
+        $return = array("code" => $code, "desc" => null, "data" => $data);
+        file_put_contents($data, $error);
+        echo json_encode($return);
+        die();
+    }
+    echo $error;
+    die();
+}
+
 require 'includes/common.php';
 
 
@@ -29,17 +80,17 @@ $url_decoded_request_array = parse_url($request_uri);
 
 // Get request type. .json is handled as json, anything else as html.
 if (preg_match("/\.json$/", $url_decoded_request_array['path'])) {
-    
+    $phpminer_request_is_ajax = true;
+
     // We only need ajax within ajax requests.
     include './includes/AjaxModul.php';
-    
+
     // Remove the .json ending.
     $url_decoded_request_array['path'] = preg_replace("/\.json$/", "", $url_decoded_request_array['path']);
-    
+
     // Set type to json / ajax.
     $set_request_type = 'json';
-}
-else {
+} else {
     // Set type to normal html.
     $set_request_type = 'html';
 }
@@ -50,7 +101,7 @@ $params = explode("/", $url_decoded_request_array['path']);
 // Remove special chars.
 foreach ($params AS &$param) {
     $param = preg_replace("/\W/", "", $param);
-} 
+}
 // Get the controller.
 array_shift($params);
 if (empty($params[0])) {
@@ -75,7 +126,7 @@ $controller = new $controller_name();
 try {
     // Set request type.
     $controller->set_request_type($set_request_type);
-        
+
     // Get the controller action.
     array_shift($params);
     if (!isset($params[0])) {
@@ -87,9 +138,8 @@ try {
     // Check if controller action exists.
     if (!method_exists($controller, $method)) {
         $controller->no_such_method();
-    }
-    else {
-    
+    } else {
+
         // Provide the view the controller and action name.
         $controller->set_controller_name($controller_name);
         $controller->set_action_name($method);
@@ -100,11 +150,9 @@ try {
         // Call the controller action with optional additional params.
         call_user_func_array(array($controller, $method), $params);
     }
-
-}
-catch (Exception $e) {
+} catch (Exception $e) {
     if ($set_request_type === 'html') {
-        
+
         if ($e instanceof AccessException) {
             $controller->fatal_error($e->getMessage(), true);
         }
@@ -119,8 +167,7 @@ catch (Exception $e) {
                 $controller->add_message($e->getMessage(), Controller::MESSAGE_TYPE_ERROR);
                 break;
         }
-    }
-    else {
+    } else {
         AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $e->getMessage());
     }
 }

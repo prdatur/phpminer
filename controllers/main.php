@@ -16,6 +16,7 @@ class main extends Controller {
             throw new AccessException('You don\'t have access to this action');
         }
         
+        
         $conf = $this->config->get_config();
         
         if ($this->access_control->has_permission(AccessControl::PERM_CHANGE_MAIN_SETTINGS)) {
@@ -49,6 +50,28 @@ class main extends Controller {
         
     }
 
+    /**
+     * Send a bugreport.
+     */
+    public function bugreport() {
+        $params = new ParamStruct();
+        $params->add_required_param('bugreport', PDT_STRING);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
+        }
+        
+        if (!file_exists($params->bugreport)) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, 'Bugreport file not found');
+        }
+        
+        $http = new HttpClient();
+        $http->do_post('https://www.phpminer.com/bugreport.php', array(
+            'bugreport' => base64_encode(file_get_contents($params->bugreport))
+        ), true);
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
     /**
      * Ajax request to switch rig collapse
      */
@@ -167,7 +190,7 @@ class main extends Controller {
                     // Setup the pool for cgminer.
                     $user = "";
                     if (!empty($pool['rig_based'])) {
-                        $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$params->rig]['shortname']);
+                        $user = '.rb' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$params->rig]['shortname']);
                     }
                     
                     // Ad this pool.
@@ -267,7 +290,7 @@ class main extends Controller {
                 // Add the pool.
                 $user = "";
                 if (!empty($pool['rig_based'])) {
-                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$current_rig]['shortname']);
+                    $user = '.rb' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$current_rig]['shortname']);
                 }
                 $this->get_rpc($current_rig)->addpool($pool['url'], $pool['user'] . $user, $pool['pass']);
                 usleep(100000); // Wait 100 milliseconds to let the pool to be alived.
@@ -306,7 +329,7 @@ class main extends Controller {
                 // Add the pool.
                 $user = "";
                 if (!empty($pool['rig_based'])) {
-                    $user = '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$current_rig]['shortname']);
+                    $user = '.rb' . preg_replace("/[^a-zA-Z0-9]/", "", $this->config->rigs[$current_rig]['shortname']);
                 }
                 $cgminer_config_pools[] = array(
                     'url' => $pool['url'],
@@ -417,11 +440,11 @@ class main extends Controller {
         else {
             $mepp = $this->config->pager_mepp;
             if (empty($mepp)) {
-                $mepp = 1;
+                $mepp = 5;
             }
             $rig_js_data = $this->get_device_data(true, 1, $mepp);
         }
-
+        
         // Get the pool uuid which is currently in use.
         $this->js_config('pool_groups', $this->pool_config->get_groups());
         $this->js_config('config', $this->config->get_config());

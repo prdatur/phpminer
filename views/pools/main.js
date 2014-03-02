@@ -241,7 +241,7 @@ Soopfw.behaviors.pools_main = function() {
         dialog += '            <input type="text" id="quota" value="1" style="position: absolute;margin-left: 210px;width: 300px;"></input>';
         dialog += '        </div>';
         dialog += '        <div class="form-element" id="rig_based_elm">';
-        dialog += '            <label for="rig_based">Enable rig-based usernames:<i data-toggle="tooltip" title="When you enable this and switch with one rig to this pool, the username which is used for this pool will be appended with \'_rb_{rigname}\' where {rigname} will be replaced with the rigname. Notice all characters which are not a-z, A-Z or 0-9 will be removed. This is helpfull when using mining pools which have VARDIF activated. For example you have 2 rigs first name is: \'My rig 5\', second \'My other rig 1\' and you provide the userame \'user.myrigs\'. When you switch with rig \'My rig 5\' the used username will be \'user.myrigs_rb_myrig5\' now you also switch with  \'My other rig 1\' then the used username will be \'user.myrigs_rb_myotherrig1\'. Don\'t be afraid, after you activate the checkbox all required usernames will be displayed." class="icon-help-circled"></i></label>';
+        dialog += '            <label for="rig_based">Enable rig-based usernames:<i data-toggle="tooltip" title="When you enable this and switch with one rig to this pool, the username which is used for this pool will be appended with \'.rb{rigname}\' where {rigname} will be replaced with the rigname. Notice all characters which are not a-z, A-Z or 0-9 will be removed. This is helpfull when using mining pools which have VARDIF activated. For example you have 2 rigs first name is: \'My rig 5\', second \'My other rig 1\' and you provide the userame \'user.myrigs\'. When you switch with rig \'My rig 5\' the used username will be \'user.myrigs.rbmyrig5\' now you also switch with  \'My other rig 1\' then the used username will be \'user.myrigs.rbmyotherrig1\'. Don\'t be afraid, after you activate the checkbox all required usernames will be displayed." class="icon-help-circled"></i></label>';
         dialog += '            <input type="checkbox" id="rig_based" value="Enabled" style="position: absolute;margin-left: 210px;width: 16px;height: 16px;margin-top: 10px;"></input>';
         dialog += '        </div>';
         dialog += '    </div>';
@@ -289,7 +289,7 @@ Soopfw.behaviors.pools_main = function() {
                         var help = $('<ul></ul>');
                         
                         $.each(phpminer.settings.rig_names, function(k, v) {
-                            help.append('<li>For rig "<b>' + v + '</b>" the required usernames is: "<b>' + $('#username').val() + '_rb_' +  v.replace(/[^a-zA-Z0-9]/, "") + '</b>"</li>');
+                            help.append('<li>For rig "<b>' + v + '</b>" the required usernames is: "<b>' + $('#username').val() + '.rb' +  v.replace(/[^a-zA-Z0-9]/, "") + '</b>"</li>');
                         });
                         help_div.append(help);
                         $('#rig_based_elm').append(help_div);

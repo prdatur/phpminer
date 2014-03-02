@@ -68,10 +68,13 @@ table:not(.layout_table).device_list td.disabled {
 }
 .pool_switching_container label {
     margin-top: 3px;
+    float: right; 
+    margin-left: 10px;
 }
 .pool_switching_container select {
     margin-bottom: 5px;
     padding: 2px 5px;
+    float: right;
 }
 
 .rig {
@@ -100,4 +103,11 @@ table:not(.layout_table).device_list td.disabled {
 
 .swap_rig {
     cursor: pointer;
+}
+
+div.rig > div.rig_header {
+    float: left;
+}
+div.rig > div > h2 {
+    display: inline;
 }

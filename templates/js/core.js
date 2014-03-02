@@ -43,6 +43,16 @@ $.extend(Soopfw, {
 		progressbars: {}
 	},
 
+        /**
+         * Creates and returns an icon as an jquery object.
+         * 
+         * @return {JQuery}
+         *   Returns the icon jquery object.
+         */
+        create_icon: function(icon) {
+            return jQuery('<i>', {class: 'icon-' + icon});
+        },
+        
 	/**
 	 * Holds all bindings for a specified tab.
 	 */
@@ -246,7 +256,7 @@ function add_rig_dialog(add, data) {
     dialog += '            <input type="text" name="name" id="name" value="' + ((data.name !== undefined) ? data.name : 'localhost') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';
     dialog += '        </div>';
     dialog += '        PHPMiner is able to add pools with "rig based" usernames. When using such pool, it uses not directly the username provided within the pool, instead it uses the username';
-    dialog += '        and append _rb_{shortname}. The setting below will allow you to have longer rig name and short rig-based usernames. Please provide only letters a-z, A-Z and numbers from 0-9.';
+    dialog += '        and append .rb{shortname}. The setting below will allow you to have longer rig name and short rig-based usernames. Please provide only letters a-z, A-Z and numbers from 0-9.';
     dialog += '        <div class="form-element">';
     dialog += '            <label for="name">Shortname:</label>';
     dialog += '            <input type="text" name="shortname" id="shortname" value="' + ((data.shortname !== undefined) ? data.shortname : 'local') + '" style="position: absolute;margin-left: 210px;width: 300px;"/> ';

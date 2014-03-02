@@ -278,8 +278,8 @@ class pools extends Controller {
             ));
         }
 
-        if (preg_match("/_rb_/", $params->user)) {
-            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'Due to the internal system a worker username can not include the substring "_rb_".');
+        if (preg_match("/.rb/", $params->user)) {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'Due to the internal system a worker username can not include the substring ".rb".');
         }
         if ($params->group === 'donate') {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'You can not add pools to donate group.');
@@ -299,13 +299,13 @@ class pools extends Controller {
                 }
                 
                 $user = preg_replace("/[^a-zA-Z0-9]/", "", $rig_data['shortname']);
-                $result = $this->pool_config->check_pool($params->url, $params->user . '_rb_' . $user, $params->pass);
+                $result = $this->pool_config->check_pool($params->url, $params->user . '.rb' . $user, $params->pass);
         
                 if ($result !== true) {
                     AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, array(
                         'url' => $params->url,
-                        'user' => $params->user . '_rb_' . $user,
-                    ), true, $params->user . '_rb_' . $user . ' => ' . $result);
+                        'user' => $params->user . '.rb' . $user,
+                    ), true, $params->user . '.rb' . $user . ' => ' . $result);
                 }
             }
         }
@@ -329,7 +329,7 @@ class pools extends Controller {
             try {
                 if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group) {
                     if ($params->rig_based) {                
-                        $user = $params->user . '_rb_' . preg_replace("/[^a-zA-Z0-9]/", "", $rig_data['shortname']);
+                        $user = $params->user . '.rb' . preg_replace("/[^a-zA-Z0-9]/", "", $rig_data['shortname']);
                     }
                     else {
                         $user = $params->user;

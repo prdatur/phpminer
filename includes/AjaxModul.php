@@ -27,6 +27,7 @@ abstract class AjaxModul
         const ERROR_DEFAULT = 501;
         const ERROR_MODULE_NOT_FOUND = 502;
         const ERROR_SECURITY_LOCK = 550;
+        const ERROR_AJAX_ERROR = 560;
 
         const ERROR_NOT_LOGGEDIN = 602;
         const ERROR_NO_RIGHTS = 601;
@@ -51,6 +52,14 @@ abstract class AjaxModul
          * @return array the returning array with format array("code" => $code, "desc" => $desc, "data" => $data)
          */
         static function return_code($code, $data = null, $die = true, $desc = "") {
+            
+                $current_output = ob_get_clean();
+                if (!empty($current_output)) {
+                    $code = AjaxModul::ERROR_AJAX_ERROR;
+                    $data = sys_get_temp_dir() . '/phpminer_' . uniqid() . '.bugreport';
+                    $die = true;
+                    file_put_contents($data, $current_output);
+                }
                 switch ((int)$code) {
                         default: $return = array("code" => $code, "desc" => $desc, "data" => $data);
                 }

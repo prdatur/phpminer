@@ -190,7 +190,7 @@ class PoolConfig {
         if (empty($user)) {
             return md5($url);
         }
-        $user = preg_replace("/_rb_[a-zA-Z0-9]+$/", "", $user);
+        $user = preg_replace("/.rb[a-zA-Z0-9]+$/", "", $user);
         return md5($url . '|' . $user);
     }
         

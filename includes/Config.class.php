@@ -643,7 +643,7 @@ class Config {
             return;
         }
 
-        if (isset($value['rigs']) && $type === 'config') {
+        if (is_array($value) && isset($value['rigs']) && $type === 'config') {
             $this->rigs = $value['rigs'];
             unset($value['rigs']);
         }
