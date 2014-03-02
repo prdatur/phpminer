@@ -68,7 +68,10 @@ class CGMinerAPI {
                 $this->socket = null;
                 throw new APIException(socket_strerror(socket_last_error()), APIException::CODE_SOCKET_CREATE_ERROR);
             }
-            @stream_set_timeout ($this->socket, $this->timeout);
+            
+            @socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
+            @socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
+        
             $res = @socket_connect($this->socket , $this->remote_ip, $this->remote_port);
             if ($res === false) {
                 @socket_close($this->socket);

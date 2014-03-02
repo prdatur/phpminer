@@ -33,19 +33,17 @@ class PHPMinerRPC extends HttpClient {
      *   The value to be set.
      * @param int $gpu
      *   The gpu. If provided this is a gpu specific value. (optional, default = null)
-     * @param PHPMinerRPC $api
-     *   The cgminer api which is needed when gpu is set (optional, default = null)
      * 
      * @return boolean|string
      *   True on success, else the error string.
      */
-    public function set_config($key, $val, $gpu = null, $api = null) {
+    public function set_config($key, $val, $gpu = null) {
         
         $devices = 0;
         $current_values = array();
         if ($gpu !== null) {
             $current_values = array();
-            $device_configs = $api->get_devices();
+            $device_configs = $this->get_devices();
             foreach ($device_configs AS $info) {
                 if (!isset($info['GPU'])) {
                     continue;
@@ -891,7 +889,6 @@ class PHPMinerRPC extends HttpClient {
         );
         
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        @stream_set_timeout ($socket, $this->timeout);
         if ($socket === false) {
             return array(
                 'error' => 1,
@@ -899,6 +896,9 @@ class PHPMinerRPC extends HttpClient {
             );
         }
         
+        @socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
+        @socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
+
         $result = @socket_connect($socket, $this->ip, $this->port);
         if ($result === false) {
             return array(
@@ -934,7 +934,7 @@ class PHPMinerRPC extends HttpClient {
     function read_buffer($socket) {
         $buf = '';
         $read_buf = '';
-        while (0 !== ($bytes = socket_recv($socket, $buf, 2048, MSG_WAITALL))) {
+        while (0 !== ($bytes = socket_recv($socket, $buf, 16, MSG_WAITALL))) {
             $read_buf .= $buf;
         }
         return $read_buf;
