@@ -663,6 +663,7 @@ function RigDetails(overview, rig, rig_data) {
                     'Rejected': 0,
                     'Hardware Errors': 0,
                     'Fan Percent': 0,
+                    'Fan Speed': 0,
                     'GPU Clock': 0,
                     'Memory Clock': 0,
                     'GPU Voltage': 0,
@@ -716,6 +717,7 @@ function RigDetails(overview, rig, rig_data) {
                 avg_data['gpu_info']['Rejected'] += parseFloat(device_data['gpu_info']['Rejected']);
                 avg_data['gpu_info']['Hardware Errors'] += parseFloat(device_data['gpu_info']['Hardware Errors']);
                 avg_data['gpu_info']['Fan Percent'] += parseFloat(device_data['gpu_info']['Fan Percent']);
+                avg_data['gpu_info']['Fan Speed'] += parseFloat(device_data['gpu_info']['Fan Speed']);
                 avg_data['gpu_info']['GPU Clock'] += parseFloat(device_data['gpu_info']['GPU Clock']);
                 avg_data['gpu_info']['Memory Clock'] += parseFloat(device_data['gpu_info']['Memory Clock']);
                 avg_data['gpu_info']['GPU Voltage'] += parseFloat(device_data['gpu_info']['GPU Voltage']);
@@ -760,6 +762,7 @@ function RigDetails(overview, rig, rig_data) {
                 avg_data['gpu_info']['MHS 5s'] = maxRound(avg_data['gpu_info']['MHS 5s']);
                 avg_data['gpu_info']['MHS av'] = maxRound(avg_data['gpu_info']['MHS av']);
                 avg_data['gpu_info']['Fan Percent'] = maxRound(avg_data['gpu_info']['Fan Percent']);
+                avg_data['gpu_info']['Fan Speed'] = maxRound(avg_data['gpu_info']['Fan Speed']);
                 avg_data['gpu_info']['GPU Clock'] = maxRound(avg_data['gpu_info']['GPU Clock']);
                 avg_data['gpu_info']['Memory Clock'] = maxRound(avg_data['gpu_info']['Memory Clock']);
                 avg_data['gpu_info']['GPU Voltage'] = maxRound(avg_data['gpu_info']['GPU Voltage'], 3);
@@ -1316,6 +1319,7 @@ function RigDevice(overview, rig, device_data) {
             },
             hw: parseFloat(data['gpu_info']['Hardware Errors']),
             fan: parseFloat(data['gpu_info']['Fan Percent']),
+            fan_speed: parseFloat(data['gpu_info']['Fan Speed']),
             engine: parseFloat(data['gpu_info']['GPU Clock']),
             memory: parseFloat(data['gpu_info']['Memory Clock']),
             voltage: parseFloat(data['gpu_info']['GPU Voltage']),
@@ -1518,7 +1522,7 @@ function RigDevice(overview, rig, device_data) {
         // Generate fan td
         this.td_fan = $('<td>', {class: 'info_fan ' + css_clickable})
             .off('value_change').on('value_change', function() {
-                $(this).html("").append(backreference.get_config(['fan'], 0) + ' %');
+                $(this).html("").append(backreference.get_config(['fan'], 0) + ' % (' + backreference.get_config(['fan_speed'], 0) + ' RPM)');
             })
             .off('click').on('click', function() {
                 getFanChangeDialog(data['ID'], data['Model']);
