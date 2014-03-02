@@ -37,7 +37,7 @@ Requirements for PHPMiner
 * PHP 5.3+
  * php5-curl (for notifications with rapidpush and/or custom post)
  * php5-json
- * php5-sqlite
+* mysql-server
 
 The original CGMiner v3.7.2 or SGMiner >= 4.1.0 is required. 
 However some API commands are slowing down PHPMiner experience like switching pools. With the original CGMiner/SGMiner, PHPMiner have to wait that each device send a accepted share to the new pool after switching pool groups, else it can not determine that the pool switch succeed.
@@ -107,6 +107,11 @@ It's just a little help to let me know that you want updates in the future and t
 
 How to setup.
 ============
+
+## Creating database.
+
+Please create a database and a user which has access to read / write data and create tables.
+After you have created them, copy the file **config/config.php.dist** to **config/config.php** and fill in your database credentials.
 
 ## Installing cronjob
 
