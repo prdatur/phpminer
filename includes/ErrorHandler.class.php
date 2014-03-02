@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Provides a class to handle errors
  *
@@ -26,8 +25,9 @@ class ErrorHandler
 	 * @return string the error string.
 	 */
 	public static function cc_error_handler($errno = E_NOTICE, $errstr = "", $errfile = "", $errline = "", $variables = "", $from_shutdown = false, $stack = null) {
+                global $phpminer_error_handler_messages;
                 if (error_reporting() == 0 || (($errno & error_reporting()) == 0 )) {
-			return;
+			return false;
 		}
                 
 		// check if function has been called by an exception
@@ -83,7 +83,7 @@ class ErrorHandler
 		// create error message
 		if (isset($errorType[$errno])) {
                         if (isset($ignoreErrorType[$errno])) {
-                           return true;
+                           return false;
                         }
 			$err = $errorType[$errno];
 		}
@@ -139,32 +139,28 @@ class ErrorHandler
 			$errMsgPlain .= "<br>\n";
 		}
 
-                ob_get_clean();
+                
                 if ($from_shutdown) {
-                    return $errMsgPlain;
+                    ob_get_clean();
+                    ob_start();
+                    $phpminer_error_handler_messages[] = $errMsgPlain;
+                    return $phpminer_error_handler_messages;
                 }
+                
 		if (ini_get("display_errors")) {
                     global $phpminer_request_is_ajax;
                     if (!$phpminer_request_is_ajax) {
-                        echo '<div style="background-color: white;">' . str_replace(" ", "&nbsp;&nbsp;&nbsp;&nbsp;", $errMsgPlain) . '</div>';
+                        $phpminer_error_handler_messages[] = '<div style="background-color: white;">' .  $errMsgPlain . '</div>';
                     }
                     else {
-                        echo $errMsgPlain;
+                        $phpminer_error_handler_messages[] = $errMsgPlain;
                     }
 		}
 
 		if (ini_get('log_errors')) {
 			error_log($errMsgPlain);
 		}
-
-                switch ($errno) {
-                        case E_ERROR:
-                        case E_USER_ERROR:
-
-                                exit(1);
-                                break;
-                }
-		return true;
+		return $phpminer_error_handler_messages;
 	}
 
 	/**

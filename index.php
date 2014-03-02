@@ -1,12 +1,12 @@
 <?php
-
+ob_start();
+$phpminer_error_handler_messages = array();
 if (!defined('SITEPATH')) {
     define('SITEPATH', dirname(__FILE__));
 }
 $phpminer_request_is_ajax = false;
 require 'includes/ErrorHandler.class.php';
 set_error_handler(array('ErrorHandler', 'cc_error_handler'), E_ALL);
-register_shutdown_function("fatal_handler");
 
 function fatal_handler() {
     $errfile = "unknown file";
@@ -35,10 +35,12 @@ function fatal_handler() {
         $errline = $error["line"];
         $errstr = $error["message"];
     }
-    global $phpminer_request_is_ajax;
-    $error = ErrorHandler::cc_error_handler($errno, $errstr, $errfile, $errline, "", true, $stack);
+    global $phpminer_request_is_ajax, $phpminer_error_handler_messages;
     
-    if ($error === true) {
+    ErrorHandler::cc_error_handler($errno, $errstr, $errfile, $errline, "", true, $stack);
+    $error = $phpminer_error_handler_messages;
+    
+    if (empty($error)) {
         return;
     }
     if ($phpminer_request_is_ajax) {
@@ -52,6 +54,7 @@ function fatal_handler() {
     echo $error;
     die();
 }
+register_shutdown_function("fatal_handler");
 
 require 'includes/common.php';
 

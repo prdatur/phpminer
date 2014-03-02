@@ -52,8 +52,9 @@ abstract class AjaxModul
          * @return array the returning array with format array("code" => $code, "desc" => $desc, "data" => $data)
          */
         static function return_code($code, $data = null, $die = true, $desc = "") {
-            
+                global $phpminer_error_handler_messages;
                 $current_output = ob_get_clean();
+                ob_start();
                 if (!empty($current_output)) {
                     $code = AjaxModul::ERROR_AJAX_ERROR;
                     $data = sys_get_temp_dir() . '/phpminer_' . uniqid() . '.bugreport';
@@ -67,7 +68,9 @@ abstract class AjaxModul
                         $die = true;
                 }
                 if ($die == true) {
-                        echo json_encode($return);
+                        if (empty($phpminer_error_handler_messages)) {
+                            echo json_encode($return);
+                        }
                         die();
                 }
                 return $return;
