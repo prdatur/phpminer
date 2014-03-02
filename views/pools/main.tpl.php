@@ -11,6 +11,9 @@
                 <a data-toggle="collapse" href="#collapse_<?php echo preg_replace("/[^a-zA-Z0-9]/", "_", $group); ?>">
                     Group: <?php echo $group; ?>
                 </a>
+                <?php if ($group !== 'default'): ?>
+                <a href="javascript:void(0)" class="edit-group" data-group="<?php echo $group; ?>" data-strategy="<?php echo $this->pool_config->get_strategy($group); ?>" data-rotate_period="<?php echo $this->pool_config->get_period($group); ?>"><i class="icon-edit"></i>Edit</a>
+                <?php endif; ?>
             </h4>
         </div>
         <div id="collapse_<?php echo preg_replace("/[^a-zA-Z0-9]/", "_", $group); ?>" class="panel-collapse collapse in">

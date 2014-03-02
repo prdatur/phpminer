@@ -409,6 +409,61 @@ class pools extends Controller {
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
 
+    public function change_group() {
+        $params = new ParamStruct();
+        $params->add_required_param('old_group', PDT_STRING);
+        $params->add_required_param('group', PDT_STRING);
+        $params->add_param('strategy', PDT_INT, 0);
+        $params->add_param('rotate_period', PDT_INT, 0);
+        $params->add_validator('old_group', new FunctionValidator('You can not change the default group', function($value) {
+            return $value != 'default';
+        }));
+        $params->add_validator('group', new FunctionValidator('This group already exists.', function($value) {
+            $pool_config = new PoolConfig();
+            return !$pool_config->group_exists($value);
+        }));
+        $params->fill();
+        
+        $this->load_pool_config();
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
+        if (!$params->is_valid(true)) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER, null, true, implode("\n", $params->get_errors()));
+        }
+        
+        if ($params->group === 'donate') {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'donate group is a special one, you can not add it.');
+        }
+        
+        $rigs_in_use = array();
+        foreach ($this->config->rigs AS $rig => $rig_data) {
+            if (!empty($rig_data['disabled'])) {
+                continue;
+            }
+            try {
+                if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group)  {
+                    $rigs_in_use[] = ' - ' . $rig;
+                }
+            }
+            catch(Exception $e) {
+                continue;
+            }
+        }
+        
+        if (!empty($rigs_in_use)) {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, "You can not change this group because there exist rig's which currently have this group active.\n\nRig's which have this group active:\n" . implode("\n", $rigs_in_use));
+        }
+        
+        $result = $this->pool_config->update_group($params->old_group, $params->group, $params->strategy, $params->rotate_period);
+        if ($result !== true) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, $result);
+        }
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
+    
     public function add_group() {
         $params = new ParamStruct();
         $params->add_required_param('group', PDT_STRING);

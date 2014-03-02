@@ -393,6 +393,32 @@ class PoolConfig {
     }
     
     /**
+     * Update a group.
+     * 
+     * @param string $old_group
+     *   The old group name.
+     * @param string $group
+     *   The new group name.
+     * @param int $strategy
+     *   The group strategy (optional, default = 0)
+     * @param int $period
+     *   The rotate period in minutes for pool strategy 2:Rotate (optional, default = 0)
+     * 
+     * @return boolean|string
+     *   Boolean true if group could be added, else the error as a string.
+     */
+    public function update_group($old_group, $group, $strategy = 0, $period = 0) {
+        if ($this->group_exists($old_group)) {
+            Db::getInstance()->exec("UPDATE [pool_groups] SET [name] = '" . SQLite3::escapeString($group) . "', [strategy] = '" . intval($strategy) . "', [period] = '" . intval($period) . "' WHERE [name] = '" . SQLite3::escapeString($old_group) . "'");
+            Db::getInstance()->exec("UPDATE [pools] SET [group] = '" . SQLite3::escapeString($group) . "' WHERE [group] = '" . SQLite3::escapeString($old_group) . "'");
+            return true;
+        }
+        else {
+            return "Group does not exist.";
+        }
+    }
+    
+    /**
      * Add a group.
      * 
      * @param string $group

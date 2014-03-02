@@ -119,105 +119,14 @@ Soopfw.behaviors.pools_main = function() {
     });
     
     $('#add-group').off('click').on('click', function() {
-        var dialog = "";
-        dialog += '    <div class="simpleform">';
-        dialog += '        <div class="form-element">';
-        dialog += '            <label for="group">Group name:</label>';
-        dialog += '            <input type="text" id="group" style="position: absolute;margin-left: 180px;width: 300px;"></input>';
-        dialog += '        </div>';
-        if (phpminer.settings.has_advanced_api) {
-            dialog += '        <div class="form-element">';
-            dialog += '            <label for="strategy">Strategy:</label>';
-            dialog += '            <select id="strategy" style="position: absolute;margin-left: 135px;width: 300px;">';
-            dialog += '                 <option value="0">Failover</option>';
-            dialog += '                 <option value="1">Round Robin</option>';
-            dialog += '                 <option value="2">Rotate</option>';
-            dialog += '                 <option value="3">Load Balance</option>';
-            dialog += '                 <option value="4">Balance</option>';
-            dialog += '            </select>';
-            dialog += '        </div>';
-            dialog += '        <div class="form-element" id="rotate_period" style="display: none">';
-            dialog += '            <label for="period">Rotate period (minutes):</label>';
-            dialog += '            <input type="text" id="period" style="position: absolute;margin-left: 135px;width: 300px;"></input>';
-            dialog += '        </div>';
-            dialog += '    </div>';
-        }        
-        make_modal_dialog('Add a pool group', dialog, [
-            {
-                title: 'Add group',
-                type: 'primary',
-                id: 'pools_add_new_group',
-                data: {
-                    "loading-text": 'Saving...'
-                },
-                click: function() {
-                    var group = $('#group').val();
-                    wait_dialog('Please wait');
-                    var send_data = {group: group};
-                    if (phpminer.settings.has_advanced_api) {
-                        send_data['strategy'] = $('#strategy').val();
-                        send_data['period'] = $('#period').val();
-                    }
-                    ajax_request(murl('pools', 'add_group'), send_data, function() {
-                        $.alerts._hide();
-                        var guuid = uuid();
-                        $('.pool_groups').append(
-                        
-                                '<div class="panel panel-default" data-grp="' + group + '">' + 
-                                '<div class="panel-heading"">' + 
-                                '    <h4 class="panel-title">' + 
-                                '        <a data-toggle="collapse" href="#collapse_' + guuid + '">' + 
-                                '            Group: ' + group + '' + 
-                                '        </a>' + 
-                                '    </h4>' + 
-                                '</div>' + 
-                                '<div id="collapse_' + guuid + '" class="panel-collapse collapse in">' + 
-                                '    <div class="panel-body">' + 
-                                '        <a class="btn btn-default" data-add-pool-group="' + group + '" style="margin-bottom: 10px;padding-left: 5px;"><i class="icon-plus"></i>Add a pool</a>' + 
-                                '        <a class="btn btn-danger" data-del-pool-group="' + group + '" style="margin-bottom: 10px;padding-left: 5px;float: right;"><i class="icon-minus"></i>Delete group</a>' + 
-                                '        <table>' + 
-                                '            <thead>' + 
-                                '                <tr class="pool_table">' + 
-                                '                    <th>Url</th>' + 
-                                '                    <th style="width:200px;">Username</th>' + 
-                                '                    <th style="width:200px;">Password</th>' + 
-                                '                    <th style="width:60px;">Quota</th>' + 
-                                '                    <th style="width:60px;">Rig based</th>' + 
-                                '                    <th style="width:120px;">Options</th>' + 
-                                '                </tr>' + 
-                                '            </thead>' + 
-                                '            <tbody class="pools" data-pool_group="' + group + '">' + 
-                                '            </tbody>' + 
-                                '        </table>' + 
-                                '    </div>' + 
-                                '</div>' +
-                                '</div>'
-                                
-                        ).hide().fadeIn();
-                        $('#pools_add_new_group').button('reset');
-                        $('.modal').modal('hide');
-                        Soopfw.reload_behaviors();
-                    }, function() {
-                        $('#pools_add_new_group').button('reset');
-                    });
-                }
-            }
-        ], {
-            width: 660,
-            show: function() {
-                if (phpminer.settings.has_advanced_api) {
-                    $('#strategy').change(function() {
-                        if ($(this).val() + "" === "" + 2) {
-                            $('#rotate_period').fadeIn();
-                        }
-                        else {
-                            $('#rotate_period').fadeOut();
-                        }
-                    });
-                }
-            }
+        add_group();
+    });
+    $('.edit-group').off('click').on('click', function() {
+        add_group({
+            group: $(this).data('group'),
+            strategy: $(this).data('strategy'),
+            rotate_period: $(this).data('rotate_period')
         });
-
     });
     
     $('a[data-add-pool-group]').off('click').on('click', function() {
@@ -264,7 +173,7 @@ Soopfw.behaviors.pools_main = function() {
                              '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="user" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter worker username">' + result.user + '</a></td>' + 
                              '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="pass" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Enter worker password">' + $('#password').val() + '</a></td>' + 
                              '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="quota" data-type="text" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Pool Quota">' + $('#quota').val() + '</a></td>' + 
-                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="rig_based" data-type="checklist" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Rig based pool">' + $('#rig_based').val() + '</a></td>' + 
+                             '   <td class="nopadding"><a href="javascript:void(0);" class="clickable" data-name="rig_based" data-type="checklist" data-pk="' + result.uuid + '|' + group + '" data-url="' + murl('pools', 'change_pool') + '" data-title="Rig based pool">' + (($('#rig_based').prop('checked')) ? 'Enabled' : 'Disabled') + '</a></td>' + 
                              '   <td><a href="javascript:void(0);" class="option-action" data-uuid="' + result.uuid + '|' + group + '" data-name="' + result.url + '" data-group="' + group + '" data-action="delete-pool" title="Delete"><i class="icon-trash"></i></a></td>' + 
                              '</tr>').hide().fadeIn();
                      
@@ -313,4 +222,158 @@ Soopfw.behaviors.pools_main = function() {
         
 
     });
+    
+    function add_group(old_data) {
+        
+        var edit_mode = (old_data !== undefined);
+        old_data = $.extend({
+            group: '',
+            strategy: 0,
+            rotate_period: ''
+        }, old_data);
+        
+        var dialog = "";
+        dialog += '    <div class="simpleform">';
+        dialog += '        <div class="form-element">';
+        dialog += '            <label for="group">Group name:</label>';
+        dialog += '            <input type="text" id="group" style="position: absolute;margin-left: 180px;width: 300px;" value="' + old_data.group + '"></input>';
+        dialog += '        </div>';
+        if (phpminer.settings.has_advanced_api) {
+            dialog += '        <div class="form-element">';
+            dialog += '            <label for="strategy">Strategy:</label>';
+            dialog += '            <select id="strategy" style="position: absolute;margin-left: 135px;width: 300px;">';
+            dialog += '                 <option value="0"' + ((old_data.strategy === 0) ? 'selected="selected"' : '') + '>Failover</option>';
+            dialog += '                 <option value="1"' + ((old_data.strategy === 1) ? 'selected="selected"' : '') + '>Round Robin</option>';
+            dialog += '                 <option value="2"' + ((old_data.strategy === 2) ? 'selected="selected"' : '') + '>Rotate</option>';
+            dialog += '                 <option value="3"' + ((old_data.strategy === 3) ? 'selected="selected"' : '') + '>Load Balance</option>';
+            dialog += '                 <option value="4"' + ((old_data.strategy === 4) ? 'selected="selected"' : '') + '>Balance</option>';
+            dialog += '            </select>';
+            dialog += '        </div>';
+            dialog += '        <div class="form-element" id="rotate_period" style="display: none">';
+            dialog += '            <label for="period">Rotate period (minutes):</label>';
+            dialog += '            <input type="text" id="period" style="position: absolute;margin-left: 135px;width: 300px;" value="' + old_data.rotate_period + '"></input>';
+            dialog += '        </div>';
+            dialog += '    </div>';
+        }   
+        var title = 'Add a pool group';
+        if (edit_mode) {
+            title = 'Change pool group: ' + old_data.group;
+        }
+        make_modal_dialog(title, dialog, [
+            {
+                title: 'Save',
+                type: 'primary',
+                id: 'pools_add_new_group',
+                data: {
+                    "loading-text": 'Saving...'
+                },
+                click: function() {
+                    var group = $('#group').val();
+                    wait_dialog('Please wait');
+                    var send_data = {group: group};
+                    send_data['strategy'] = 0;
+                    send_data['rotate_period'] = 0;
+                    if (phpminer.settings.has_advanced_api) {
+                        send_data['strategy'] = $('#strategy').val();
+                        send_data['rotate_period'] = $('#period').val();
+                    }
+                    var url = 'add_group';
+                    if (edit_mode) {
+                        send_data['old_group'] = old_data.group;
+                        url = 'change_group';
+                    }
+                    ajax_request(murl('pools', url), send_data, function() {
+                        $.alerts._hide();
+                        if (!edit_mode) {
+                            var guuid = uuid();
+                            $('.pool_groups').append(
+
+                                    '<div class="panel panel-default" data-grp="' + group + '">' + 
+                                    '<div class="panel-heading"">' + 
+                                    '    <h4 class="panel-title">' + 
+                                    '        <a data-toggle="collapse" href="#collapse_' + guuid + '">' + 
+                                    '            Group: ' + group + '' + 
+                                    '        </a>' + 
+                                    '        <a href="javascript:void(0)" class="edit-group" data-group="' + group + '" data-strategy="' + send_data['strategy'] + '" data-rotate_period="' +  send_data['rotate_period'] + '"><i class="icon-edit"></i>Edit</a>' + 
+                                    '    </h4>' + 
+                                    '</div>' + 
+                                    '<div id="collapse_' + guuid + '" class="panel-collapse collapse in">' + 
+                                    '    <div class="panel-body">' + 
+                                    '        <a class="btn btn-default" data-add-pool-group="' + group + '" style="margin-bottom: 10px;padding-left: 5px;"><i class="icon-plus"></i>Add a pool</a>' + 
+                                    '        <a class="btn btn-danger" data-del-pool-group="' + group + '" style="margin-bottom: 10px;padding-left: 5px;float: right;"><i class="icon-minus"></i>Delete group</a>' + 
+                                    '        <table>' + 
+                                    '            <thead>' + 
+                                    '                <tr class="pool_table">' + 
+                                    '                    <th>Url</th>' + 
+                                    '                    <th style="width:200px;">Username</th>' + 
+                                    '                    <th style="width:200px;">Password</th>' + 
+                                    '                    <th style="width:60px;">Quota</th>' + 
+                                    '                    <th style="width:60px;">Rig based</th>' + 
+                                    '                    <th style="width:120px;">Options</th>' + 
+                                    '                </tr>' + 
+                                    '            </thead>' + 
+                                    '            <tbody class="pools" data-pool_group="' + group + '">' + 
+                                    '            </tbody>' + 
+                                    '        </table>' + 
+                                    '    </div>' + 
+                                    '</div>' +
+                                    '</div>'
+
+                            ).hide().fadeIn();
+                        }
+                        else {
+                            var panel = $('.pool_groups .panel[data-grp="' + send_data['old_group'] + '"]');
+
+                            panel.data('grp', group).attr('data-grp', group).prop('prop-grp', group);
+                            $('.panel-title a[data-toggle]', panel).html('Group: ' + group);
+                            $('a[data-add-pool-group]', panel).data('add-pool-group', group).attr('data-add-pool-group', group).prop('data-add-pool-group', group);
+                            $('a[data-del-pool-group]', panel).data('del-pool-group', group).attr('data-del-pool-group', group).prop('data-del-pool-group', group);
+                            $('.pools[data-pool_group] tr[data-uuid]', panel).each(function() {
+                                var pk = $(this).data('uuid').split('|');
+                                $(this).data('uuid', pk[0] + '|' + group).attr('data-uuid', pk[0] + '|' + group).prop('data-uuid', pk[0] + '|' + group)
+                            });
+                            
+                            $('a[data-pk]', panel).each(function() {
+                                var pk = $(this).data('pk').split('|');
+                                $(this).data('pk', pk[0] + '|' + group).attr('data-pk', pk[0] + '|' + group).prop('data-pk', pk[0] + '|' + group)
+                            });
+                            
+                            $('a[data-action="delete-pool"]', panel).each(function() {
+                                var pk = $(this).data('uuid').split('|');
+                                $(this)
+                                        .data('uuid', pk[0] + '|' + group).attr('data-uuid', pk[0] + '|' + group).prop('data-uuid', pk[0] + '|' + group)
+                                        .data('group', group).attr('data-group', group).prop('data-group', group)
+                            });
+                            
+                            $('a.edit-group', panel)
+                                    .data('group', group).attr('data-group', group).prop('data-group', group)
+                                    .data('strategy', send_data['strategy']).attr('data-strategy', send_data['strategy']).prop('data-strategy', send_data['strategy'])
+                                    .data('rotate_period', send_data['rotate_period']).attr('data-rotate_period', send_data['rotate_period']).prop('data-rotate_period', send_data['rotate_period']);
+                            
+                            $('.pools', panel).data('pool_group', group).attr('data-pool_group', group).prop('data-pool_group', group);
+                        }
+                        $('#pools_add_new_group').button('reset');
+                        $('.modal').modal('hide');
+                        Soopfw.reload_behaviors();
+                    }, function() {
+                        $('#pools_add_new_group').button('reset');
+                    });
+                }
+            }
+        ], {
+            width: 660,
+            show: function() {
+                if (phpminer.settings.has_advanced_api) {
+                    $('#strategy').change(function() {
+                        if ($(this).val() + "" === "" + 2) {
+                            $('#rotate_period').fadeIn();
+                        }
+                        else {
+                            $('#rotate_period').fadeOut();
+                        }
+                    });
+                }
+            }
+        });
+    }
 };
