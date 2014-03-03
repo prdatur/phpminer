@@ -60,7 +60,7 @@ class PoolConfig {
             ':pass' => $pass,
             ':group' => $group,
             ':quota' => $quota,
-            ':rig_Based' => $rig_based
+            ':rig_based' => ($rig_based) ? 1 : 0
         ));
     }
     
