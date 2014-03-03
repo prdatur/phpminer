@@ -77,6 +77,9 @@ class PoolConfig {
     public function get_current_active_pool_group_from_rpc($rpc) {
         $config = $rpc->get_config();
         $pools = array();
+        if (empty($config['pools'])) {
+            return null;
+        }
         foreach ($config['pools'] AS $pool) {
             $pools[] = array(
                 'URL' => $pool['url'],
