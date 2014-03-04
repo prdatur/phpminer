@@ -919,6 +919,15 @@ function RigDetails(overview, rig, rig_data) {
     
             // Start/Stop action.
             .append(this.start_stop_header_action)
+    
+            // Reboot action.
+            .append(render_header_action('Reboot', 'ccw', function() {
+                confirm('Do you really want to reboot the rig: <b>' + back_reference.rig_name + '</b>', 'Reboot rig ' + back_reference.rig_name + '?', function() {
+                    ajax_request(murl('main', 'reboot_rig'), {rig: back_reference.rig_name}, function() {
+                        success_alert('Rig rebooted');
+                    });
+                });
+            }))
             ;
        
         // Add pool switch.

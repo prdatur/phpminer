@@ -30,6 +30,7 @@ class AccessControl {
     // RIGS 
     const PERM_CHANGE_RIGS = 'change_rigs';    
     const PERM_STOP_RIGS = 'stop_rigs';
+    const PERM_REBOOT_RIGS = 'reboot_rigs';
     
     // NOTIFICATION
     const PERM_CHANGE_NOTIFICATION_SETTINGS = 'change_notification_settings';
@@ -116,6 +117,7 @@ class AccessControl {
             // RIGS
             self::PERM_CHANGE_RIGS => 'Allows to change all rigs',
             self::PERM_STOP_RIGS => 'Allows to start/stop any rig',
+            self::PERM_REBOOT_RIGS => 'Allows to reboot any rig',
             
             // NOTIFICATION
             self::PERM_CHANGE_NOTIFICATION_SETTINGS => 'Allows to view/change notification settings',

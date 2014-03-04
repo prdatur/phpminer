@@ -25,8 +25,10 @@ class ErrorHandler
 	 * @return string the error string.
 	 */
 	public static function cc_error_handler($errno = E_NOTICE, $errstr = "", $errfile = "", $errline = "", $variables = "", $from_shutdown = false, $stack = null) {
-                global $phpminer_error_handler_messages;
-                if (error_reporting() == 0 || (($errno & error_reporting()) == 0 )) {
+                global $phpminer_error_handler_messages, $phpminer_error_handler_suppressed_messages;
+                $supress_check = md5($errno.$errstr.$errfile.$errline);
+                if (error_reporting() == 0 || (($errno & error_reporting()) == 0 ) || isset($phpminer_error_handler_suppressed_messages[$supress_check])) {
+                        $phpminer_error_handler_suppressed_messages[$supress_check] = true;
 			return false;
 		}
                 

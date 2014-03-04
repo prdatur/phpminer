@@ -504,6 +504,30 @@ class main extends Controller {
     }
 
     /**
+     * Ajax request to reboot rig.
+     */
+    public function reboot_rig() {
+        $params = new ParamStruct();
+        $params->add_required_param('rig', PDT_STRING);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
+        }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_REBOOT_RIGS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
+        $rigs = $this->config->rigs;
+        if (!isset($rigs[$params->rig])) {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'No such rig');
+        }
+        $this->get_rpc($params->rig)->reboot();
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
+    
+    /**
      * Ajax request to remove rig.
      */
     public function delete_rig() {

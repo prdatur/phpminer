@@ -1,6 +1,7 @@
 <?php
 ob_start();
 $phpminer_error_handler_messages = array();
+$phpminer_error_handler_suppressed_messages = array();
 if (!defined('SITEPATH')) {
     define('SITEPATH', dirname(__FILE__));
 }
