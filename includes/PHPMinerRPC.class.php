@@ -888,7 +888,7 @@ class PHPMinerRPC extends HttpClient {
             'api_proxy' => $from_api,
         );
         
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        $socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($socket === false) {
             return array(
                 'error' => 1,
@@ -909,7 +909,15 @@ class PHPMinerRPC extends HttpClient {
         
         $in = json_encode($args);
         @socket_write($socket, $in, strlen($in));
-        $resp = $this->read_buffer($socket);
+        
+        // Read the response.
+        $buf = '';
+        $read_buf = '';
+        while (0 !== ($bytes = @socket_recv($socket, $buf, 16, MSG_WAITALL))) {
+            $read_buf .= $buf;
+        }
+        
+        $resp = $read_buf;
         
         @socket_close($socket);
         $res = json_decode($resp, true);
@@ -920,24 +928,5 @@ class PHPMinerRPC extends HttpClient {
             );
         }
         return $res;
-    }
-    
-    /**
-     * Reads data from the given socket.
-     * 
-     * @param resource $socket
-     *   The socket to read from.
-     * 
-     * @return string|boolean
-     *  The read string or boolean false on error.
-     */
-    function read_buffer($socket) {
-        $buf = '';
-        $read_buf = '';
-        while (0 !== ($bytes = socket_recv($socket, $buf, 16, MSG_WAITALL))) {
-            $read_buf .= $buf;
-        }
-        return $read_buf;
-    }
-    
+    } 
 }

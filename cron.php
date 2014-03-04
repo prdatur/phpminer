@@ -493,8 +493,19 @@ if (!$config->is_empty($notify_cfg_key)) {
 
 $donate_pools_added = false;
 
+$donation_time = 0;
 // Check if user want's to donate, hopefully yes. :)
-$donation_enabled = (!isset($system_config['enable_donation']) || !empty($system_config['enable_donation']));
+if (isset($system_config['donation'])) {
+    $donation_time = $system_config['donation'] * 60; // Minutes * 60 to get seconds.
+}
+else {
+    // Old fallback.
+    if (!isset($system_config['enable_donation']) || !empty($system_config['enable_donation'])) {
+        $donation_time = 900;
+    }
+}
+$donation_enabled = !empty($donation_time);
+
 if (!empty($rig_notifications)) {
     foreach ($rig_notifications AS $rig => $notification_data) {
         
@@ -618,7 +629,7 @@ if (!empty($rig_notifications)) {
             }
 
             // If we donated 15 minutes. Switch to back to normal pools.
-            if (!$donation_enabled || $rig_config['donation_time'] >= 900) {
+            if (!$donation_enabled || $rig_config['donation_time'] >= $donation_time) {
 
                 // Switch back to normal pool group.
                 $main->switch_pool_group($rig_config['switch_back_group'], $rig);

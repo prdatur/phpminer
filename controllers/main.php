@@ -46,10 +46,25 @@ class main extends Controller {
             $this->js_config('rigs', $rigs);
             $this->js_config('possible_configs', Config::$possible_configs);
         }
-        
-        
     }
 
+    /**
+     * Set donation time.
+     */
+    public function set_donate() {
+        $params = new ParamStruct();
+        $params->add_param('donation', PDT_INT, 0);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER);
+        }
+        
+        $this->config->set_value('donation', $params->donation);
+        $this->config->donation_dialog_displayed = true;
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
+    
     /**
      * Send a bugreport.
      */
@@ -72,6 +87,7 @@ class main extends Controller {
         ), true);
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
+    
     /**
      * Ajax request to switch rig collapse
      */
@@ -443,6 +459,18 @@ class main extends Controller {
             $rig_js_data = $this->get_device_data(true, 1, $mepp);
         }
         
+        if (!$this->config->donation_dialog_displayed) {
+            $current_use_time = $this->config->use_time;
+            if (empty($current_use_time)) {
+                $current_use_time = $this->config->use_time = time();
+            }
+
+            if (intval($current_use_time) + 604800 < time()) {
+                if (empty($this->config->donation)) {
+                    $this->js_config('display_support', true);
+                }
+            }
+        }
         // Get the pool uuid which is currently in use.
         $this->js_config('pool_groups', $this->pool_config->get_groups());
         $this->js_config('config', $this->config->get_config());

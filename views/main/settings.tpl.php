@@ -14,12 +14,15 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="key"><label for="ajax_refresh_intervall">Ajax refresh intervall (ms):</label></td>
-                        <td class="value"><input type="text" id="ajax_refresh_intervall" name="ajax_refresh_intervall" value="<?php echo (!empty($conf['ajax_refresh_intervall']) ? $conf['ajax_refresh_intervall'] : 5000);?>" /></td>
+                        <td class="key" style="padding: 5px;vertical-align: top;">Support PHPMiner:</td>
+                        <td class="value" style="padding: 5px;">
+                            To support further updates and help to improve PHPMiner, I decided to implement an auto donation system which you can disable at any time. By default it is disabled.<br><b>So what is auto-donation?</b><br>PHPMiner will detect when your workers have mined 24 hours, then PHPMiner will switch to donation pools where your workers will mine for me for <span class="donation_new_value"></span> Minutes. After this time PHPMiner will switch back to your previous pool group.<br><span class="donation_new_value"></span> Minutes within 24 Hours are just <span class="donation_new_value_percent"></span> % of the hole mining time. It's just a little help to let me know that you want updates in the future and this tells me that my work with PHPMiner was useful.
+                            <br>
+                            <div id="donation"></div> <span class="donation_new_value"></span> Minutes (<span class="donation_new_value_percent"></span> % of day)<input name="donation" id="donation_val" type="hidden" value="<?php echo (!isset($conf['donation']) ? '0' : $conf['donation']);?>"></td>
                     </tr>
                     <tr>
-                        <td class="key">Enable donation:<i data-toggle="tooltip" title="To support further updates and help to improve PHPMiner, I decided to implement an auto donation system which you can disable at any time. So what is auto-donation? PHPMiner will detect when your workers have mined 24 hours, then PHPMiner will switch to donation pools where your workers will mine for me for 15 Minuntes. After this time PHPMiner will switch back to your previous pool group. 15 Minutes within 24 Hours are just 1% if the hole mining time. So this will not have a real effect of your profit. It's just a little help to let me know that you want updates in the future and this tells me that my work with PHPMiner was useful." class="icon-help-circled"></i></td>
-                        <td class="value"><div class="slider"><input type="checkbox" id="enable_donation" name="enable_donation" value="1" <?php echo (!isset($conf['enable_donation']) || $conf['enable_donation'] == "1" ? 'checked="checked"' : '');?> /><label for="enable_donation"></label></div></td>
+                        <td class="key"><label for="ajax_refresh_intervall">Ajax refresh intervall (ms):</label></td>
+                        <td class="value"><input type="text" id="ajax_refresh_intervall" name="ajax_refresh_intervall" value="<?php echo (!empty($conf['ajax_refresh_intervall']) ? $conf['ajax_refresh_intervall'] : 5000);?>" /></td>
                     </tr>
                     <tr>
                         <td class="key">Allow offline pools:<i data-toggle="tooltip" title="Enable this option to allow adding pools which are offline or credentials are invalid." class="icon-help-circled"></i></td>

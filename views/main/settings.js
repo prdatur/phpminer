@@ -95,6 +95,42 @@ Soopfw.behaviors.main_settings = function() {
         });
         $('li:first-child', this).click();
     });
+    
+    var pre_val = 0;
+    if (!empty(phpminer.settings.config['donation'])) {
+        pre_val = parseInt(phpminer.settings.config['donation']);
+    }
+    $('#donation').noUiSlider({
+        range: [5, 241],
+        start: pre_val,
+        handles: 1,
+        margin: 2,
+        step: 1,
+        decimals: 1,
+        slide: function() {
+            var value = parseInt($(this).val());
+            if (value === 5) {
+                value = 0;
+            }
+            else {
+                value--;
+            }
+            
+            $('.donation_new_value_percent').html(Math.round(((100/1440) * value)*100)/100);
+            $('.donation_new_value').html(Math.round(value));
+        }
+    }).change(function() {
+        var value = parseInt($(this).val());
+        if (value === 5) {
+            value = 0;
+        }
+        else {
+            value--;
+        }
+        $('#donation_val').val(value);
+    });
+    $('.donation_new_value_percent').html(Math.round(((100/1440) * pre_val)*100)/100);
+    $('.donation_new_value').html(Math.round(pre_val));
 
 };
 

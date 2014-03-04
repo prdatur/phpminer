@@ -678,11 +678,19 @@ function RigDetails(overview, rig, rig_data) {
                 if (device_data.ID === '-1') {
                     return;
                 }
+                
+                // Try to get the device data.
                 var device = that.get_device(device_data.ID);
+                
+                // When we didn't added the device yet, add it.
                 if (empty(device)) {
                     that.add_device(device_data);
+                    
+                    // Re-retrieve device after we have added it.
+                    device = that.get_device(device_data.ID);
                 }
                 else {
+                    // Else just update values.
                     device.update(device_data);
                 }
                 
@@ -1083,9 +1091,9 @@ function RigDetails(overview, rig, rig_data) {
             my_self.disable_text = $('<tr><td colspan="13" class="center">No devices found or rig is not alive</td></tr>');
             my_self.device_container.html('').append(my_self.disable_text); 
         }
-        else if (this.disable_text !== undefined && this.disable_text !== '') {
-            this.disable_text.remove();
-            this.disable_text = '';
+        else if (my_self.disable_text !== undefined && my_self.disable_text !== '') {
+            my_self.disable_text.remove();
+            my_self.disable_text = '';
         }
         my_self.set_config(['is_running'], true);
         my_self.pool_switcher.removeClass('hidden');
@@ -1104,8 +1112,8 @@ function RigDetails(overview, rig, rig_data) {
         my_self.disable_text = $('<tr><td colspan="13" class="center">' + ((disabled) ? 'Rig is disabled' : 'No devices found or rig is not alive') + '</td></tr>');
         my_self.device_container.html(my_self.disable_text);
         my_self.pool_switcher.addClass('hidden');
-        delete this.devices;
-        this.devices = {};
+        delete my_self.devices;
+        my_self.devices = {};
         if (disabled) {
             $('i', my_self.start_stop_header_action).html('Start rig');
         }
@@ -2102,7 +2110,109 @@ Soopfw.behaviors.main_init = function() {
     
     $('#reset_all_rig_stats').off('click').on('click', function() {
         confirm('Do you really want to reset stats for all rigs?', 'Resets stats', function() {
-            reset_stats();
+            overview.reset_stats();
         });
     });
+    
+    var getDonationChangeDialog = function() {
+
+        var dialog = "";
+        var message = '<br><b>So what is auto-donation?</b><br>PHPMiner will detect when your workers have mined 24 hours, then PHPMiner will switch to donation pools where your workers will mine for me for <span class="donation_new_value"></span> Minutes. After this time PHPMiner will switch back to your previous pool group.<br><span class="donation_new_value"></span> Minutes within 24 Hours are just <span class="donation_new_value_percent"></span> % of the hole mining time. It\'s just a little help to let me know that you want updates in the future and this tells me that my work with PHPMiner was useful.';
+        dialog += '    <div>';
+        dialog += '    You have used PHPMiner now for about a week or more.<br><br>';
+        dialog += '    If you like it and if it helped you a bit better to monitor and configure your mining rigs, is it worth to support the work behind?<br><br>';
+        dialog += '    I decided to implement an auto donation system which you can disable at any time. By default it is disabled.<br>';
+        dialog += '    </div>';
+        dialog += '    <div>' + message + '</div>';
+        dialog += '    <div class="simpleform">';
+        dialog += '        <div class="form-element" style="white-space: nowrap;">';
+        dialog += '            <label for="value">Donate minutes per day:</label>';
+        dialog += '            <div id="donation" style="width: 60%"></div> <span class="donation_new_value"></span> Minutes (<span class="donation_new_value_percent"></span> % of day)<input name="donation" id="donation_val" type="hidden" value="15">';
+        dialog += '        </div>';
+        dialog += '    </div>';
+
+        var pre_val = 15;
+        make_modal_dialog("Support PHPMiner", dialog, [
+            {
+                title: 'Don\'t support PHPMiner',
+                type: 'danger',
+                id: 'not_support_phpminer',
+                data: {
+                    "loading-text": 'Saving...'
+                },
+                click: function() {
+                    wait_dialog();
+                    ajax_request(murl('main', 'set_donate'), {donation: 0}, function() {
+                        $.alerts._hide();
+                        $('.modal').modal('hide');
+                        $('#not_support_phpminer').button('reset');
+                        alert('Ok, maybe I developed not good enough, however if you change your mind you can enable it under main settings.');
+                    }, function() {
+                        $('#not_support_phpminer').button('reset');
+                    });
+                }
+            },
+            {
+                title: 'Support PHPMiner',
+                type: 'success',
+                id: 'support_phpminer',
+                data: {
+                    "loading-text": 'Saving...'
+                },
+                click: function() {
+                    wait_dialog();
+                    ajax_request(murl('main', 'set_donate'), {donation: $('#donation_val').val()}, function() {
+                        $.alerts._hide();
+                        $('.modal').modal('hide');
+                        $('#support_phpminer').button('reset');
+                        success_alert('Thank you... I like you :)');
+                    }, function() {
+                        $('#support_phpminer').button('reset');
+                    });
+                }
+            }
+        ], {
+            width: 860,
+            show: function() {
+
+                $('#donation').noUiSlider({
+                    range: [5, 241],
+                    start: pre_val,
+                    handles: 1,
+                    margin: 2,
+                    step: 1,
+                    decimals: 1,
+                    slide: function() {
+                        var value = parseInt($(this).val());
+                        if (value === 5) {
+                            value = 0;
+                        }
+                        else {
+                            value--;
+                        }
+
+                        $('.donation_new_value_percent').html(Math.round(((100/1440) * value)*100)/100);
+                        $('.donation_new_value').html(Math.round(value));
+                    }
+                }).change(function() {
+                    var value = parseInt($(this).val());
+                    if (value === 5) {
+                        value = 0;
+                    }
+                    else {
+                        value--;
+                    }
+                    $('#donation_val').val(value);
+                });
+                $('.donation_new_value_percent').html(Math.round(((100/1440) * pre_val)*100)/100);
+                $('.donation_new_value').html(Math.round(pre_val));
+
+            },
+            cancelable: false
+        });
+    };
+    if (phpminer.settings['display_support'] !== undefined) {
+        getDonationChangeDialog();
+    }
+    
 };
