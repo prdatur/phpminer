@@ -1050,7 +1050,7 @@ function RigDetails(overview, rig, rig_data) {
                         .append(this.pool_group_switch)
                             
                         // Label for pool groups.
-                        .append('<label for="' + this.identifier + '_current_pool_group">Change mining pool:&nbsp;&nbsp;</label>')
+                        .append('<label for="' + this.identifier + '_current_pool_group">Change mining group:&nbsp;&nbsp;</label>')
                 );
         }
         
