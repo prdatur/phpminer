@@ -21,7 +21,7 @@
                             <div id="donation"></div> <span class="donation_new_value"></span> Minutes (<span class="donation_new_value_percent"></span> % of day)<input name="donation" id="donation_val" type="hidden" value="<?php echo (!isset($conf['donation']) ? '0' : $conf['donation']);?>"></td>
                     </tr>
                     <tr>
-                        <td class="key"><label for="ajax_refresh_intervall">Ajax refresh intervall (ms):</label></td>
+                        <td class="key"><label for="ajax_refresh_intervall">Ajax refresh interval (ms):</label></td>
                         <td class="value"><input type="text" id="ajax_refresh_intervall" name="ajax_refresh_intervall" value="<?php echo (!empty($conf['ajax_refresh_intervall']) ? $conf['ajax_refresh_intervall'] : 5000);?>" /></td>
                     </tr>
                     <tr>
