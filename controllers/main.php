@@ -1017,47 +1017,62 @@ class main extends Controller {
             $pools = $this->get_rpc($rig)->get_pools();
 
             $devices = $this->get_rpc($rig)->get_devices_details();
-            foreach ($devices AS &$device) {
-                if ($device['Name'] !== 'GPU') {
-                    continue;
-                }
-                $info = $this->get_rpc($rig)->get_gpu($device['ID']);
-                $info = reset($info);
+            if (!is_array($devices)) {
+                $devices = array();
+            }
+            if (!empty($devices)) {
+                
+                foreach ($devices AS &$device) {
+                    if ($device['Name'] !== 'GPU') {
+                        continue;
+                    }
+                    $info = $this->get_rpc($rig)->get_gpu($device['ID']);
+                    $info = reset($info);
 
-                $device['gpu_info'] = $info;
+                    $device['gpu_info'] = $info;
 
-                // Check if we have our own cgminer fork with advanced api.
-                if (isset($info['Current Pool'])) {
-                    $pool_check = $info['Current Pool'];
-                } else {
-                    $pool_check = $info['Last Share Pool'];
-                }
+                    // Check if we have our own cgminer fork with advanced api.
+                    if (isset($info['Current Pool'])) {
+                        $pool_check = $info['Current Pool'];
+                    } else {
+                        $pool_check = $info['Last Share Pool'];
+                    }
 
-                foreach ($pools AS $pool) {
-                    if ($pool['POOL'] == $pool_check) {
-                        $device['pool'] = $pool;
+                    foreach ($pools AS $pool) {
+                        if ($pool['POOL'] == $pool_check) {
+                            $device['pool'] = $pool;
+                        }
+                    }
+
+                    if (!empty($rigs[$rig]['switch_back_group'])) {
+                        $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
+                    }
+                    if (empty($device['disabled'])) {
+                        $device['is_running']= $this->get_rpc($rig)->is_cgminer_running();
                     }
                 }
-
-                if (!empty($rigs[$rig]['switch_back_group'])) {
-                    $device['donating'] = ceil((900 - $rigs[$rig]['donation_time']) / 60);
-                }
-                if (empty($device['disabled'])) {
-                    $device['is_running']= $this->get_rpc($rig)->is_cgminer_running();
-                }
             }
-            
             // Determine which pool group we are currently using.        
             $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
 
             if (empty($current_active_group)) {
                 $rig_conf = $this->get_rpc($rig)->get_config();
                 if (!empty($rig_conf)) {
-                    $this->pool_config->del_group('Auto created for rig: ' . $rig);
-                    foreach ($rig_conf['pools'] AS $rig_conf_pool) {
-                        $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
+                    
+                    // Remove pools which does not have all required config's.
+                    foreach ($rig_conf['pools'] AS $rig_conf_index => $rig_conf_pool) {
+                        if (!isset($rig_conf_pool['url']) || !isset($rig_conf_pool['user']) || !isset($rig_conf_pool['pass'])) {
+                            unset($rig_conf['pools'][$rig_conf_index]);
+                        }
                     }
-                    $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
+                    // Check again if some pools were valid, if so create the "auto create" pool group.
+                    if (!empty($rig_conf)) {
+                        $this->pool_config->del_group('Auto created for rig: ' . $rig);
+                        foreach ($rig_conf['pools'] AS $rig_conf_pool) {
+                            $this->pool_config->add_pool($rig_conf_pool['url'], $rig_conf_pool['user'], $rig_conf_pool['pass'], 'Auto created for rig: ' . $rig);
+                        }
+                        $current_active_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($rig));
+                    }
                 }
             }
 

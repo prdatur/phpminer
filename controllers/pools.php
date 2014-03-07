@@ -174,6 +174,9 @@ class pools extends Controller {
                         $active_pools[$pool_check]++;
 
                         // For the first time we save the pool as the active one, we will set it back to null if we find more than one active pool which are not the same.
+                        if (!isset($sorted_pools[$pool_check])) {
+                            continue;
+                        }
                         $active_pool = $sorted_pools[$pool_check];
                     }
 

@@ -200,7 +200,13 @@ class HttpClient {
                 }
 
                 if (isset($connection_result['error'])) {
-                    return $connection_result['error'][1];
+                    if (is_array($connection_result['error'])) {
+                        if (isset($connection_result['error'][1])) {
+                            return $connection_result['error'][1];
+                        }
+                        return current($connection_result['error']);
+                    }
+                    return $connection_result['error'] . "";
                 }
                 
                 if (isset($connection_result['result']) && $connection_result['result'] === false) {

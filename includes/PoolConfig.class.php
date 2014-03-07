@@ -116,6 +116,11 @@ class PoolConfig {
      */
     private function get_current_active_pool_group_from_pools($pools) {
        
+        // We can not determine the current active pools if no pools where provided or could be found.
+        if (empty($pools)) {
+            return null;
+        }
+        
         $where_array = array();
         $values = array();
         $i = 0;
