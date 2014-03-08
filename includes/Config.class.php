@@ -216,14 +216,8 @@ class Config {
             'values' => PDT_STRING,
         ),
         'kernel' => array(
-            'description' => "Override sha256 kernel to use (diablo, poclbm, phatk, diakgcn or scrypt) - one value or comma separated",
-            'values' => array(
-                'poclbm',
-                'phatk',
-                'diakgcn',
-                'diablo',
-                'scrypt',
-            ),
+            'description' => "Override sha256 kernel to use ( for example: diablo, poclbm, phatk, diakgcn or scrypt) - one value or comma separated, please check your miner software for available kernels",
+            'values' => PDT_STRING,
         ),
         'icarus-options' => array(
             'description' => "- no help available -",
