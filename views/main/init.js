@@ -825,6 +825,8 @@ function RigDetails(overview, rig, rig_data) {
             
             // After adding all devices, we have to enable the rig.
             enable_rig();
+            
+            $("h2 > span", this.html).trigger('rig_hashrate_changed');
         }
         else {
             disable_rig(this.get_config(['disabled'], false));
@@ -891,7 +893,7 @@ function RigDetails(overview, rig, rig_data) {
                     .append($('<span>').html(back_reference.rig_name))
                     .append(
                         $('<span>').off('rig_hashrate_changed').on('rig_hashrate_changed', function() {
-                            $(this).html(back_reference.get_rig_hashrate());
+                            $(this).html(" " + rig_overview.get_hashrate_string(back_reference.get_rig_hashrate()));
                         })
                     )
             )
