@@ -103,6 +103,13 @@ class Session
 		}
 	}
 
+        /**
+         * Closes the session for write operations, this will speed up reads.
+         */
+        public function close_write() {
+            session_write_close();
+        }
+        
 	/**
 	 * Returns the current session id
 	 *

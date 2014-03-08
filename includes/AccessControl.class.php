@@ -190,6 +190,11 @@ class AccessControl {
                 $user = $this->access_config->user_get($_SERVER['PHP_AUTH_USER']);
                 if ($pw_hash->check_password($_SERVER['PHP_AUTH_PW'], $user['password'])) {
                     self::$session->set('username', $_SERVER['PHP_AUTH_USER']);
+                    
+                    // This is for now the only position where we write, so we can close the session for write operations.
+                    // This will speed up the performance.
+                    self::$session->close_write();
+                    
                     $this->user = $this->get_config()->user_get(self::$session->get('username'));
                     return true;
                 }
