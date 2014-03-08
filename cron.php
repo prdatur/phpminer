@@ -91,7 +91,7 @@ if (!$config->is_empty($notify_cfg_key)) {
 
     // Check if Push.co notification is enabled.
     $pushco_enabled = false;
-    $pushco_api_key = '';
+    /*$pushco_api_key = '';
     $pushco_api_secret = '';
     if ($config->get_value('pushco_enable', $notify_cfg_key)) {
         $pushco_api_key = $config->get_value('pushco_api_key', $notify_cfg_key);
@@ -99,7 +99,7 @@ if (!$config->is_empty($notify_cfg_key)) {
         if (!empty($pushco_api_key) && !empty($pushco_api_secret)) {
             $pushco_enabled = true;
         }
-    }
+    }*/
     
     // Check if post url notification is enabled.
     $post_enabled = false;
