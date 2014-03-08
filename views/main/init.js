@@ -1820,11 +1820,11 @@ function RigDevice(overview, rig, device_data) {
         dialog += '    <div class="simpleform">';
         dialog += '        <div class="form-element">';
         dialog += '            <label for="min_temp">Min. temperature:</label>';
-        dialog += '            <div id="min_temp"></div> % <span id="min_temp_new_value"></span>';
+        dialog += '            <div id="min_temp"></div> <span id="min_temp_new_value">C°</span>';
         dialog += '        </div>';
         dialog += '        <div class="form-element">';
         dialog += '            <label for="max_temp">Max. temperature:</label>';
-        dialog += '            <div id="max_temp"></div> % <span id="max_temp_new_value"></span>';
+        dialog += '            <div id="max_temp"></div> <span id="max_temp_new_value">C°</span>';
         dialog += '        </div>';
         dialog += '    </div>';
 
