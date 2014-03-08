@@ -130,9 +130,12 @@ class Controller {
         
         }
         
+        $this->assign('current_version', implode('.', $system_conf['version']));
         if (isset($system_conf['directory']) && !empty($this->config->latest_version) && $system_conf['version'] !== $this->config->latest_version) {
             $this->add_message('A new version is available, current version <b>' . implode('.', $system_conf['version']) . '</b> - latest version <b>' . implode('.', $this->config->latest_version) . '</b>. <a href="https://phpminer.com" target="_blank">Download</a>. After updating to a new version, do not forget to copy the new index.php from the phpminer_rpcclient and restart the service."', Controller::MESSAGE_TYPE_INFO);
         }
+        
+        
         
         if (empty($this->config->cron_last_run)) {
             $this->add_message('The cronjob never ran! If you configurated it correctly, just wait 1 or 2 minutes, after the cronjob was executed, this message will disappear. If not configurated please have a look at the <a href="' . $system_conf['directory'] . '/README.md" target="_blank">Readme</a>', Controller::MESSAGE_TYPE_INFO);

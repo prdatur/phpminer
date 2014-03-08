@@ -42,7 +42,7 @@
     <body>
         <div id="page">
             <section id="header">
-                <h1>PHPMiner - Mine better<span id="global_hashrate"></span></h1>
+                <h1>PHPMiner <?php echo $this->get_variable('current_version'); ?> - Mine better<span id="global_hashrate"></span></h1>
                 <ul class="clearfix">
                     <li><a href="<?php echo $this->get_variable('docroot'); ?>/"><i class="icon-home"></i>Home</a></li>
                     <li><a href="<?php echo murl('pools', 'main'); ?>"><i class="icon-group"></i>Pools</a></li>
