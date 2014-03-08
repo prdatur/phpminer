@@ -7,7 +7,6 @@ if (!defined('SITEPATH')) {
 }
 $phpminer_request_is_ajax = false;
 require 'includes/ErrorHandler.class.php';
-require 'includes/InfoException.class.php';
 set_error_handler(array('ErrorHandler', 'cc_error_handler'), E_ALL);
 
 function fatal_handler() {

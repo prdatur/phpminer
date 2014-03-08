@@ -56,6 +56,7 @@ define("PDT_LANGUAGE_ENABLED", $i++, true);
 define("PDT_SERIALIZED", $i++, true);
 define("PDT_BLOB", $i++, true);
 
+require 'InfoException.class.php';
 require 'Db.class.php';
 require 'Updates.class.php';
 require 'HttpClient.class.php';
