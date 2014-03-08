@@ -11,6 +11,7 @@ require 'includes/InfoException.class.php';
 set_error_handler(array('ErrorHandler', 'cc_error_handler'), E_ALL);
 
 function fatal_handler() {
+    global $system_conf;
     $errfile = "unknown file";
     $errstr = "shutdown";
     $errno = E_CORE_ERROR;
@@ -49,7 +50,10 @@ function fatal_handler() {
         $code = 560;
         $data = sys_get_temp_dir() . '/phpminer_' . uniqid() . '.bugreport';
         $return = array("code" => $code, "desc" => null, "data" => $data);
-        file_put_contents($data, $error);
+        if (is_array($error)) {
+            $error = implode("\n", $error);
+        }
+        file_put_contents($data, "PHPMiner version: " . implode('.', $system_conf['version']) . "\n" . $error);
         echo json_encode($return);
         die();
     }
