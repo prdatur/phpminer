@@ -64,7 +64,7 @@ require 'PHPMinerRPC.class.php';
 require 'Controller.class.php';
 
 
-$system_conf['version'] = array(1, 3, 0);
+$system_conf['version'] = array(1, 3, 1);
 
 // Prevent error message that directory is not set.
 $system_conf['directory'] = '';
