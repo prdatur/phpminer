@@ -7,6 +7,7 @@ if (!defined('SITEPATH')) {
 }
 $phpminer_request_is_ajax = false;
 require 'includes/ErrorHandler.class.php';
+require 'includes/InfoException.class.php';
 set_error_handler(array('ErrorHandler', 'cc_error_handler'), E_ALL);
 
 function fatal_handler() {
@@ -168,7 +169,7 @@ try {
                 break;
             // Bad bad, display errors.
             default:
-                $controller->add_message($e->getMessage(), Controller::MESSAGE_TYPE_ERROR);
+                $controller->add_message($e->getMessage(), ($e instanceof InfoException) ? Controller::MESSAGE_TYPE_INFO : Controller::MESSAGE_TYPE_ERROR);
                 break;
         }
     } else {
