@@ -7,7 +7,7 @@ if (isset($_SERVER['REQUEST_URI'])) {
 }
 
 if (!defined('SITEPATH')) {
-        define('SITEPATH', dirname(__FILE__));
+    define('SITEPATH', dirname(__FILE__));
 }
 
 
@@ -56,6 +56,7 @@ $config = new Config(SITEPATH . '/config/config.json');
 
 // Can't do anything if nothing is configurated.'
 if ($config->is_empty()) {
+    unlock();
     exit;
 }
 
