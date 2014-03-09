@@ -1027,6 +1027,9 @@ class main extends Controller {
                         continue;
                     }
                     $info = $this->get_rpc($rig)->get_gpu($device['ID']);
+                    if (!is_array($info)) {
+                        continue;
+                    }
                     $info = reset($info);
 
                     $device['gpu_info'] = $info;
