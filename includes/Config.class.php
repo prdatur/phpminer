@@ -532,6 +532,10 @@ class Config {
             if ($sql instanceof PDOStatement) {
                 while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                     $result[$row['key']] = json_decode($row['value'], true);
+                    if (!isset($result[$row['key']]['shortname'])) {
+                        $result[$row['key']]['shortname'] = strtolower($result[$row['key']]['name']);
+                        $this->set_value($row['key'], $result[$row['key']], 'rigs');
+                    }
                 }
             }
             return $result;
