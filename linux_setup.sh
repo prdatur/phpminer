@@ -8,10 +8,9 @@ fi
 echo "Install required software."
 apt-get install -y apache2 libapache2-mod-php5 php5-cli php5-mcrypt php5-mhash curl php5-curl
 apt-get install -y php5-json
-apt-get install -y mysql-server
 
 echo "Mysql server will now be installed, if it is not already, you will be asked for the password for the 'root' user. Choose a good one. After installation you will be asked for this again. This will make sure this install script can create the required user and database for phpminer."
-apt-get install -y mysql-server
+apt-get install -y mysql-server php5-mysql
 
 echo "Please enter the mysql password for the user root:"
 read MYSQL_ROOT

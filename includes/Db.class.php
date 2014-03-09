@@ -19,7 +19,7 @@ class Db {
         
         
         
-        if (file_exists('config/config.php')) {
+        if (file_exists(SITEPATH . '/config/config.php')) {
             include SITEPATH . '/config/config.php';
         }
         
