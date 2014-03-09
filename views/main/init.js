@@ -826,7 +826,40 @@ function RigDetails(overview, rig, rig_data) {
             // After adding all devices, we have to enable the rig.
             enable_rig();
             
-            $("h2 > span", this.html).trigger('rig_hashrate_changed');
+            $("h2 > span", that.html).trigger('rig_hashrate_changed');
+            
+            // Add all custom commands
+            if (devices.custom_commands.length !== 0) {
+                var new_commands = $.extend({}, devices.custom_commands);
+
+                // Get all current custom commands,
+                $('option', that.custom_commands).each(function() {
+                    // Get the custom command of the current option.
+                    var cmd = $(this).attr('value');
+
+                    // If the new commands don't have this, delete it.
+                    if (new_commands[cmd] === undefined) {
+                        if (cmd !== '') {
+                            $(this).remove();
+                        }
+                        return;
+                    }
+
+                    // Remove found custom command.
+                    delete new_commands[cmd];
+                });
+
+                // Loop through each custom command which is left and add it.
+
+                $.each(new_commands, function(cmd, data) {
+                    var confirmation_required = '0';
+                    if (!empty(data.confirmation_required)) {
+                        confirmation_required = '1';   
+                    }
+                   that.custom_commands.append($('<option>', {value: cmd}).data('confirmation_required', confirmation_required).html(data.title));
+                });
+            }
+            
         }
         else {
             disable_rig(this.get_config(['disabled'], false));
@@ -862,6 +895,33 @@ function RigDetails(overview, rig, rig_data) {
             });
         });
         
+        // Create pool switch select.
+        this.custom_commands = $('<select>', {class: 'custom_commands', id: this.identifier + '_custom_commands'}).append('<option value="">Custom cmd</option>')
+            .off('change').on('change', function() {
+                var cmd = $(this).val();
+                var option = $('option[value="' + cmd + '"]', this);
+                var call_cmd = function(cmd) {
+                    ajax_request(murl('main', 'send_custom_command'), {rig: rig, cmd: cmd}, function(result) {
+                        if (empty(result)) {
+                            success_alert('Command send successfully.', null, null, 10000);
+                        }
+                        else {
+                            alert(result, 'Response');
+                        }
+                    });
+                };
+                if (option.data('confirmation_required') === '1') {
+                    confirm('Do you really want to execute "' + option.html() + '"', 'Confirmation required', function() {
+                        call_cmd(cmd);
+                    });
+                }
+                else {
+                    call_cmd(cmd);
+                }
+                
+                $(this).val("");
+            });
+        
         // Add header bar.
         this.header = $('<div>', {class: 'rig_header'})
             // Ttitle + Hashrate.
@@ -892,7 +952,7 @@ function RigDetails(overview, rig, rig_data) {
                     )
                     .append($('<span>').html(back_reference.rig_name))
                     .append(
-                        $('<span style="margin-left: 30px;margin-right: 20px;">').off('rig_hashrate_changed').on('rig_hashrate_changed', function() {
+                        $('<span style="margin-left: 20px;">').off('rig_hashrate_changed').on('rig_hashrate_changed', function() {
                             $(this).html(" " + rig_overview.get_hashrate_string(back_reference.get_rig_hashrate()));
                         })
                     )
@@ -930,6 +990,9 @@ function RigDetails(overview, rig, rig_data) {
                     });
                 });
             }))
+            
+            // Custom commands.
+            .append(this.custom_commands)
             ;
        
         // Add pool switch.
@@ -1128,7 +1191,7 @@ function RigDetails(overview, rig, rig_data) {
         if (disabled) {
             $('i', my_self.start_stop_header_action).html('Start rig');
         }
-        else {;
+        else {
             my_self.set_config(['is_running'], false);
         }
     };

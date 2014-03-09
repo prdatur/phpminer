@@ -77,6 +77,13 @@ table:not(.layout_table).device_list td.disabled {
     float: right;
 }
 
+select.custom_commands {
+    margin-bottom: 5px;
+    padding: 2px 5px;
+    margin-left: 10px;
+}
+
+
 .rig {
     padding: 10px;
     border: 1px solid #A5A5A5;

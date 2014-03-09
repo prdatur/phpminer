@@ -745,6 +745,26 @@ class main extends Controller {
     }
     
     /**
+     * This will send a custom command to the rpc client.
+     */
+    public function send_custom_command() {
+        $params = new ParamStruct();
+        $params->add_required_param('rig', PDT_STRING);
+        $params->add_required_param('cmd', PDT_STRING);
+
+        $params->fill();
+        if (!$params->is_valid()) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER);
+        }
+        
+        if (!$this->access_control->has_permission(AccessControl::PERM_SEND_CUSTOM_COMMANDS)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
+        AjaxModul::return_code(AjaxModul::SUCCESS, $this->get_rpc($params->rig)->send_custom_command($params->cmd));
+    }
+    
+    /**
      * Ajax request to check a connection to cgminer.
      */
     public function check_connection() {
@@ -1078,9 +1098,13 @@ class main extends Controller {
                     }
                 }
             }
-
+            $custom_commands = $this->get_rpc($rig)->get_custom_commands();
+            if (!is_array($custom_commands)) {
+                $custom_commands = array();
+            }
             return array(
                 'rig_name' => $orig,
+                'custom_commands' => $custom_commands,
                 'device_list' => $devices,
                 'active_pool_group' => $current_active_group,
                 'pools' => $this->pool_config->get_pools($current_active_group),
@@ -1095,6 +1119,7 @@ class main extends Controller {
             if (!empty($rigs[$rig]['disabled'])) {
                 return array(
                     'rig_name' => $orig,
+                    'custom_commands' => array(),
                     'pools' => array(),
                     'active_pool_group' => null,
                     'device_list' => array(),

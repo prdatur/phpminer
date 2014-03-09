@@ -42,6 +42,53 @@ class RPCClientApi {
     }
     
     /**
+     * Returns all available custom commands.
+     * 
+     * @return array
+     *   All available custom commands for this rig.
+     */
+    public function get_custom_commands() {
+        $resp = array();
+        if (!empty($this->config['custom_commands'])) {
+            foreach ($this->config['custom_commands'] AS $cmd => $data) {
+                if (empty($data['title'])) {
+                    continue;
+                }
+                $resp[$cmd] = array(
+                    'title' => $data['title'],
+                    'confirmation_required' => $data['confirmation_required'],
+                );
+            }
+        }
+        return $resp;
+    }
+    
+    /**
+     * Send custom command and returns the result.
+     * 
+     * @param array $data
+     *   The orig data from phpminer. (Optional, default = array())
+     * 
+     * @return String
+     *   The response.
+     */
+    public function send_custom_command($data = array()) {
+        if (empty($data['cmd'])) {
+            return "No command provided.";
+        }
+        
+        if (!isset($this->config['custom_commands'][$data['cmd']])) {
+            return "Invalid command provided.";
+        }
+        
+        $resp = shell_exec($this->config['custom_commands'][$data['cmd']]['command']);
+        if ($this->config['custom_commands'][$data['cmd']]['has_response']) {
+            return $resp;
+        }
+        return "";
+    }
+    
+    /**
      * Returns the miner process id.
      * 
      * @param array $data

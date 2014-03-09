@@ -130,6 +130,18 @@ class PHPMinerRPC extends HttpClient {
         return $res['msg'];
     }
     
+    public function get_custom_commands() {
+        $res =  $this->send('get_custom_commands');
+        return $res['msg'];
+    }
+    
+    public function send_custom_command($cmd) {
+        $res =  $this->send('send_custom_command', array(
+            'cmd' => $cmd,
+        ));
+        return $res['msg'];
+    }
+    
     public function reboot() {
         $this->send('reboot');
     }

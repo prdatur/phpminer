@@ -31,4 +31,13 @@ $config['cgminer_path'] = '/opt/cgminer';
 // Path to AMD SDK if available (Normally this is only needed within Linux)
 $config['amd_sdk'] = '';
 
+
+$config['custom_commands'] = array(
+    'get_date' => array(
+        'title' => 'Get date',
+        'command' => 'date',
+        'confirmation_required' => false,
+        'has_response' => true,
+    )
+);
 /* * ********* CONFIG END ************* */
