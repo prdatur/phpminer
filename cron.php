@@ -10,6 +10,10 @@ if (!defined('SITEPATH')) {
     define('SITEPATH', dirname(__FILE__));
 }
 
+if (!defined('IS_CRON')) {
+    define('IS_CRON', true);
+}
+
 
 
 // If on linux, we can create a little helper to prevent double starts.

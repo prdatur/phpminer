@@ -118,7 +118,9 @@ class Controller {
         $this->config = Config::getInstance();
         
         $this->access_control = AccessControl::getInstance();
-        if ($this->config->enable_access_control) {
+        
+        // We only enable access control in a real web request, from cron we have to let it disabled.
+        if ($this->config->enable_access_control && !defined('IS_CRON')) {
             $this->access_control->enable();
             if (!$this->access_control->get_config()->is_empty() && !$this->access_control->check_login()) {
                 $this->fatal_error('You are not logged in. Access denied!');
