@@ -892,7 +892,7 @@ function RigDetails(overview, rig, rig_data) {
                     )
                     .append($('<span>').html(back_reference.rig_name))
                     .append(
-                        $('<span>').off('rig_hashrate_changed').on('rig_hashrate_changed', function() {
+                        $('<span style="margin-left: 30px;margin-right: 20px;">').off('rig_hashrate_changed').on('rig_hashrate_changed', function() {
                             $(this).html(" " + rig_overview.get_hashrate_string(back_reference.get_rig_hashrate()));
                         })
                     )
@@ -1541,7 +1541,7 @@ function RigDevice(overview, rig, device_data) {
         // Generate fan td
         this.td_fan = $('<td>', {class: 'info_fan ' + css_clickable})
             .off('value_change').on('value_change', function() {
-                $(this).html("").append(backreference.get_config(['fan'], 0) + ' % (' + backreference.get_config(['fan_speed'], 0) + ' RPM)');
+                $(this).html("").append(backreference.get_config(['fan'], 0) + ' % (' + Math.round(backreference.get_config(['fan_speed'], 0)) + ' RPM)');
             })
             .off('click').on('click', function() {
                 getFanChangeDialog(data['ID'], data['Model']);
