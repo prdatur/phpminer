@@ -1082,7 +1082,7 @@ class main extends Controller {
 
             if (empty($current_active_group)) {
                 $rig_conf = $this->get_rpc($rig)->get_config();
-                if (!empty($rig_conf)) {
+                if (!empty($rig_conf) && isset($rig_conf['pools'])) {
                     
                     // Remove pools which does not have all required config's.
                     foreach ($rig_conf['pools'] AS $rig_conf_index => $rig_conf_pool) {

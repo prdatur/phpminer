@@ -189,7 +189,10 @@ class pools extends Controller {
                     if ($active_pool === null) {
                         $wait_msg .= 'Rig <b>' . $rig . '</b>\n';
                         foreach ($active_pools AS $pool_id => $device_count) {
-                           $wait_msg .= ' - ' . $sorted_pools[$pool_id]['URL'] . " (" . $device_count . ")\n"; 
+                            if ($pool_id === -1) {
+                                continue;
+                            }
+                            $wait_msg .= ' - ' . $sorted_pools[$pool_id]['URL'] . " (" . $device_count . ")\n"; 
                         }
                         continue;
                     }
