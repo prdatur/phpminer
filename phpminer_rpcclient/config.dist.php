@@ -37,6 +37,55 @@ $config['cgminer_path'] = '/opt/cgminer';
 // Path to AMD SDK if available (Normally this is only needed within Linux)
 $config['amd_sdk'] = '';
 
+// Here you can define the start and stop command.
+// This is optional, if you let it empty it will call the following command:
+// Stop:
+//   Linux:
+//     kill -9 {process_id}
+//   Windows
+//     taskkill /F /PID {process_id}
+//
+// Start:
+//   Linux:
+//     #!/bin/bash
+//     export GPU_MAX_ALLOC_PERCENT=100;
+//     export GPU_USE_SYNC_OBJECTS=1;
+//     export DISPLAY=:0;
+//     export LD_LIBRARY_PATH={amd_sdk}; # Only if configurated.
+//     cd {cgminer_path};
+//     screen -d -m -S {miner} ./{miner_binary} -c {cgminer_config_path}; # If {miner_binary} is empty it will use {miner}
+//   Windows
+//     setx GPU_MAX_ALLOC_PERCENT 100
+//     setx GPU_USE_SYNC_OBJECTS 1
+//     cd {cgminer_path}
+//     {miner_binary} -c {cgminer_config_path}; # If {miner_binary} is empty it will use {miner}.exe
+//
+// You can include the process id with %pid% within the stop request.
+//
+// For linux users:
+//   You can provide any command which is available under bash
+// For windows users:
+//   You can provide any command which is available within a .bat file.
+//
+// Example 1: Interupt instead of kill on linux machine
+//
+// $config['commands'] = array(
+//   'start' => null,
+//   'stop' => 'kill -15 %pid%',
+// );
+//
+// Example 2: Use smos/bamt mine start / mine stop
+//
+// $config['commands'] = array(
+//   'start' => 'mine start',
+//   'stop' => 'mine stop',
+// );
+$config['commands'] = array(
+    'start' => null,
+    'stop' => null,
+);
+
+// Here you can define custom commands which you can execute from the webinterface on this rig.
 $config['custom_commands'] = array(
     'get_date' => array(
         'title' => 'Get date',

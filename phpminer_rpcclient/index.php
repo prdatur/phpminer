@@ -42,6 +42,19 @@ if (empty($config['miner_binary'])) {
     }
 }
 
+// Make sure array index keys exists.
+if (!isset($config['commands'])) {
+    $config['commands'] = array();
+}
+
+if (!isset($config['commands']['start'])) {
+    $config['commands']['start'] = null;
+}
+
+if (!isset($config['commands']['stop'])) {
+    $config['commands']['stop'] = null;
+}
+
 // Create server, we need this here in order to close all sockets when pressing ctrl+c
 $rpc_server = new RPCClientServer($config);
 

@@ -127,6 +127,12 @@ class RPCClientApi {
         // Check if we could find it.
         if (!empty($cgminer_pid)) {
             
+            // If custom command for stop is found, use this instead of default one.
+            if (!empty($this->config['commands']['stop'])) {
+                exec(str_replace("%pid%", $cgminer_pid, $this->config['commands']['stop']));
+                return true;
+            }
+            
             // Check if on windows.
             if ($this->is_windows) {
                 
@@ -191,19 +197,29 @@ class RPCClientApi {
         if ($this->is_cgminer_running()) {
             return;
         }
-        
+        $cmd = '';
+        // If custom command for start is found, use this instead of default one.
+        if (!empty($this->config['commands']['start'])) {
+            $cmd = $this->config['commands']['start'];
+        }
         // Start on linux.
         if (!$this->is_windows) {
-            $cmd = "#!/bin/bash\n"
-                    . "export GPU_MAX_ALLOC_PERCENT=100;\n"
-                    . "export GPU_USE_SYNC_OBJECTS=1;\n"
-                    . "export DISPLAY=:0;\n";
-            if (!empty($this->config['amd_sdk'])) {
-                $cmd .= "export LD_LIBRARY_PATH=" . escapeshellarg($this->config['amd_sdk']) . ":;\n";
+            if (empty($cmd)) {
+                $cmd = "#!/bin/bash\n"
+                        . "export GPU_MAX_ALLOC_PERCENT=100;\n"
+                        . "export GPU_USE_SYNC_OBJECTS=1;\n"
+                        . "export DISPLAY=:0;\n";
+                if (!empty($this->config['amd_sdk'])) {
+                    $cmd .= "export LD_LIBRARY_PATH=" . escapeshellarg($this->config['amd_sdk']) . ":;\n";
+                }
+                $cmd .= "cd " . escapeshellarg($this->config['cgminer_path']) . ";\n";
+                $cmd .= "screen -d -m -S " . $this->config['miner'] . " ./" . $this->config['miner_binary'] . " -c " . escapeshellarg($this->config['cgminer_config_path']) . "\n";
             }
-            $cmd .= "cd " . escapeshellarg($this->config['cgminer_path']) . ";\n";
-            $cmd .= "screen -d -m -S " . $this->config['miner'] . " ./" . $this->config['miner_binary'] . " -c " . escapeshellarg($this->config['cgminer_config_path']) . "\n";
-
+            else {
+               // On Linux we need to place the bin bash in front of the custom command.
+               $cmd = "#!/bin/bash\n" . $cmd; 
+            }
+            
             file_put_contents('/tmp/startcg', $cmd);
             @chmod('/tmp/startcg', 0777);
             shell_exec('/tmp/startcg');
@@ -211,11 +227,14 @@ class RPCClientApi {
             
         // Start on windows.
         } else {
-            $cmd = ""
-                    . "setx GPU_MAX_ALLOC_PERCENT 100\n"
-                    . "setx GPU_USE_SYNC_OBJECTS 1\n";
-            $cmd .= "cd " . escapeshellarg($this->config['cgminer_path']) . "\n";
-            $cmd .= $this->config['miner_binary'] . " -c " . escapeshellarg($this->config['cgminer_config_path']) . "\n";
+            if (empty($cmd)) {
+                $cmd = ""
+                        . "setx GPU_MAX_ALLOC_PERCENT 100\n"
+                        . "setx GPU_USE_SYNC_OBJECTS 1\n";
+                $cmd .= "cd " . escapeshellarg($this->config['cgminer_path']) . "\n";
+                $cmd .= $this->config['miner_binary'] . " -c " . escapeshellarg($this->config['cgminer_config_path']) . "\n";
+            }
+            
             $temp = sys_get_temp_dir();
             if (!preg_match("/(\/|\\)$/", $temp)) {
                 $temp .= "\\";

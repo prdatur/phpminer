@@ -3,3 +3,4 @@ config/config.php
 config/phpminer.db
 config/pools.json
 config/notify.json
+phpminer_rpcclient/config.php
