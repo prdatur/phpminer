@@ -162,13 +162,19 @@ echo "
 // Path to AMD SDK if available (Normally this is only needed within Linux)
 \$config['amd_sdk'] = '$AMD_SDK';
 
-// Here you can define the start and stop command.
+// Here you can define custom start,stop and reboot commands.
 // This is optional, if you let it empty it will call the following command:
 // Stop:
 //   Linux:
 //     kill -9 {process_id}
 //   Windows
 //     taskkill /F /PID {process_id}
+//     
+// Reboot:
+//   Linux:
+//     shutdown -r now (or if not user root it tries sudo shutdown -r now)
+//   Windows
+//     shutdown /r /t 1
 //
 // Start:
 //   Linux:
@@ -197,6 +203,7 @@ echo "
 // \$config['commands'] = array(
 //   'start' => null,
 //   'stop' => 'kill -15 %pid%',
+//   'reboot' => null,
 // );
 //
 // Example 2: Use smos/bamt mine start / mine stop
@@ -204,10 +211,12 @@ echo "
 // \$config['commands'] = array(
 //   'start' => 'mine start',
 //   'stop' => 'mine stop',
+//   'reboot' => null,
 // );
 \$config['commands'] = array(
     'start' => null,
     'stop' => null,
+    'reboot' => null,
 );
 
 // Here you can define custom commands which you can execute from the webinterface on this rig.

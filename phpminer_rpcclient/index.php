@@ -55,6 +55,10 @@ if (!isset($config['commands']['stop'])) {
     $config['commands']['stop'] = null;
 }
 
+if (!isset($config['commands']['reboot'])) {
+    $config['commands']['reboot'] = null;
+}
+
 // Create server, we need this here in order to close all sockets when pressing ctrl+c
 $rpc_server = new RPCClientServer($config);
 

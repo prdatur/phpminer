@@ -258,6 +258,12 @@ class RPCClientApi {
      */
     public function reboot($data = array()) {
         
+        // If custom command for reboot is found, use this instead of default one.
+        if (!empty($this->config['commands']['reboot'])) {
+            exec($this->config['commands']['reboot']);
+            return true;
+        }
+            
         if ($this->is_windows) {
             
             // Reboot machine on windows.
