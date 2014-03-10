@@ -159,7 +159,26 @@ class CGMinerAPI {
         }
     }
     
-    private function request($cmd, $single_response = false, $parameter = null, $has_response = true) {
+    /**
+     * Do a cgminer api call.
+     * 
+     * @param string $cmd
+     *   The cmd.
+     * @param boolean $single_response
+     *   If set to true the response will be the first value of the first response array. (Optional, default = false)
+     * @param array|string $parameter
+     *   The parameter for this command (Optional, default = null)
+     * @param boolean $has_response
+     *   If set to true it will return an empty array if the response was empty.  (Optional, default = true)
+     * @param boolean $full_response
+     *   If set to true it will return the full response array. (Optional, default = false)
+     * 
+     * @return mixed
+     *   Returns on error false or the response data.
+     * 
+     * @throws APIRequestException
+     */
+    private function request($cmd, $single_response = false, $parameter = null, $has_response = true, $full_response = false) {
         
         // If we didn't connected yet, connect
         if ($this->socket === null) {
@@ -209,8 +228,13 @@ class CGMinerAPI {
             throw new APIRequestException($json['STATUS'][0]['Msg'] . "\n");
         }
         
+        if ($full_response) {
+            return $json;
+        }
+        
         // Remove status.
         unset($json['STATUS']);
+        
         // Get the command data.
         $response = reset($json);
         
@@ -316,7 +340,7 @@ class CGMinerAPI {
      *   True if user has the permissions, else false.
      */
     public function is_privileged() {
-        $result = $this->request('privileged');
+        $result = $this->request('privileged', false, null, false, true);
         return $result['STATUS'][0]['STATUS'] === 'S';
     }
     
