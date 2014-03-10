@@ -632,14 +632,15 @@ function RigDetails(overview, rig, rig_data) {
         // Init the pools for the current active pool group.
         if (devices !== false && devices.disabled !== true) {
             //new_pool_groups
-            this.pool_group_switch.trigger('new_pool_groups', [rig_overview.settings.pool_groups]);
+            if (this.pool_group_switch !== undefined) {
+                this.pool_group_switch.trigger('new_pool_groups', [rig_overview.settings.pool_groups]);
+
+                // Switch the select to the current active pool group.
+                this.pool_group_switch.val(devices.active_pool_group);
             
-            // Switch the select to the current active pool group.
-            this.pool_group_switch.val(devices.active_pool_group);
+                this.pool_switch.trigger('new_pools', [devices.pools]);
+            }     
             
-            //this.pool_group_switch.val();
-            this.pool_switch.trigger('new_pools', [devices.pools]);
-                 
             // For average device we need to store all active pools, to can display them.
             var active_pools = {};
             

@@ -1,6 +1,9 @@
 <?php
 declare(ticks = 1);
 
+set_time_limit (0);
+ob_implicit_flush ();
+
 // Load default config.
 $config = array();
 include dirname(__FILE__) . '/config.dist.php';
@@ -39,6 +42,9 @@ if (empty($config['miner_binary'])) {
     }
 }
 
+// Create server, we need this here in order to close all sockets when pressing ctrl+c
+$rpc_server = new RPCClientServer($config);
+
 // If on linux, we can create a little helper to prevent double starts.
 // We also register the handler on pressing ctrl+c / ctrl+d to make sure the lock file will be removed.
 if (function_exists('pcntl_signal')) {
@@ -48,7 +54,7 @@ if (function_exists('pcntl_signal')) {
         switch ($signo) {
             case SIGTERM:
             case SIGINT:
-                unlink($check_file);
+                unlock();
                 exit;
         }
     }
@@ -63,18 +69,19 @@ if (function_exists('pcntl_signal')) {
     file_put_contents($check_file, getmypid());
     
     function unlock() {
-        global $check_file;
+        global $check_file, $rpc_server;
+        $rpc_server->close();
         @unlink($check_file);
     }
 }
 else {
     function unlock() {
-        
+        global $rpc_server;
+        $rpc_server->close();
     }
 }
 
 // Start server.
-$rpc_server = new RPCClientServer($config);
 $rpc_server->start();
 
 // Just make sure that tmp pid file is removed after script end. (Linux only)

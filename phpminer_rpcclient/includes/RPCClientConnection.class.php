@@ -50,7 +50,7 @@ class RPCClientConnection {
 
         // Read the data from phpminer.
         $data = $this->read_buffer();
-
+        
         // Check if client really sent some data.
         $bytes = strlen($data);
         if ($bytes === 0 || $data === false) {
@@ -138,9 +138,6 @@ class RPCClientConnection {
                 return $this->response($ex->getMessage(), true);
             }
         }
-   
-            
-            
     }
 
     /**
@@ -148,7 +145,8 @@ class RPCClientConnection {
      */
     public function disconnect() {
         // Shutdown socket.
-        stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
+        @socket_shutdown($this->socket, 2);
+        @socket_close($this->socket);
     }
 
     /**
@@ -158,21 +156,25 @@ class RPCClientConnection {
      *   Returns the read string, boolean false on error.
      */
     private function read_buffer() {
+        
         $buffer = '';
         $buffsize = 8192;
-        $metadata['unread_bytes'] = 0;
-        do {
-            if (feof($this->socket)) {
-                return false;
-            }
-            $result = fread($this->socket, $buffsize);
-            if ($result === false) {
-                return false;
-            }
-            $buffer .= $result;
-            $metadata = stream_get_meta_data($this->socket);
-            $buffsize = ($metadata['unread_bytes'] > $buffsize) ? $buffsize : $metadata['unread_bytes'];
-        } while ($metadata['unread_bytes'] > 0);
+        $buf = null;
+        
+        $res = socket_recv($this->socket, $buf, $buffsize,0);
+        if($res == null) {
+            log_console("Couldn't Receive Data.");
+            return false;
+        }
+        else {
+            $buffer = $buf;
+        }
+        while ($res >= $buffsize) {
+            $buffer .= $buf;
+            $buf = null;
+            $res = socket_recv($this->socket, $buf, $buffsize, 0);
+        }
+                
         return $buffer;
     }
 
@@ -186,17 +188,21 @@ class RPCClientConnection {
      *   Returns the written bytes as an integer, boolean false on error.
      */
     private function write_buffer($string) {
-        $string_length = strlen($string);
-        $fwrite = 0;
-        for ($written = 0; $written < $string_length; $written += $fwrite) {
-            $fwrite = @fwrite($this->socket, substr($string, $written));
-            if ($fwrite === false) {
-                return false;
-            } elseif ($fwrite === 0) {
-                return false;
-            }
+       
+        $tmpBuf = $string;
+        $iBufLen = strlen($tmpBuf);
+        $res = socket_send($this->socket, $tmpBuf, $iBufLen,0);
+
+        if ($res === false) {
+            log_console("Couldn't send Data.");
+            return false;
         }
-        return $written;
+        else if ($res < $iBufLen) {
+            $tmpBuf = substr($tmpBuf, $res);
+            $this->write_buffer($tmpBuf);
+        }
+        
+        return $res;
     }
 
     /**

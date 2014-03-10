@@ -1035,7 +1035,9 @@ class main extends Controller {
         $rigs = $this->config->rigs;
         try {
             $pools = $this->get_rpc($rig)->get_pools();
-
+            if (empty($pools) || !is_array($pools)) {
+                $pools = array();
+            }
             $devices = $this->get_rpc($rig)->get_devices_details();
             if (!is_array($devices)) {
                 $devices = array();
@@ -1099,7 +1101,7 @@ class main extends Controller {
                 }
             }
             $custom_commands = $this->get_rpc($rig)->get_custom_commands();
-            if (!is_array($custom_commands)) {
+            if (empty($custom_commands) || !is_array($custom_commands)) {
                 $custom_commands = array();
             }
             return array(
