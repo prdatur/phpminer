@@ -993,14 +993,17 @@ class main extends Controller {
             }
             if (!empty($devices)) {
                 
-                foreach ($devices AS &$device) {
+                foreach ($devices AS $k => &$device) {
                     if ($device['Name'] !== 'GPU') {
+                        unset($devices[$k]);
                         continue;
                     }
                     $info = $this->get_rpc($rig)->get_gpu($device['ID']);
-                    if (!is_array($info)) {
+                    if (!is_array($info) || empty($info)) {
+                        unset($devices[$k]);
                         continue;
                     }
+                    
                     $info = reset($info);
 
                     $device['gpu_info'] = $info;

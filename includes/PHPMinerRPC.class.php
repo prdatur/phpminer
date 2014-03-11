@@ -205,7 +205,58 @@ class PHPMinerRPC extends HttpClient {
      *   API Response.
      */
     public function get_pools() {
-        return $this->send_api('get_pools');
+        $result = $this->send_api('get_pools');
+        
+        // Required device details keys.
+        $pool_key_check = array(
+            'POOL',
+            'URL',
+            'Status',
+            'Priority',
+            'Quota',
+            #'Long Poll',
+            #'Getworks',
+            #'Accepted',
+            #'Rejected',
+            #'Works',
+            #'Discarded',
+            #'Stale',
+            #'Get Failures',
+            #'Remote Failures',
+            #'User',
+            #'Last Share Time',
+            #'Diff1 Shares',
+            #'Proxy Type',
+            #'Proxy',
+            #'Difficulty Accepted',
+            #'Difficulty Rejected',
+            #'Difficulty Stale',
+            #'Last Share Difficulty',
+            #'Has Stratum',
+            #'Stratum Active',
+            #'Stratum URL',
+            #'Has GBT',
+            #'Best Share',
+            #'Pool Rejected%',
+            #'Pool Stale%',
+        );
+        
+        // Loop through each result and checks if all required keys exists.
+        foreach ($result AS $k => $device) {
+            
+            // Loop through each required key.
+            foreach ($pool_key_check AS $check_key) {
+                
+                // If key does not exists. remove the device.
+                if (!isset($device[$check_key])) {
+                    unset($result[$k]);
+                    break;
+                }
+            }
+        }
+        
+        // Return end result.
+        return $result;
     }
     
     /**
@@ -225,7 +276,57 @@ class PHPMinerRPC extends HttpClient {
      *   API Response.
      */
     public function get_devices() {
-        return $this->send_api('get_devices');
+        $result = $this->send_api('get_devices');
+
+        // Required device details keys.
+        $gpu_device_key_check = array(
+            'GPU',
+            'Enabled',
+            'Status',
+            'Temperature',
+            'Fan Speed',
+            'Fan Percent',
+            'GPU Clock',
+            'Memory Clock',
+            'GPU Voltage',
+            'GPU Activity',
+            #'Powertune',
+            'MHS av',
+            'MHS 5s',
+            'Accepted',
+            'Rejected',
+            'Hardware Errors',
+            'Utility',
+            'Intensity',
+            'Last Share Pool',
+            #'Last Share Time',
+            #'Total MH',
+            #'Diff1 Work',
+            #'Difficulty Accepted',
+            #'Difficulty Rejected',
+            #'Last Share Difficulty',
+            #'Last Valid Work',
+            #'Device Hardware%',
+            #'Device Rejected%',
+            #'Device Elapsed',
+        );
+        
+        // Loop through each result and checks if all required keys exists.
+        foreach ($result AS $k => $device) {
+            
+            // Loop through each required key.
+            foreach ($gpu_device_key_check AS $check_key) {
+                
+                // If key does not exists. remove the device.
+                if (!isset($device[$check_key])) {
+                    unset($result[$k]);
+                    break;
+                }
+            }
+        }
+        
+        // Return end result.
+        return $result;
     }
     
     /**
@@ -245,7 +346,35 @@ class PHPMinerRPC extends HttpClient {
      *   API Response.
      */
     public function get_devices_details() {
-        return $this->send_api('get_devices_details');
+        $result = $this->send_api('get_devices_details');
+        
+        // Required device details keys.
+        $device_details_key_check = array(
+            'DEVDETAILS',
+            'Name',
+            'ID',
+            #'Driver',
+            'Kernel',
+            'Model',
+            #'Device Path',
+        );
+        
+        // Loop through each result and checks if all required keys exists.
+        foreach ($result AS $k => $device) {
+            
+            // Loop through each required key.
+            foreach ($device_details_key_check AS $check_key) {
+                
+                // If key does not exists. remove the device.
+                if (!isset($device[$check_key])) {
+                    unset($result[$k]);
+                    break;
+                }
+            }
+        }
+        
+        // Return end result.
+        return $result;
     }
     
     /**
@@ -444,11 +573,56 @@ class PHPMinerRPC extends HttpClient {
      * @param int $gpu_id
      *   The gpu id.
      * 
-     * @return array
-     *   API Response.
+     * @return array|boolean
+     *   API Response or boolean false if api does not return valid response.
      */
     public function get_gpu($gpu_id) {
-        return $this->send_api('get_gpu', $gpu_id);
+        $result = $this->send_api('get_gpu', $gpu_id);
+        if (isset($result[0])) {
+            
+            // Required device details keys.
+            $gpu_device_key_check = array(
+                'GPU',
+                'Enabled',
+                'Status',
+                'Temperature',
+                'Fan Speed',
+                'Fan Percent',
+                'GPU Clock',
+                'Memory Clock',
+                'GPU Voltage',
+                'GPU Activity',
+                #'Powertune',
+                'MHS av',
+                'MHS 5s',
+                'Accepted',
+                'Rejected',
+                'Hardware Errors',
+                'Utility',
+                'Intensity',
+                'Last Share Pool',
+                #'Last Share Time',
+                #'Total MH',
+                #'Diff1 Work',
+                #'Difficulty Accepted',
+                #'Difficulty Rejected',
+                #'Last Share Difficulty',
+                #'Last Valid Work',
+                #'Device Hardware%',
+                #'Device Rejected%',
+                #'Device Elapsed',
+            );
+
+            // Loop through each required key.
+            foreach ($gpu_device_key_check AS $check_key) {
+
+                // If key does not exists. return error.
+                if (!isset($result[0][$check_key])) {
+                    return false;
+                }
+            }
+        }
+        return $result;
     }
     
     /**
