@@ -150,10 +150,6 @@ class Controller {
         if ($this->controller_name === 'main' && ($this->action_name === 'check_connection' || $this->action_name === 'connection_reconnect')) {
             return;
         }
-        
-        if (empty($this->config->rigs)) {
-            throw new APIException('No rigs configurated', APIException::CODE_SOCKET_CONNECT_ERROR);
-        }
     }
        
     /**

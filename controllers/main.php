@@ -788,65 +788,8 @@ class main extends Controller {
         }
         
                 
-        $api = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key);
         try {
-            $version = $api->test_connection();
-            if (empty($version) || (!isset($version['CGMiner']) && !isset($version['SGMiner'])) || !isset($version['API'])) {
-                $message = "Could not find CGMiner/SGminer version or CGMiner/SGminer API version. Please check that CGMiner/SGminer is running and configurated how it is written within the readme of PHPMiner.";
-                AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $message);
-            }
-            
-            if (isset($version['CGMiner'])) {
-                $type = "CGMiner";
-                $orig_version = $version['CGMiner'];
-                $cgminer_version = explode(".", $version['CGMiner']);
-                $required_cgminer_version = array(3, 7, 2);
-            }
-            else if (isset($version['SGMiner'])) {
-                $type = "SGMiner";
-                $orig_version = $version['SGMiner'];
-                $cgminer_version = explode(".", $version['SGMiner']);
-                $required_cgminer_version = array(3, 7, 2);
-            }
-            $api_version = explode(".", $version['API']);
-            $required_api_version = array(1, 32);
-
-            $cgminer_version_valid = false;
-            foreach ($required_cgminer_version AS $i => $check_value) {
-                if (!isset($cgminer_version[$i])) {
-                    $cgminer_version[$i] = 0;
-                }
-                if ($cgminer_version[$i] > $check_value || ($i === count($required_cgminer_version) - 1 && $cgminer_version[$i] == $check_value)) {
-                    $cgminer_version_valid = true;
-                    break;
-                }
-            }
-
-            $api_version_valid = false;
-            foreach ($required_api_version AS $i => $check_value) {
-                if (!isset($api_version[$i])) {
-                    $api_version[$i] = 0;
-                }
-                if ($api_version[$i] > $check_value || ($i === count($required_api_version) - 1 && $api_version[$i] == $check_value)) {
-                    $api_version_valid = true;
-                    break;
-                }
-            }
-
-            if ($cgminer_version_valid === false || $api_version_valid === false) {
-                $message = "PHPMiner could connect to CGMiner/SGMiner, but CGMiner/SGMiner runs in a unsupported version.\n\n";
-
-                $message .= "PHPMiner requires version: \n";
-                $message .= $type . ": <b>" . implode(".", $required_cgminer_version) . "</b>\n";
-                $message .= $type . " API: <b>" . implode(".", $required_api_version) . "</b>\n\n";
-
-                $message .= "Your version: \n";
-                $message .= $type . ": <b>" . $orig_version . "</b>\n";
-                $message .= $type . " API: <b>" . $version['API'] . "</b>\n";
-                AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $message);
-            }
-
-            $rpc_check = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key, 10);
+            $rpc_check = new PHPMinerRPC($params->http_ip, $params->http_port, $params->rpc_key, 5);
             $rpc_response = $rpc_check->ping();
             if ($rpc_response !== true) {
                 AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'RPC Error: ' . $rpc_response);
@@ -884,10 +827,8 @@ class main extends Controller {
             }
             
             $this->config->rigs = $new_rigs;
-            AjaxModul::return_code(AjaxModul::SUCCESS, array(
-                'cgminer' => $orig_version,
-                'api' => $version['API'],
-            ));
+            AjaxModul::return_code(AjaxModul::SUCCESS);
+            
         } catch (APIException $ex) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $ex->getMessage());
         }
