@@ -799,6 +799,14 @@ class main extends Controller {
             if (isset($rigs[$params->name]) && (empty($params->edit) || $params->edit === "false")) {
                 AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'This rig already exists.');
             }
+            
+            // Verify shortname is uniq.
+            foreach ($rigs AS $rig => $rig_data) {
+                if ($rig !== $params->name && $rig_data['shortname'] === $params->shortname) {
+                    AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'This shortname is already in use at rig <b>' . $rig . '</b>.');                    
+                }
+            }
+            
             $new_rigs = array();
             
             $rig_to_use = array(
