@@ -111,7 +111,7 @@ class RPCClientServer {
 
             }
             else {
-                log_console('Socket error: ' . socket_strerror(socket_last_error($this->master)));
+                #log_console('Socket error: ' . socket_strerror(socket_last_error($this->master)));
                 continue;
             }
             
