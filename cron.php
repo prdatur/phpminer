@@ -56,7 +56,7 @@ require_once 'includes/PoolConfig.class.php';
 require 'controllers/main.php';
 
 // Get the system config.
-$config = new Config(SITEPATH . '/config/config.json');
+$config = Config::getInstance();
 
 // Can't do anything if nothing is configurated.'
 if ($config->is_empty()) {
