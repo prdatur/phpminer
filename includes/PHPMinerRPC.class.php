@@ -122,6 +122,14 @@ class PHPMinerRPC extends HttpClient {
         return $res['msg'];
     }
     
+    public function switch_miner($miner) {
+        $res =  $this->send('switch_miner', array('miner' => $miner));
+        if (empty($res['error'])) {
+            return true;
+        }
+        return $res['msg'];
+    }
+    
     public function kill_cgminer() {
         $res =  $this->send('kill_cgminer');
         if (empty($res['error'])) {
@@ -130,8 +138,27 @@ class PHPMinerRPC extends HttpClient {
         return $res['msg'];
     }
     
+    public function get_current_miner() {
+        $res =  $this->send('get_current_miner');
+        if (empty($res)) {
+            return "";
+        }
+        return $res['msg'];
+    }
+    
     public function get_custom_commands() {
         $res =  $this->send('get_custom_commands');
+        if (empty($res)) {
+            return array();
+        }
+        return $res['msg'];
+    }
+    
+    public function get_available_miners() {
+        $res =  $this->send('get_available_miners');
+        if (empty($res)) {
+            return array();
+        }
         return $res['msg'];
     }
     
@@ -1106,7 +1133,12 @@ class PHPMinerRPC extends HttpClient {
         $resp = $read_buf;
         
         @socket_close($socket);
+        if (empty($resp)) {
+            return "";
+        }
         $res = json_decode($resp, true);
+        
+        
         if ($res === false || empty($res)) {
             return array(
                 'error' => 1,

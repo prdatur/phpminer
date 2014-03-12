@@ -84,6 +84,24 @@ class RPCClientConnection {
 
         $client_api = null;
         
+        $config['rpc_config']->reload();
+        $current_miner = $config['rpc_config']->current_miner;
+        if (!isset($config['miners'][$current_miner])) {
+            $current_miner_config = reset($config['miners']);
+        }
+        else {
+            $current_miner_config = $config['miners'][$current_miner];
+        }
+
+        $config['miner_api_ip'] = $current_miner_config['ip'];
+        $config['miner_api_port'] = $current_miner_config['port'];
+        $config['miner'] = $current_miner_config['miner'];
+        $config['miner_binary'] = $current_miner_config['miner_binary'];
+        $config['cgminer_config_path'] = $current_miner_config['cgminer_config_path'];
+        $config['cgminer_path'] = $current_miner_config['cgminer_path'];
+        $config['amd_sdk'] = $current_miner_config['amd_sdk'];
+        
+        
         // Check which api is required.
         if (!isset($rpc_data['api_proxy']) || empty($rpc_data['api_proxy'])) {
             // Get the rpc api.

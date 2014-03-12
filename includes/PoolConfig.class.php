@@ -450,16 +450,19 @@ class PoolConfig {
      *   The group strategy (optional, default = 0)
      * @param int $period
      *   The rotate period in minutes for pool strategy 2:Rotate (optional, default = 0)
+     * @param string $miner
+     *   The miner to be used (Optional, default = '')
      * 
      * @return boolean|string
      *   Boolean true if group could be added, else the error as a string.
      */
-    public function update_group($old_group, $group, $strategy = 0, $period = 0) {
+    public function update_group($old_group, $group, $strategy = 0, $period = 0, $miner = '') {
         if ($this->group_exists($old_group)) {
-            Db::getInstance()->exec('UPDATE "pool_groups" SET "name" = :group, "strategy" = :strategy, "period" = :period WHERE "name" = :old', array(
+            Db::getInstance()->exec('UPDATE "pool_groups" SET "name" = :group, "strategy" = :strategy, "period" = :period, "miner" = :miner WHERE "name" = :old', array(
                 ':group' => $group,
                 ':strategy' => $strategy,
                 ':period' => $period,
+                ':miner' => $miner,
                 ':old' => $old_group,
             ));
             Db::getInstance()->exec('UPDATE "pools" SET "group" = :group WHERE "group" = :old', array(
@@ -482,16 +485,19 @@ class PoolConfig {
      *   The group strategy (optional, default = 0)
      * @param int $period
      *   The rotate period in minutes for pool strategy 2:Rotate (optional, default = 0)
+     * @param string $miner
+     *   The miner to be used. (Optional, default = '')
      * 
      * @return boolean|string
      *   Boolean true if group could be added, else the error as a string.
      */
-    public function add_group($group, $strategy = 0, $period = 0) {
+    public function add_group($group, $strategy = 0, $period = 0, $miner = '') {
         try {
-            Db::getInstance()->exec('INSERT INTO "pool_groups" ("name", "strategy", "period") VALUES (:group, :strategy, :period)', array(
+            Db::getInstance()->exec('INSERT INTO "pool_groups" ("name", "strategy", "period", "miner") VALUES (:group, :strategy, :period, :miner)', array(
                 ':group' => $group,
                 ':strategy' => $strategy,
                 ':period' => $period,
+                ':miner' => $miner,
             ));
             return true;
         }

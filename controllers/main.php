@@ -269,7 +269,20 @@ class main extends Controller {
         }
         $errors = array();
         $success = array();
+        
+        $group = $this->pool_config->get_group($params->group);
+        
         foreach ($rigs AS $current_rig) {
+            
+            $available_miners = array_flip($this->get_rpc($rig)->get_available_miners());
+            if (!empty($group['miner']) && !isset($available_miners[$group['miner']])) {
+                $errors[] = 'The miner "<b>' . $group['miner'] . '</b>" is not availabler at rig <b>' . $current_rig . '</b>.';
+                continue;
+            }
+            
+            if (empty($group['miner'])) {
+                $group['miner'] = key($available_miners);
+            }
             
             if (!$from_cron) {
                 if (!$this->access_control->has_permission(AccessControl::PERM_SWITCH_POOL_GROUP)) {
@@ -284,6 +297,17 @@ class main extends Controller {
             }
 
             $old_group = $this->pool_config->get_current_active_pool_group($this->get_rpc($current_rig));
+            
+            // Switch to correct miner.
+            if (!$this->get_rpc($rig)->switch_miner($group['miner'])) {
+                $errors[] = 'Could not switch to miner "<b>' . $group['miner'] . '</b>" at rig <b>' . $current_rig . '</b>.';
+                $old_group_details = $this->pool_config->get_group($old_group);
+                if (!$this->get_rpc($rig)->switch_miner($old_group_details['miner'])) {
+                    $errors[] = 'Could not switch back to miner "<b>' . $old_group_details['miner'] . '</b>" at rig <b>' . $current_rig . '</b>, it can be that this rig is now offline.';
+                }
+                continue;
+            }
+            
 
             $cg_pools = $this->get_rpc($current_rig)->get_pools();
             $pools_to_add = $this->pool_config->get_pools($params->group);
@@ -335,6 +359,12 @@ class main extends Controller {
             $cgminer_config_pools = array();
             if (!$pool_switched) {
                 $group_pools = $this->pool_config->get_pools($old_group);
+                
+                $old_group_details = $this->pool_config->get_group($old_group);
+                if (!$this->get_rpc($rig)->switch_miner($old_group_details['miner'])) {
+                    $errors[] = 'Could not switch back to miner "<b>' . $old_group_details['miner'] . '</b>" at rig <b>' . $current_rig . '</b>, it can be that this rig is now offline.';
+                }
+                
             }
 
             foreach ($group_pools AS $k => $pool) {

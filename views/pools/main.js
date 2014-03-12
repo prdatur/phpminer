@@ -125,7 +125,8 @@ Soopfw.behaviors.pools_main = function() {
         add_group({
             group: $(this).data('group'),
             strategy: $(this).data('strategy'),
-            rotate_period: $(this).data('rotate_period')
+            rotate_period: $(this).data('rotate_period'),
+            miner: $(this).data('miner')
         });
     });
     
@@ -229,7 +230,8 @@ Soopfw.behaviors.pools_main = function() {
         old_data = $.extend({
             group: '',
             strategy: 0,
-            rotate_period: ''
+            rotate_period: '',
+            miner: ''
         }, old_data);
         
         var dialog = "";
@@ -237,6 +239,14 @@ Soopfw.behaviors.pools_main = function() {
         dialog += '        <div class="form-element">';
         dialog += '            <label for="group">Group name:</label>';
         dialog += '            <input type="text" id="group" style="position: absolute;margin-left: 180px;width: 300px;" value="' + old_data.group + '"></input>';
+        dialog += '        </div>';
+        dialog += '        <div class="form-element">';
+        dialog += '            <label for="miner">Miner:</label>';
+        dialog += '            <select id="miner" style="position: absolute;margin-left: 138px;width: 300px;">';
+        $.each (phpminer.settings.available_miners, function(tmp, miner) {
+            dialog += '                 <option value="' + miner + '"' + ((old_data.miner === miner) ? 'selected="selected"' : '') + '>' + miner+ '</option>';            
+        });
+        dialog += '            </select>';
         dialog += '        </div>';
         if (phpminer.settings.has_advanced_api) {
             dialog += '        <div class="form-element">';
@@ -270,7 +280,10 @@ Soopfw.behaviors.pools_main = function() {
                 click: function() {
                     var group = $('#group').val();
                     wait_dialog('Please wait');
-                    var send_data = {group: group};
+                    var send_data = {
+                        group: group,
+                        miner: $('#miner').val()
+                    };
                     send_data['strategy'] = 0;
                     send_data['rotate_period'] = 0;
                     if (phpminer.settings.has_advanced_api) {
@@ -294,7 +307,7 @@ Soopfw.behaviors.pools_main = function() {
                                     '        <a data-toggle="collapse" href="#collapse_' + guuid + '">' + 
                                     '            Group: ' + group + '' + 
                                     '        </a>' + 
-                                    '        <a href="javascript:void(0)" class="edit-group" data-group="' + group + '" data-strategy="' + send_data['strategy'] + '" data-rotate_period="' +  send_data['rotate_period'] + '"><i class="icon-edit"></i>Edit</a>' + 
+                                    '        <a href="javascript:void(0)" class="edit-group" data-group="' + group + '" data-miner="' + send_data['miner'] + '" data-strategy="' + send_data['strategy'] + '" data-rotate_period="' +  send_data['rotate_period'] + '"><i class="icon-edit"></i>Edit</a>' + 
                                     '    </h4>' + 
                                     '</div>' + 
                                     '<div id="collapse_' + guuid + '" class="panel-collapse collapse in">' + 
@@ -348,6 +361,7 @@ Soopfw.behaviors.pools_main = function() {
                             $('a.edit-group', panel)
                                     .data('group', group).attr('data-group', group).prop('data-group', group)
                                     .data('strategy', send_data['strategy']).attr('data-strategy', send_data['strategy']).prop('data-strategy', send_data['strategy'])
+                                    .data('miner', send_data['miner']).attr('data-miner', send_data['miner']).prop('data-miner', send_data['miner'])
                                     .data('rotate_period', send_data['rotate_period']).attr('data-rotate_period', send_data['rotate_period']).prop('data-rotate_period', send_data['rotate_period']);
                             
                             $('.pools', panel).data('pool_group', group).attr('data-pool_group', group).prop('data-pool_group', group);

@@ -4,3 +4,4 @@ config/phpminer.db
 config/pools.json
 config/notify.json
 phpminer_rpcclient/config.php
+phpminer_rpcclient/config.json

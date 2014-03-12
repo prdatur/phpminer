@@ -14,6 +14,7 @@ class pools extends Controller {
             $this->pool_config->add_group('default', 0, 0);
         }
         $rig_names = array();
+        $available_miners = array();
         foreach ($this->config->rigs AS $rig => $rig_data) {
             if (!empty($rig_data['shortname'])) {
                 $rig_names[] = $rig_data['shortname'];
@@ -21,8 +22,13 @@ class pools extends Controller {
             else {
                 $rig_names[] = $rig;
             }
+            foreach ($this->get_rpc($rig)->get_available_miners() AS $miner) {
+                $available_miners[$miner] = $miner;
+            }
         }
+        
         $this->js_config('rig_names', $rig_names);
+        $this->js_config('available_miners', $available_miners);
     }
 
     public function change_pool() {
@@ -420,17 +426,18 @@ class pools extends Controller {
         $params->add_required_param('old_group', PDT_STRING);
         $params->add_required_param('group', PDT_STRING);
         $params->add_param('strategy', PDT_INT, 0);
+        $params->add_param('miner', PDT_STRING, '');
         $params->add_param('rotate_period', PDT_INT, 0);
         $params->add_validator('old_group', new FunctionValidator('You can not change the default group', function($value) {
             return $value != 'default';
         }));
-        $params->add_validator('group', new FunctionValidator('This group already exists.', function($value) {
-            $pool_config = new PoolConfig();
-            return !$pool_config->group_exists($value);
-        }));
         $params->fill();
         
         $this->load_pool_config();
+        
+        if ($params->old_group !== $params->group && $pool_config->group_exists($params->group)) {
+            AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'This group already exists');            
+        }
         
         if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
             AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
@@ -463,7 +470,7 @@ class pools extends Controller {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, "You can not change this group because there exist rig's which currently have this group active.\n\nRig's which have this group active:\n" . implode("\n", $rigs_in_use));
         }
         
-        $result = $this->pool_config->update_group($params->old_group, $params->group, $params->strategy, $params->rotate_period);
+        $result = $this->pool_config->update_group($params->old_group, $params->group, $params->strategy, $params->rotate_period, $params->miner);
         if ($result !== true) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, $result);
         }
@@ -475,6 +482,7 @@ class pools extends Controller {
         $params->add_required_param('group', PDT_STRING);
         $params->add_param('strategy', PDT_INT, 0);
         $params->add_param('rotate_period', PDT_INT, 0);
+        $params->add_param('miner', PDT_STRING, '');
         $params->add_validator('group', new FunctionValidator('This group already exists.', function($value) {
             $pool_config = new PoolConfig();
             return !$pool_config->group_exists($value);
@@ -495,7 +503,7 @@ class pools extends Controller {
 
         $this->load_pool_config();
         
-        $result = $this->pool_config->add_group($params->group, $params->strategy, $params->rotate_period);
+        $result = $this->pool_config->add_group($params->group, $params->strategy, $params->rotate_period, $params->miner);
         if ($result !== true) {
             AjaxModul::return_code(AjaxModul::ERROR_INVALID_PARAMETER, null, true, $result);
         }

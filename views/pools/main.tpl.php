@@ -4,6 +4,8 @@
 <div class="panel-group pool_groups" id="accordion">
     <?php if (AccessControl::getInstance()->has_permission(AccessControl::PERM_VIEW_POOL_GROUP)): ?>
     <?php foreach($this->pool_config->get_groups() AS $group): ?>
+    <?php $group_cfg = $this->pool_config->get_group($group); ?>
+    
     <?php if ($group === 'donate') { continue; } ?>
     <div class="panel panel-default" data-grp="<?php echo $group; ?>">
         <div class="panel-heading">
@@ -12,7 +14,7 @@
                     Group: <?php echo $group; ?>
                 </a>
                 <?php if ($group !== 'default'): ?>
-                <a href="javascript:void(0)" class="edit-group" data-group="<?php echo $group; ?>" data-strategy="<?php echo $this->pool_config->get_strategy($group); ?>" data-rotate_period="<?php echo $this->pool_config->get_period($group); ?>"><i class="icon-edit"></i>Edit</a>
+                <a href="javascript:void(0)" class="edit-group" data-group="<?php echo $group; ?>" data-strategy="<?php echo $group_cfg['strategy']; ?>" data-miner="<?php echo $group_cfg['miner']; ?>" data-rotate_period="<?php echo $group_cfg['period']; ?>"><i class="icon-edit"></i>Edit</a>
                 <?php endif; ?>
             </h4>
         </div>

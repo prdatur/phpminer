@@ -20,27 +20,56 @@ foreach ($dist_config AS $k => $v) {
     }
 }
 
+define('SITEPATH', dirname(__FILE__));
+
 include dirname(__FILE__) . '/includes/common.php';
 include dirname(__FILE__) . '/includes/CGMinerAPI.class.php';
 include dirname(__FILE__) . '/includes/RPCClientApi.class.php';
 include dirname(__FILE__) . '/includes/RPCClientConnection.class.php';
 include dirname(__FILE__) . '/includes/RPCClientServer.class.php';
-
-
-// When no miner is configurated, fallback to cgminer.
-if (empty($config['miner'])) {
-    $config['miner'] = 'cgminer';
-}
+include dirname(__FILE__) . '/includes/Config.class.php';
 
 $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
 
-// When no miner binaray is configurated or invalid one, fallback to .exe on windows
-if (empty($config['miner_binary'])) {
-    $config['miner_binary'] = $config['miner'];
-    if ($is_windows) {
-        $config['miner_binary'] .= '.exe';
-    }
+// Generate miner array when having old single miner version.
+if (!isset($config['miners'])) {
+    $config['miners'] = array();
+    $config['miners'][$config['miner']] = array(
+        'ip' => $config['miner_api_ip'],
+        'port' => $config['miner_api_port'],
+        'miner' => $config['miner'],
+        'miner_binary' => $config['miner_binary'],
+        'cgminer_config_path' => $config['cgminer_config_path'],
+        'cgminer_path' => $config['cgminer_path'],
+        'amd_sdk' => $config['amd_sdk'],
+    );
 }
+
+foreach ($config['miners'] AS $k => $miner_entry) {
+    // When no miner is configurated, fallback to cgminer.
+    if (empty($miner_entry['miner'])) {
+        $miner_entry['miner'] = 'cgminer';
+    }
+
+    // When no miner binaray is configurated or invalid one, fallback to .exe on windows
+    if (empty($miner_entry['miner_binary'])) {
+        $miner_entry['miner_binary'] = $miner_entry['miner'];
+        if ($is_windows) {
+            $miner_entry['miner_binary'] .= '.exe';
+        }
+    }
+    $config['miners'][$k] = $miner_entry;
+}
+
+$rpc_config = new Config(SITEPATH . '/config.json');
+$current_miner = $rpc_config->current_miner;
+if (empty($current_miner)) {
+    reset($config['miners']);
+    $current_miner = key($config['miners']);
+}
+$rpc_config->current_miner = $current_miner;
+
+$config['rpc_config'] = $rpc_config;
 
 // Make sure array index keys exists.
 if (!isset($config['commands'])) {

@@ -109,7 +109,9 @@ class RPCClientApi {
             }
             return false;
         } else {
-            $res = trim(shell_exec("ps a | grep \"" . $this->config['miner_binary'] . " -\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
+            $cmd = "ps a | grep \"" . $this->config['miner_binary'] . " -\" | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'";
+            #echo $cmd . "\n";
+            $res = trim(shell_exec($cmd));
             return intval($res);
         }
     }
@@ -149,6 +151,92 @@ class RPCClientApi {
     }
     
     /**
+     * Returns the current miner at this rig.
+     * 
+     * @param array $data
+     *   The orig data from phpminer. (Optional, default = array())
+     * 
+     * @return boolean
+     *   the current miner.
+     */
+    public function get_current_miner($data = array()) {
+        return $this->config['rpc_config']->current_miner;
+    }
+    
+    /**
+     * Returns all possible miners for this rig.
+     * 
+     * @return array
+     *   The miners.
+     */
+    public function get_available_miners() {
+        return array_keys($this->config['miners']);
+    }
+    
+    /**
+     * Switch the rig to the given miner.
+     * 
+     * @param array $data
+     *   The orig data from phpminer. (Optional, default = array())
+     * 
+     * @return boolean
+     *   True on success, else false.
+     */
+    public function switch_miner($data = array()) {
+        
+        // Check if miner was provided and if it exists.
+        if (empty($data['miner']) || !isset($this->config['miners'][$data['miner']])) {
+            return false;
+        }
+        
+        // Get current miner.
+        $current_miner = $this->config['rpc_config']->current_miner;
+        
+        // Check if it is already on that miner.
+        if ($data['miner'] === $current_miner) {
+            log_console('Already on that miner');
+            return true;
+        }
+        
+        $this->kill_cgminer();
+        
+        $run_tries = 0;
+        while ($this->is_cgminer_running()) {
+            sleep(1);
+            if ($run_tries++ >= 10) {
+                log_console('Could not stop current miner');
+                return false;
+            }
+        }
+        $current_miner_config = $this->config['miners'][$data['miner']];
+        $this->config['miner_api_ip'] = $current_miner_config['ip'];
+        $this->config['miner_api_port'] = $current_miner_config['port'];
+        $this->config['miner'] = $current_miner_config['miner'];
+        $this->config['miner_binary'] = $current_miner_config['miner_binary'];
+        $this->config['cgminer_config_path'] = $current_miner_config['cgminer_config_path'];
+        $this->config['cgminer_path'] = $current_miner_config['cgminer_path'];
+        $this->config['amd_sdk'] = $current_miner_config['amd_sdk'];
+        
+        $this->config['rpc_config']->current_miner = $data['miner'];
+
+        $this->restart_cgminer();
+        
+        $client_api = new CGMinerAPI($this->config['miner_api_ip'], $this->config['miner_api_port']);
+        $tries = 0;
+        while($tries++ <= 10) {
+            try {
+                $client_api->test_connection();
+                return true;
+            } catch (Exception $ex) {
+                
+            }
+            sleep(1);
+        }
+        log_console('Could not start new miner');
+        return false;
+    }
+    
+    /**
      * Returns wether the miner is running or not.
      * 
      * @param array $data
@@ -182,7 +270,9 @@ class RPCClientApi {
             return false;
         } else {
             // Check for defunced process on linux.
-            $res = trim(shell_exec("ps a | grep " . $this->config['miner_binary'] . " | grep defunc | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'"));
+            $cmd = "ps a | grep " . $this->config['miner_binary'] . " | grep defunc | grep -v grep | grep -v SCREEN | grep -v \"php -f \" | awk '{print $1}'";
+            #echo $cmd."\n";
+            $res = trim(shell_exec($cmd));
             return !empty($res);
         }
     }

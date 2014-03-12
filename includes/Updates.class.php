@@ -193,4 +193,8 @@ class Update {
         }
     }
     
+    public function update_2() {
+        Db::getInstance()->exec('ALTER TABLE `pool_groups` ADD `miner` VARCHAR(255) NOT NULL AFTER `period`;');
+    }
+    
 }

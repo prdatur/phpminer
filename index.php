@@ -164,17 +164,8 @@ try {
         if ($e instanceof AccessException) {
             $controller->fatal_error($e->getMessage(), true);
         }
-        switch ($e->getCode()) {
-            // We also want to get back to the setup screen to choose ip and port when we couldn't connect to the api.
-            // There the existing connection settings will be pre-filled.
-            case APIException::CODE_SOCKET_CONNECT_ERROR:
-                $controller->setup();
-                break;
-            // Bad bad, display errors.
-            default:
-                $controller->add_message($e->getMessage(), ($e instanceof InfoException) ? Controller::MESSAGE_TYPE_INFO : Controller::MESSAGE_TYPE_ERROR);
-                break;
-        }
+
+        $controller->add_message($e->getMessage(), ($e instanceof InfoException) ? Controller::MESSAGE_TYPE_INFO : Controller::MESSAGE_TYPE_ERROR);
     } else {
         AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, $e->getMessage());
     }
