@@ -1575,7 +1575,7 @@ function RigDevice(overview, rig, device_data) {
                     .append(shares.accepted)
                     .append(Soopfw.create_icon('cancel'))
                     .append(shares.rejected)
-                    .append(' (' + Math.round((100 / shares.accepted) * shares.rejected, 2) + '%)');
+                    .append(' (' + Math.round((100 / ( shares.accepted + shares.rejected ) ) * shares.rejected, 2) + '%)');
             })
             .appendTo(this.html);
           
