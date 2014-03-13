@@ -1087,13 +1087,15 @@ class PHPMinerRPC extends HttpClient {
      *   The data. (Optional, default = array())
      * @param boolean $from_api
      *   Enable miner api mode. (Optional, default = false)
+     * @param int $count
+     *   INTERNAL USE, DO NOT PROVIDE IT.
      * 
      * @return mixed
      *   Returns an array with 'error' => 0|1 where 1 determines we had an error and 'msg' with eather the error message on error or the response data.
      *   When $from_api is set to true it returns boolean false on error, else the direct response content from ['msg']
      *   
      */
-    private function send($command, $data = array(), $from_api = false) {
+    private function send($command, $data = array(), $from_api = false, $count = 0) {
         $args = array(
             'rpc_key' => $this->rpc_key,
             'command' => $command,
@@ -1141,6 +1143,10 @@ class PHPMinerRPC extends HttpClient {
         
         if (empty($resp)) {
             $this->sem_release($semaphore_id);
+            if ($count < 5) {
+                usleep(100);
+                return $this->send($command, $data, $from_api, $count++);
+            }
             return array(
                 'error' => 1,
                 'msg' => "No data",
