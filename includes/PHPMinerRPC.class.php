@@ -1100,9 +1100,12 @@ class PHPMinerRPC extends HttpClient {
             'data' => $data,
             'api_proxy' => $from_api,
         );
-        
-        $socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        $semaphore_id = md5($this->ip . '|' . $this->port);
+        $this->sem_get($semaphore_id);
+        $this->sem_acquire($semaphore_id);
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($socket === false) {
+            $this->sem_release($semaphore_id);
             return array(
                 'error' => 1,
                 'msg' => "Can not create socket.",
@@ -1114,6 +1117,7 @@ class PHPMinerRPC extends HttpClient {
 
         $result = @socket_connect($socket, $this->ip, $this->port);
         if ($result === false) {
+            $this->sem_release($semaphore_id);
             return array(
                 'error' => 1,
                 'msg' => "Could not connect to PHPMiner RPC, please check IP and port settings for PHPMiner RPC",
@@ -1126,25 +1130,69 @@ class PHPMinerRPC extends HttpClient {
         // Read the response.
         $buf = '';
         $read_buf = '';
-        while (0 !== ($bytes = @socket_recv($socket, $buf, 16, MSG_WAITALL))) {
+        
+        while ($buf = @socket_read($socket, 2048)) {
             $read_buf .= $buf;
         }
         
         $resp = $read_buf;
         
-        @socket_close($socket);
+        socket_close($socket);
+        
         if (empty($resp)) {
-            return "";
+            $this->sem_release($semaphore_id);
+            return array(
+                'error' => 1,
+                'msg' => "No data",
+            );
         }
         $res = json_decode($resp, true);
         
         
         if ($res === false || empty($res)) {
+            $this->sem_release($semaphore_id);
             return array(
                 'error' => 1,
                 'msg' => "Could not connect to PHPMiner RPC, please check IP and port settings for PHPMiner RPC",
             );
         }
+        $this->sem_release($semaphore_id);
         return $res;
+    } 
+    
+    /**
+     * Waits as long as the semaphore key is locked.
+     * 
+     * @param string $key
+     *   The semaphore key.
+     */
+    private function sem_get($key) {  
+        do {
+            // Read the db entry for the given semaphore key.
+            $data = Db::getInstance()->querySingle('SELECT 1 FROM "semaphore" WHERE "key" = :key', false, array(':key' => $key));
+            
+            // If it is empty semaphore is not in use.
+            $inuse = !empty($data)          ;          
+        } while ($inuse);
+    } 
+    
+    /**
+     * Locks this semaphore key.
+     * 
+     * @param string $key
+     *   The semaphore key.
+     */
+    private function sem_acquire($key) { 
+        Db::getInstance()->query('INSERT INTO "semaphore" ("key") VALUES (:key)', array(':key' => $key));
+    } 
+    
+    /**
+     * Unlocks this semaphore key.
+     * 
+     * @param string $key
+     *   The semaphore key.
+     */
+    private function sem_release($key) { 
+        Db::getInstance()->query('DELETE FROM "semaphore" WHERE "key" = :key', array(':key' => $key));
     } 
 }

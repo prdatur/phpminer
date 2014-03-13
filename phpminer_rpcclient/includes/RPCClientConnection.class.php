@@ -209,7 +209,7 @@ class RPCClientConnection {
        
         $tmpBuf = $string;
         $iBufLen = strlen($tmpBuf);
-        $res = socket_send($this->socket, $tmpBuf, $iBufLen,0);
+        $res = socket_write($this->socket, $tmpBuf, $iBufLen);
 
         if ($res === false) {
             log_console("Couldn't send Data.");

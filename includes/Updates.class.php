@@ -194,7 +194,16 @@ class Update {
     }
     
     public function update_2() {
-        Db::getInstance()->exec('ALTER TABLE `pool_groups` ADD `miner` VARCHAR(255) NOT NULL AFTER `period`;');
+        Db::getInstance()->exec('ALTER TABLE "pool_groups" ADD "miner" VARCHAR(255) NOT NULL AFTER "period";');
+    }
+    
+    public function update_3() {
+        Db::getInstance()->exec('
+          CREATE TABLE IF NOT EXISTS "semaphore" (
+            "key" varchar(255) NOT NULL,
+            PRIMARY KEY ("key")
+          ) ENGINE=MEMORY DEFAULT CHARSET=latin1;'
+        );
     }
     
 }

@@ -103,12 +103,11 @@ class RPCClientServer {
                 // Proccess client.
                 if ($this->client) {
                     $this->client->process_connection($this->config);
-                }    
-                
-                // Disconnection client.
-                $this->client->disconnect();
-                $this->client = null;
-
+                    
+                    // Disconnection client.
+                    $this->client->disconnect();
+                    $this->client = null;
+                }   
             }
             else {
                 #log_console('Socket error: ' . socket_strerror(socket_last_error($this->master)));
