@@ -11,31 +11,39 @@ $config['ip'] = '127.0.0.1';
 // Service port, change it to your needs, please keep in mind, in Linux ports lower 1000 can only be created by user root.
 $config['port'] = 11111;
 
-// Miner, can be cgminer or sgminer
-$config['miner'] = 'cgminer';
-
-// The miner api ip
-$config['miner_api_ip'] = '127.0.0.1';
-
-// The port of the miner api
-$config['miner_api_port'] = '4028';
-
-// Miner binary, this can be left empty if the binary is the same as the miner. For example miner = cgminer, miner_binary = cgminer or on windows cgminer.exe
-$config['miner_binary'] = '';
-
 // RPC Secret key.
 $config['rpc_key'] = '3_Kebju-55Xn-EigZb';
 
-// The path + file where the cgminer.conf is.
-// Please make sure that the user which run's this script has the permission to edit this file.
-$config['cgminer_config_path'] = '/opt/cgminer/cgminer.conf';
-
-// The path where the cgminer executable is.
-// Please make sure that the user which run's this script has the permission to start cgminer.
-$config['cgminer_path'] = '/opt/cgminer';
-
-// Path to AMD SDK if available (Normally this is only needed within Linux)
-$config['amd_sdk'] = '';
+// Holds all available miners for this rig.
+$config['miners'] = array(
+    
+    // First miner named "SGMiner"
+    'CGMiner' => array(
+        
+        // The ip to the miner api (which is configured at miner.conf as api-allow (This needs W: prefix for priviledge access)
+        'ip' => '127.0.0.1',
+        
+        // The miner api port.
+        'port' => 4028,
+        
+        // Miner, can be cgminer or sgminer
+        'miner' => 'cgminer',
+        
+        // Miner binary, this can be left empty if the binary is the same as the miner. For example miner = cgminer, miner_binary = cgminer or on windows cgminer.exe
+        'miner_binary' => '',
+        
+        // The path + file where the cgminer.conf is.
+        // Please make sure that the user which run's this script has the permission to edit this file.
+        'cgminer_config_path' => '/opt/cgminer/cgminer.conf',
+        
+        // The path where the cgminer executable is.
+        // Please make sure that the user which run's this script has the permission to start cgminer.
+        'cgminer_path' => '/opt/miners/cgminer',
+        
+        // Path to AMD SDK if available (Normally this is only needed within Linux and can be ommited also on linux)
+        'amd_sdk' => '',
+    ),
+);
 
 // Here you can define custom start,stop and reboot commands.
 // This is optional, if you let it empty it will call the following command:
