@@ -8,7 +8,7 @@ class PHPMinerRPC extends HttpClient {
     private $rpc_key = null;
     private $timeout = null;
     private $has_advanced_api = false;
-    public function __construct($ip, $port, $rpc_key, $timeout = 10) {
+    public function __construct($ip, $port, $rpc_key, $timeout = 5) {
         $this->ip = $ip;
         $this->port = $port;
         $this->rpc_key = $rpc_key;
@@ -1096,74 +1096,90 @@ class PHPMinerRPC extends HttpClient {
      *   
      */
     private function send($command, $data = array(), $from_api = false, $count = 0) {
-        $args = array(
-            'rpc_key' => $this->rpc_key,
-            'command' => $command,
-            'data' => $data,
-            'api_proxy' => $from_api,
-        );
+        
+        // Increase try counter.
+        $count++;
+        
+        // Get semaphore key.
         $semaphore_id = md5($this->ip . '|' . $this->port);
+        
+        // Wait until semaphore is free.
         $this->sem_get($semaphore_id);
+        
+        // Acquire our own lock.
         $this->sem_acquire($semaphore_id);
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if ($socket === false) {
+        
+        // Connect to the rpc client.
+        $errno = 0;
+        $errstr = "";
+        $socket = @fsockopen($this->ip, $this->port, $errno, $errstr, $this->timeout);
+        
+        // Make sure connection is good.
+        if ($socket === false || $errno !== 0) {
+            
+            // Release lock.
             $this->sem_release($semaphore_id);
+            
+            // Just to be double sure close socket.
+            @fclose($socket);
+           
+            // Return error.
             return array(
                 'error' => 1,
                 'msg' => "Can not create socket.",
             );
         }
         
-        @socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
-        @socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
-
-        $result = @socket_connect($socket, $this->ip, $this->port);
-        if ($result === false) {
-            $this->sem_release($semaphore_id);
-            return array(
-                'error' => 1,
-                'msg' => "Could not connect to PHPMiner RPC, please check IP and port settings for PHPMiner RPC",
-            );
-        }
+        // Set read/write timeout.
+        stream_set_timeout($socket, $this->timeout, 0);
         
-        $in = json_encode($args);
-        @socket_write($socket, $in, strlen($in));
+        // Write command to the rpc client.
+        fwrite($socket, json_encode(array(
+            'rpc_key' => $this->rpc_key,
+            'command' => $command,
+            'data' => $data,
+            'api_proxy' => $from_api,
+        )));
         
         // Read the response.
-        $buf = '';
-        $read_buf = '';
-        
-        while ($buf = @socket_read($socket, 2048)) {
-            $read_buf .= $buf;
+        $response = '';        
+        while (!feof($socket)) {
+            $response .= fgets($socket, 128);
         }
         
-        $resp = $read_buf;
+        // Now we don't need the socket anymore. So close it.
+        fclose($socket);
         
-        socket_close($socket);
+        // Parse the result as json.
+        $result = json_decode($response, true);
         
-        if (empty($resp)) {
+        // Verfify we got a result from rpc client. it is empty we have a problem because rpc client always returns with the response array.
+        if (empty($result)) {
+            
+            // Release lock
             $this->sem_release($semaphore_id);
+            
+            // If we didn't tried it yet more then 5 times, try the request again.
             if ($count < 5) {
+                // Wait a small time.
                 usleep(100);
-                return $this->send($command, $data, $from_api, $count++);
+                
+                // Now try again.
+                return $this->send($command, $data, $from_api, $count);
             }
+            
+            // We tried it more than 5 times. Return error.
             return array(
                 'error' => 1,
                 'msg' => "No data",
             );
         }
-        $res = json_decode($resp, true);
         
-        
-        if ($res === false || empty($res)) {
-            $this->sem_release($semaphore_id);
-            return array(
-                'error' => 1,
-                'msg' => "Could not connect to PHPMiner RPC, please check IP and port settings for PHPMiner RPC",
-            );
-        }
+        // Release lock.
         $this->sem_release($semaphore_id);
-        return $res;
+        
+        // Return the response.
+        return $result;
     } 
     
     /**

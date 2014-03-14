@@ -48,7 +48,7 @@ class CGMinerAPI {
      * @param int $port
      *   The remote port where cgminer is running.
      */
-    public function __construct($address, $port, $timeout = 10) {
+    public function __construct($address, $port, $timeout = 5) {
         $this->remote_ip = $address;
         $this->remote_port = $port;
         $this->timeout = $timeout;
@@ -63,21 +63,18 @@ class CGMinerAPI {
      */
     private function setup_socket() {
         if ($this->socket === null) {
-            $this->socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-            if ($this->socket === false || $this->socket === null) {
+            
+            // Connect to the rpc client.
+            $errno = 0;
+            $errstr = "";
+            $this->socket = @fsockopen($this->remote_ip, $this->remote_port, $errno, $errstr, $this->timeout);
+            if ($this->socket === false || $this->socket === null || $errno !== 0) {
                 $this->socket = null;
-                throw new APIException(socket_strerror(socket_last_error()), APIException::CODE_SOCKET_CREATE_ERROR);
+                throw new APIException($errstr, APIException::CODE_SOCKET_CREATE_ERROR);
             }
             
-            @socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
-            @socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=>$this->timeout, 'usec'=>0));
-        
-            $res = @socket_connect($this->socket , $this->remote_ip, $this->remote_port);
-            if ($res === false) {
-                @socket_close($this->socket);
-                $this->socket = null;
-                throw new APIException(socket_strerror(socket_last_error()), APIException::CODE_SOCKET_CONNECT_ERROR);
-            }
+            // Set read/write timeout.
+            stream_set_timeout($this->socket, $this->timeout, 0);
         }
     }
     
@@ -125,8 +122,9 @@ class CGMinerAPI {
         }
         
         $line = '';
-        while (true) {
-            $data = socket_read($this->socket, 256);
+                 
+        while (!feof($this->socket)) {
+            $data = fgets($this->socket, 256);
            
             // Nothing was read.
             if (empty($data)) {
@@ -153,7 +151,7 @@ class CGMinerAPI {
         
         // Only close if the socket is currently opened.
         if ($this->socket !== null) {
-            socket_close($this->socket);
+            fclose($this->socket);
             $this->socket = null;
         }
     }
@@ -198,12 +196,9 @@ class CGMinerAPI {
             }
             $cmd_data['parameter'] = $parameter;
         }
-                
-        // We need to get a variable so we can determine the length of it which is needed by socket_write.
-        $json_data = json_encode($cmd_data);    
-        
+                        
         // Send the command to the api server.
-        socket_write($this->socket, $json_data, strlen($json_data));
+        fwrite($this->socket, json_encode($cmd_data));
         
         // Read the api response.
         $line = $this->read_from_api();
