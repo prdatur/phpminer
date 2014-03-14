@@ -97,8 +97,7 @@ class CGMinerAPI {
         $res = $this->get_version();
         
         $advanced_api = $this->check('currentpool');
-        $this->has_advanced_api = $advanced_api[0]['Exists'] == 'Y';
-        
+        $this->has_advanced_api = (!empty($advanced_api) && is_array($advanced_api) && $advanced_api[0]['Exists'] == 'Y');
         return $res;
         
     }
