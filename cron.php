@@ -511,8 +511,9 @@ else {
 }
 $donation_enabled = !empty($donation_time);
 
-if (!empty($rig_notifications)) {
-    foreach ($rig_notifications AS $rig => $notification_data) {
+$rigs = $config->rigs;
+if (!empty($rigs)) {
+    foreach ($rigs AS $rig => $rig_data) {
         
         // Get the old pool group to switch back after donating.
         $main = new main();

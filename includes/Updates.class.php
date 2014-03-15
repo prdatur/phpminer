@@ -219,4 +219,11 @@ class Update {
         Db::getInstance()->exec('ALTER TABLE `pools` ADD `sort_order` INT NOT NULL AFTER `uuid`, ADD INDEX (`sort_order`) ;');
     }
     
+    /**
+     * Add pid to semaphore.
+     */
+    public function update_5() {
+        Db::getInstance()->exec('ALTER TABLE `semaphore` ADD `pid` INT NOT NULL AFTER `key`;');
+    }
+    
 }

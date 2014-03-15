@@ -1188,14 +1188,54 @@ class PHPMinerRPC extends HttpClient {
      * @param string $key
      *   The semaphore key.
      */
-    private function sem_get($key) {  
+    private function sem_get($key) {
+        $try_time = time();
         do {
+            $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN');
             // Read the db entry for the given semaphore key.
-            $data = Db::getInstance()->querySingle('SELECT 1 FROM "semaphore" WHERE "key" = :key', false, array(':key' => $key));
+            $pid = Db::getInstance()->querySingle('SELECT pid FROM "semaphore" WHERE "key" = :key', false, array(':key' => $key));
             
             // If it is empty semaphore is not in use.
-            $inuse = !empty($data)          ;          
+            $inuse = !empty($pid); 
+            
+            if ($inuse) {
+                if ($is_windows) {
+                    $task_list = array();
+                    exec("tasklist 2>NUL", $task_list);
+                    $still_running = '';
+                    foreach ($task_list AS $task) {
+                        $matches = array();
+                        if (preg_match("/\s" . (int)$pid . "\s/", $task, $matches)) {
+                            $still_running = true;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    $still_running = trim(shell_exec('ps -p ' . (int)$pid . ' | grep -v TIME'));
+                }
+                if (empty($still_running)) {
+                    $inuse = false;
+                    $this->sem_release($key);
+                }
+            }
+            
+            // If process requires more then 10 seconds, there is something wrong.
+            if (time()-$try_time >= 10) {
+                // Kill the process which hangs.
+                if ($is_windows) {
+                    exec("taskkill /F /PID " . intval($pid));
+                }
+                else {
+                    exec("kill -9 " . intval($pid));
+                }
+                $try_time = time();
+                $this->sem_release($key);
+            }
+            usleep(100);
+            
         } while ($inuse);
+        
     } 
     
     /**
@@ -1205,7 +1245,7 @@ class PHPMinerRPC extends HttpClient {
      *   The semaphore key.
      */
     private function sem_acquire($key) { 
-        Db::getInstance()->query('INSERT INTO "semaphore" ("key") VALUES (:key)', array(':key' => $key));
+        Db::getInstance()->query('INSERT INTO "semaphore" ("key", "pid") VALUES (:key, :pid)', array(':key' => $key, ':pid' => getmypid()));
     } 
     
     /**
