@@ -5,3 +5,11 @@
 .pool_table {
     white-space: nowrap;
 }
+
+.panel-body .btn-sm {
+    margin-bottom: 5px;
+}
+
+.panel-body .btn-danger {
+    float: right;
+}

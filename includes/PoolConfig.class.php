@@ -133,7 +133,7 @@ class PoolConfig {
         }
         
         $result = array();
-        $sql = Db::getInstance()->query('SELECT * FROM "pools" WHERE ' . implode(" OR ", $where_array), $values);
+        $sql = Db::getInstance()->query('SELECT * FROM "pools" WHERE ' . implode(" OR ", $where_array). ' ORDER BY "sort_order"', $values);
         if ($sql instanceof PDOStatement) {
             while ($row = $sql->fetch(PDO::FETCH_ASSOC)) {
                $result[$row['group']] = $row['group'];
@@ -304,6 +304,24 @@ class PoolConfig {
     }
     
     /**
+     * Set the new order of the pool.
+     * 
+     * @param string $group
+     *   The group.
+     * @param string $pool_uuid
+     *   the pool uuid.
+     * @param int $order
+     *   The new order number.
+     */
+    public function update_pool_order($group, $pool_uuid, $order) {
+        Db::getInstance()->exec('UPDATE "pools" SET "order" = :order WHERE "uuid" = :uuid AND "group" = :group', array(
+            ':order' => $order,
+            ':uuid' => $pool_uuid,
+            ':group' => $group,
+        ));
+    }
+    
+    /**
      * Returns the group data..
      * 
      * @param string $group
@@ -348,7 +366,7 @@ class PoolConfig {
      *   The pools within this group.
      */
     public function get_pools($group = 'default') {
-        $sql = Db::getInstance()->query('SELECT * FROM "pools" WHERE "group" = :group', array(
+        $sql = Db::getInstance()->query('SELECT * FROM "pools" WHERE "group" = :group ORDER BY "sort_order"', array(
             ':group' => $group,
         ));
         $result = array();
@@ -410,8 +428,12 @@ class PoolConfig {
             ':uuid' => $uuid,
             ':group' => $group,
         ));
-        $data['rig_based'] = !empty($data['rig_based']);
-        $data['quota'] = intval($data['quota']);
+        if (isset($data['rig_based'])) {
+            $data['rig_based'] = !empty($data['rig_based']);
+        }
+        if (isset($data['quota'])) {
+            $data['quota'] = intval($data['quota']);
+        }
         return $data;
     }
     

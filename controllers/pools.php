@@ -26,12 +26,28 @@ class pools extends Controller {
                 $available_miners[$miner] = $miner;
             }
         }
+        $pools = array();
+        foreach ($this->pool_config->get_groups() AS $group) {
+            if ($group === 'donate') {
+                continue;
+            }
+            $groupdata = $this->pool_config->get_group($group);
+            $groupdata['id'] = preg_replace("/[^a-zA-Z0-9]/", "_", $group);
+            
+            $pools[$group] = array(
+                'group' => $groupdata,
+                'pools' => $this->pool_config->get_pools($group),
+            );
+        }
         
+        $this->js_config('pools', $pools);
+        $this->js_config('can_change', AccessControl::getInstance()->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP));
         $this->js_config('rig_names', $rig_names);
         $this->js_config('available_miners', $available_miners);
     }
 
     public function change_pool() {
+        $this->request_type = 'json';
         $params = new ParamStruct();
         $params->add_required_param('pk', PDT_STRING);
         $params->add_required_param('name', PDT_STRING);
@@ -92,11 +108,18 @@ class pools extends Controller {
         }
         
         $this->pool_config->update_pool($uuid, $old_pool['url'], $old_pool['user'], $old_pool['pass'], $old_pool['quota'], $old_pool['rig_based']);
+        
+        
+        require_once SITEPATH . '/includes/AjaxModul.php';
         AjaxModul::return_code(AjaxModul::SUCCESS, array(
             'group' => $group,
             'old' => $uuid,
             'new' => $this->pool_config->get_pool_uuid($old_pool['url'], $old_pool['user']),
             'url' => $old_pool['url'],
+            'user' => $old_pool['user'],
+            'pass' => $old_pool['pass'],
+            'quota' => $old_pool['quota'],
+            'rig_based' => $old_pool['rig_based'],
         ));
     }
 
@@ -421,6 +444,54 @@ class pools extends Controller {
         AjaxModul::return_code(AjaxModul::SUCCESS);
     }
 
+    public function change_sort_order() {
+        $params = new ParamStruct();
+        $params->add_required_param('new_order', PDT_ARR);
+        $params->add_required_param('group', PDT_STRING);
+        $params->fill();
+        
+        $this->load_pool_config();
+               
+        if (!$this->access_control->has_permission(AccessControl::PERM_CHANGE_POOL_GROUP)) {
+            AjaxModul::return_code(AjaxModul::ERROR_NO_RIGHTS);
+        }
+        
+        if (!$params->is_valid(true)) {
+            AjaxModul::return_code(AjaxModul::ERROR_MISSING_PARAMETER, null, true, implode("\n", $params->get_errors()));
+        }
+        
+        // Set new order.
+        foreach ($params->new_order AS $uuid => $order) {
+            $this->pool_config->update_pool_order($params->group, $uuid, $order);
+        }
+                
+        // Change pool order within miner app if active.
+        foreach ($this->config->rigs AS $rig => $rig_data) {
+            if (!empty($rig_data['disabled'])) {
+                continue;
+            }
+            try {
+                if ($this->pool_config->get_current_active_pool_group($this->get_rpc($rig)) === $params->group)  {
+                    
+                    $new_order = array();
+                    $pools = $this->get_rpc($rig)->get_pools();
+                    foreach ($params->new_order AS $uuid => $order) {
+                        foreach ($pools AS $pool) {
+                            if ($this->pool_config->get_pool_uuid($pool['URL'], $pool['User']) === $uuid) {
+                                $new_order[] = $pool['POOL'];
+                            }
+                        }
+                    }
+                    $this->get_rpc($rig)->set_poolpriority($new_order);
+                }
+            }
+            catch(Exception $e) {
+                continue;
+            }
+        }
+        AjaxModul::return_code(AjaxModul::SUCCESS);
+    }
+    
     public function change_group() {
         $params = new ParamStruct();
         $params->add_required_param('old_group', PDT_STRING);
@@ -435,7 +506,7 @@ class pools extends Controller {
         
         $this->load_pool_config();
         
-        if ($params->old_group !== $params->group && $pool_config->group_exists($params->group)) {
+        if ($params->old_group !== $params->group && $this->pool_config->group_exists($params->group)) {
             AjaxModul::return_code(AjaxModul::ERROR_DEFAULT, null, true, 'This group already exists');            
         }
         

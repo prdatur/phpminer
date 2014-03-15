@@ -511,7 +511,7 @@ class PHPMinerRPC extends HttpClient {
      *   API Response.
      */
     public function set_poolpriority($pool_ids) {
-        return $this->send_api('set_poolpriority', $pool_ids);
+        return $this->send_api('set_poolpriority', array($pool_ids));
     }
     
     /**
@@ -1132,7 +1132,7 @@ class PHPMinerRPC extends HttpClient {
         
         // Set read/write timeout.
         stream_set_timeout($socket, $this->timeout, 0);
-        
+
         // Write command to the rpc client.
         fwrite($socket, json_encode(array(
             'rpc_key' => $this->rpc_key,

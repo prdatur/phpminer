@@ -77,7 +77,7 @@ class Controller {
      * 
      * @var string
      */
-    private $request_type = '';
+    protected $request_type = '';
     
     /**
      * This will determine if we use cgminer with advanced api or not.

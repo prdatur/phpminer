@@ -25,6 +25,7 @@
         <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/jquery.nouislider.min.js"></script>
         <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/bootstrap/js/bootstrap.min.js"></script>
         <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/x-editable/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+        <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/jquery.tablednd.js"></script>
         <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/common.js"></script>
         <script type="text/javascript" src="<?php echo $this->get_variable('docroot'); ?>/templates/js/core.js"></script>
         <?php foreach ($this->get_variable('jsfiles') AS $file): ?>

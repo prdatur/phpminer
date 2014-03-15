@@ -193,10 +193,16 @@ class Update {
         }
     }
     
+    /**
+     * Add miner application for pool groups
+     */
     public function update_2() {
         Db::getInstance()->exec('ALTER TABLE "pool_groups" ADD "miner" VARCHAR(255) NOT NULL AFTER "period";');
     }
     
+    /**
+     * Add semaphore.
+     */
     public function update_3() {
         Db::getInstance()->exec('
           CREATE TABLE IF NOT EXISTS "semaphore" (
@@ -204,6 +210,13 @@ class Update {
             PRIMARY KEY ("key")
           ) ENGINE=MEMORY DEFAULT CHARSET=latin1;'
         );
+    }
+    
+    /**
+     * Add sort order.
+     */
+    public function update_4() {
+        Db::getInstance()->exec('ALTER TABLE `pools` ADD `sort_order` INT NOT NULL AFTER `uuid`, ADD INDEX (`sort_order`) ;');
     }
     
 }

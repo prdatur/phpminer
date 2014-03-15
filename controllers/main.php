@@ -425,6 +425,21 @@ class main extends Controller {
 
             // When we switched successfully.
             if ($pool_switched) {
+                
+                    
+                // Adter switching, change pool priority.
+                $new_order = array();
+                $pools = $this->get_rpc($current_rig)->get_pools();
+                foreach ($pools_to_add AS $uuid => $order) {
+                    foreach ($pools AS $pool) {
+                        if ($this->pool_config->get_pool_uuid($pool['URL'], $pool['User']) === $uuid) {
+                            $new_order[] = $pool['POOL'];
+                        }
+                    }
+                }
+                $this->get_rpc($current_rig)->set_poolpriority($new_order);
+                
+                
                 $this->get_rpc($current_rig)->set_config('pools', $cgminer_config_pools);
 
                 if ($this->get_rpc($current_rig)->has_advanced_api()) {
