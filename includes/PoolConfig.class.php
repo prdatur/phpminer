@@ -314,7 +314,7 @@ class PoolConfig {
      *   The new order number.
      */
     public function update_pool_order($group, $pool_uuid, $order) {
-        Db::getInstance()->exec('UPDATE "pools" SET "order" = :order WHERE "uuid" = :uuid AND "group" = :group', array(
+        Db::getInstance()->exec('UPDATE "pools" SET "sort_order" = :order WHERE "uuid" = :uuid AND "group" = :group', array(
             ':order' => $order,
             ':uuid' => $pool_uuid,
             ':group' => $group,
