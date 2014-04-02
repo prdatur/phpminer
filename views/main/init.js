@@ -1567,7 +1567,7 @@ function RigDevice(overview, rig, device_data) {
             .appendTo(this.html);
     
         // Generate shares td
-        this.td_shares = $('<td>', {class: 'info_shares shares' + css_right})
+        this.td_shares = $('<td>', {class: 'info_shares shares ' + css_right})
             .off('value_change').on('value_change', function() {
                 var shares = backreference.get_config(['shares'], {accepted: 0, rejected: 0});
                 $(this).html("")
